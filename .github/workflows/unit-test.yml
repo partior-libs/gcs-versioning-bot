@@ -1,0 +1,23 @@
+name: Test Auto Versioning
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  test-generic-versioning:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - id: versioning
+        uses: partior-libs/gcs-versioning-bot@main
+        with:
+          artifactory-username: svc-smc-read
+          artifactory-password: ${{ secrets.ARTIFACTORY_PASSWORD }}
+          artifactory-target-dev-repo: smc-generic-dev
+          artifactory-target-release-repo: smc-generic-release
+          artifactory-target-group: ${{ steps.pipeline-branch-config.outputs.artifact_packager_group }}
+          artifactory-target-artifact-name: ${{ needs.read-config.outputs.ARTIFACT-BASE-NAME }}
+          branch-name: ${GITHUB_REF#refs/heads/}
+          short-hash: ${GITHUB_SHA::8}
+
+      - name: Get version
+        run: |
+          echo Version: [${{ steps.versioning.outputs.name }}]

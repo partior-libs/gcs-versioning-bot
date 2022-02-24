@@ -1,0 +1,75 @@
+name: 'Partior SMC Packaging'
+description: 'Package artifact with auto versioning for Smart Contract'
+inputs:
+  artifactory-username:  
+    description: 'Username for artifactory'
+    required: true
+    default: 'NIL'
+  artifactory-password:  
+    description: 'Password for artifactory'
+    required: true
+    default: 'NIL'
+  artifactory-target-dev-repo:  
+    description: 'Path of developmemt/RC repository target'
+    required: true
+    default: 'NIL'
+  artifactory-target-release-repo:  
+    description: 'Path of release/prod repository'
+    required: true
+    default: 'NIL'
+  artifactory-target-group:  
+    description: 'Artifact group'
+    required: false
+    default: 'partior'
+  artifactory-target-artifact-name:  
+    description: 'Artifact name'
+    required: true
+    default: 'NIL'
+  artifactory-base-url:  
+    description: 'Artifactory base URL'
+    required: false
+    default: 'https://partior.jfrog.io/artifactory'
+  folder-list:  
+    description: 'Comma delimited list for folders to be packaged'
+    required: true
+    default: 'NIL'
+  file-list:  
+    description: 'Comma delimited list for files to be packaged'
+    required: false
+    default: 'NIL'
+  list-strict-mode:  
+    description: 'Fail if folder/file not found'
+    required: false
+    default: 'true'
+  branch-name:  
+    description: 'Branch name'
+    required: true
+    default: 'feature'
+  artifact-package-cache-name:  
+    description: 'Temporary file to cache tar gzip file'
+    required: false
+    default: 'NIL'
+  short-hash:  
+    description: 'Short hash for the code base'
+    required: false
+    default: 'FFFFFFF'
+  artifact-type:  
+    description: 'Artifact definition type'
+    required: false
+    default: 'tgz'
+outputs:
+  artifact-package-name:
+    description: "Final output"
+    value: ${{ steps.final-artifact.outputs.filename }}
+runs:
+  using: "composite"
+  steps:
+    - run: ${{ github.action_path }}/scripts/get_latest_version.sh "${{ inputs.artifactory-base-url }}" "${{ inputs.artifactory-target-dev-repo }}" "${{ inputs.artifactory-target-release-repo }}" "${{ inputs.artifactory-target-group }}" "${{ inputs.artifactory-target-artifact-name }}" "${{ inputs.artifact-type }}"  "${{ inputs.branch-name }}" "${{ inputs.artifactory-username }}" "${{ inputs.artifactory-password }}"
+      shell: bash
+    - run: ${{ github.action_path }}/scripts/generate_package_version.sh "${{ inputs.artifactory-target-artifact-name }}" "${{ inputs.branch-name }}" "${{ inputs.short-hash }}"
+      shell: bash
+    - id: final-version
+      run: echo "::set-output name=name::$(echo $(${{ github.action_path }}/scripts/read_new_version.sh))"
+      shell: bash
+    - run: echo Done versioning
+      shell: bash
