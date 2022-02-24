@@ -13,8 +13,8 @@ jobs:
           artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
           artifactory-target-dev-repo: smc-generic-dev
           artifactory-target-release-repo: smc-generic-release
-          artifactory-target-group: ${{ steps.pipeline-branch-config.outputs.artifact_packager_group }}
-          artifactory-target-artifact-name: ${{ needs.read-config.outputs.ARTIFACT-BASE-NAME }}
+          artifactory-target-group: antztest
+          artifactory-target-artifact-name: dummy-artifact
           branch-name: ${GITHUB_REF#refs/heads/}
           short-hash: ${GITHUB_SHA::8}
 
