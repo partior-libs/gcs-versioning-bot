@@ -10,7 +10,7 @@ jobs:
         uses: partior-libs/gcs-versioning-bot@main
         with:
           artifactory-username: svc-smc-read
-          artifactory-password: ${{ secrets.ARTIFACTORY_PASSWORD }}
+          artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
           artifactory-target-dev-repo: smc-generic-dev
           artifactory-target-release-repo: smc-generic-release
           artifactory-target-group: ${{ steps.pipeline-branch-config.outputs.artifact_packager_group }}
