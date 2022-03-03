@@ -41,6 +41,10 @@ runs:
       shell: bash
 
     - run: |
+        echo TEST_ANTZ=$TEST_ANTZ
+      shell: bash
+
+    - run: |
         echo branches_default_gitleaks_enabled=$branches_default_gitleaks_enabled
         echo artifact-auto-versioning_patch-version_rules_branches_target=$artifact-auto-versioning_patch-version_rules_branches_target
       shell: bash

@@ -7,5 +7,7 @@ if [[ ! -f "$importerFile" ]]; then
     exit 1
 fi
 
-cat $importerFile | sed -r "s/echo ::set-output name=//g" | sed -r "s/::/=\"/g" | sed -r "s/$/\"/g" | grep "=\"" >> $GITHUB_ENV
-cat $importerFile | sed -r "s/echo ::set-output name=//g" | sed -r "s/::/=\"/g" | sed -r "s/$/\"/g" | grep "=\"" > antz.tmp
+#cat $importerFile | sed -r "s/echo ::set-output name=//g" | sed -r "s/::/=\"/g" | sed -r "s/$/\"/g" | grep "=\"" >> $GITHUB_ENV
+cat $importerFile | sed -r "s/echo ::set-output name=//g" | sed -r "s/::/=/g" |  grep "=" >> $GITHUB_ENV
+echo TEST_ANTZ=Hello World >> $GITHUB_ENV
+
