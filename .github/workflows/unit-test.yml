@@ -1,7 +1,9 @@
 name: Test Auto Versioning
 on: [push, pull_request, workflow_dispatch]
 
- 
+env:
+  YAML_CONFIG_IMPORTER: yaml_importer_${{ github.run_id }}_${{ github.run_number }}
+  
 jobs:
   read-config:
     runs-on: ubuntu-latest
