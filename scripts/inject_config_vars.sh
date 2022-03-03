@@ -8,3 +8,4 @@ if [[ ! -f "$importerFile" ]]; then
 fi
 
 cat $importerFile | sed -r "s/echo ::set-output name=//g" | sed -r "s/::/=\"/g" | sed -r "s/$/\"/g" | grep "=\"" >> $GITHUB_ENV
+cat $importerFile | sed -r "s/echo ::set-output name=//g" | sed -r "s/::/=\"/g" | sed -r "s/$/\"/g" | grep "=\"" > antz.tmp

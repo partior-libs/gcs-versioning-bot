@@ -37,9 +37,13 @@ runs:
       shell: bash
 
     - run: |
-        set
+        cat antz.tmp
       shell: bash
 
+    - run: |
+        echo branches_default_gitleaks_enabled=$branches_default_gitleaks_enabled
+        echo artifact-auto-versioning_patch-version_rules_branches_target=$artifact-auto-versioning_patch-version_rules_branches_target
+      shell: bash
     # - run: ${{ github.action_path }}/scripts/get_latest_version.sh "${{ inputs.artifactory-base-url }}" "${{ inputs.artifactory-target-dev-repo }}" "${{ inputs.artifactory-target-release-repo }}" "${{ inputs.artifactory-target-group }}" "${{ inputs.artifactory-target-artifact-name }}" "${{ inputs.artifact-type }}"  "${{ inputs.branch-name }}" "${{ inputs.artifactory-username }}" "${{ inputs.artifactory-password }}"
     #   shell: bash
     # - run: ${{ github.action_path }}/scripts/generate_package_version.sh "${{ inputs.artifactory-target-artifact-name }}" "${{ inputs.branch-name }}" "${{ inputs.short-hash }}"
