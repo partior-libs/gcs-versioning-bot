@@ -17,6 +17,10 @@ inputs:
     description: 'Branch name'
     required: true
     default: 'feature'
+  rules-importer-file:
+    description: 'File generated from partior-libs/gcs-yaml-importer'
+    required: true
+    default: 'NIL'
   artifact-type:  
     description: 'Artifact definition type'
     required: false
@@ -28,18 +32,13 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - name: Convert to normal bash env export format
+      run: ${{ github.action_path }}/scripts/inject_config_vars.sh "${{ inputs.rules-importer-file }}"
+
     - run: |
-        TESTVAR1=123456
+        set
       shell: bash
-    - run: |
-        echo TESTVAR1=$TESTVAR1
-      shell: bash
-    - run: |
-        echo TESTVAR2=abcde >> $GITHUB_ENV
-      shell: bash
-    - run: |
-        echo TESTVAR2=$TESTVAR2
-      shell: bash
+
     # - run: ${{ github.action_path }}/scripts/get_latest_version.sh "${{ inputs.artifactory-base-url }}" "${{ inputs.artifactory-target-dev-repo }}" "${{ inputs.artifactory-target-release-repo }}" "${{ inputs.artifactory-target-group }}" "${{ inputs.artifactory-target-artifact-name }}" "${{ inputs.artifact-type }}"  "${{ inputs.branch-name }}" "${{ inputs.artifactory-username }}" "${{ inputs.artifactory-password }}"
     #   shell: bash
     # - run: ${{ github.action_path }}/scripts/generate_package_version.sh "${{ inputs.artifactory-target-artifact-name }}" "${{ inputs.branch-name }}" "${{ inputs.short-hash }}"
