@@ -2,22 +2,56 @@ name: Test Auto Versioning
 on: [push, pull_request, workflow_dispatch]
 
 jobs:
-  test-generic-versioning:
+  read-config:
     runs-on: ubuntu-latest
+    outputs:
+      ENABLE-GITLEAKS: ${{ steps.pipeline-branch-config.outputs.gitleaks_enabled }}
+      ARTIFACT-BASE-NAME: ${{ steps.pipeline-config.outputs.artifact-base-name }}
     steps:
       - uses: actions/checkout@v2
-      - id: versioning
-        uses: partior-libs/gcs-versioning-bot@main
         with:
-          artifactory-username: svc-smc-read
-          artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
-          artifactory-target-dev-repo: smc-generic-dev
-          artifactory-target-release-repo: smc-generic-release
-          artifactory-target-group: antztest
-          artifactory-target-artifact-name: dummy-artifact
-          branch-name: ${GITHUB_REF#refs/heads/}
-          short-hash: ${GITHUB_SHA::8}
+          repository: partior-quorum/controller-smc-pipelines
+          ref: main
+          token: ${{ secrets.GH_REPO_PAT }}
 
-      - name: Get version
+      - name: Get repo details
+        id: get-repo
         run: |
-          echo Version: [${{ steps.versioning.outputs.name }}]
+          echo ::set-output name=branch-name::$(echo ${GITHUB_REF#refs/heads/} | cut -d"/" -f1)
+          echo ::set-output name=name::$(echo ${GITHUB_REPOSITORY}  | cut -d"/" -f2)
+
+      - name: Generate config importer
+        uses: partior-libs/gcs-yaml-importer@partior-stable
+        with:
+          yaml-file: projects/${{ steps.get-repo.outputs.name }}.yml
+          query-path: .smc.ci
+          output-file: ${{ env.YAML_CONFIG_IMPORTER }}
+          yaml-file-for-default: projects/smc-default.yml
+          query-path-for-default: .smc.ci
+          upload: true
+
+      - name: Start import pipeline config
+        id: pipeline-config
+        run: |
+          echo Importing ...${{ env.YAML_CONFIG_IMPORTER }}
+          source ./${{ env.YAML_CONFIG_IMPORTER }}
+          
+  # test-generic-versioning:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - id: versioning
+  #       uses: partior-libs/gcs-versioning-bot@main
+  #       with:
+  #         artifactory-username: svc-smc-read
+  #         artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
+  #         artifactory-target-dev-repo: smc-generic-dev
+  #         artifactory-target-release-repo: smc-generic-release
+  #         artifactory-target-group: antztest
+  #         artifactory-target-artifact-name: dummy-artifact
+  #         branch-name: ${GITHUB_REF#refs/heads/}
+  #         short-hash: ${GITHUB_SHA::8}
+
+  #     - name: Get version
+  #       run: |
+  #         echo Version: [${{ steps.versioning.outputs.name }}]

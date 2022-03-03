@@ -29,18 +29,6 @@ inputs:
     description: 'Artifactory base URL'
     required: false
     default: 'https://partior.jfrog.io/artifactory'
-  folder-list:  
-    description: 'Comma delimited list for folders to be packaged'
-    required: true
-    default: 'NIL'
-  file-list:  
-    description: 'Comma delimited list for files to be packaged'
-    required: false
-    default: 'NIL'
-  list-strict-mode:  
-    description: 'Fail if folder/file not found'
-    required: false
-    default: 'true'
   branch-name:  
     description: 'Branch name'
     required: true
@@ -58,9 +46,9 @@ inputs:
     required: false
     default: 'tgz'
 outputs:
-  artifact-package-name:
+  artifact-version-name:
     description: "Final output"
-    value: ${{ steps.final-artifact.outputs.filename }}
+    value: ${{ steps.final-version.outputs.name }}
 runs:
   using: "composite"
   steps:
