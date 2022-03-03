@@ -12,7 +12,7 @@ jobs:
         with:
           repository: partior-quorum/controller-smc-pipelines
           ref: main
-          token: ${{ secrets.GH_REPO_PAT }}
+          token: ${{ github.token }}
 
       - name: Get repo details
         id: get-repo
