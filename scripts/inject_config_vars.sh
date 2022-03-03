@@ -2,7 +2,7 @@
 
 importerFile=$1
 
-if [[ -f "$importerFile" ]]; then
+if [[ ! -f "$importerFile" ]]; then
     echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate importer file: [$importerFile]"
     exit 1
 fi
