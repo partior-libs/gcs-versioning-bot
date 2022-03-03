@@ -21,6 +21,10 @@ inputs:
     description: 'File generated from partior-libs/gcs-yaml-importer'
     required: true
     default: 'NIL'
+  debug:
+    description: 'Debug mode for more logging'
+    required: false
+    default: 'true'
   artifact-type:  
     description: 'Artifact definition type'
     required: false
@@ -32,17 +36,14 @@ outputs:
 runs:
   using: "composite"
   steps:
+  
     - name: Convert to normal bash env export format
       run: ${{ github.action_path }}/scripts/inject_config_vars.sh "${{ inputs.rules-importer-file }}"
       shell: bash
 
-    - run: |
-        echo TEST_ANTZ=$TEST_ANTZ
-      shell: bash
-
-    - run: |
-        echo branches_default_gitleaks_enabled=$branches_default_gitleaks_enabled
-        echo artifact-auto-versioning_patch-version_rules_branches_target=$artifact-auto-versioning_patch-version_rules_branches_target
+    - name: List all config variables
+      if: inputs.debug == 'true'
+      run: ${{ github.action_path }}/scripts/list_config_variables.sh ${{ github.action_path }}/config/general.ini
       shell: bash
     # - run: ${{ github.action_path }}/scripts/get_latest_version.sh "${{ inputs.artifactory-base-url }}" "${{ inputs.artifactory-target-dev-repo }}" "${{ inputs.artifactory-target-release-repo }}" "${{ inputs.artifactory-target-group }}" "${{ inputs.artifactory-target-artifact-name }}" "${{ inputs.artifact-type }}"  "${{ inputs.branch-name }}" "${{ inputs.artifactory-username }}" "${{ inputs.artifactory-password }}"
     #   shell: bash

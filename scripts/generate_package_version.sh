@@ -98,7 +98,7 @@ function degaussCoreVersionVariables() {
         echo "export ${vCurrentMsgTag}=false" >> $tmpVariable
     fi
     if [[ ! "${!versionFileRuleEnabled}" == "true" ]]; then
-        echo "export ${versionScope}_V_CONFIG_VFILE=false" >> $tmpVariable
+        echo "export ${versionScope}_V_CONFIG_VFILE_NAME=false" >> $tmpVariable
         echo "export ${vCurrentVersionFile}=false" >> $tmpVariable
     fi
     source ./$tmpVariable
@@ -131,7 +131,7 @@ function degaussPreReleaseVersionVariables() {
         echo "export ${vCurrentTag}=false" >> $tmpVariable
     fi
     if [[ ! "${!versionFileRuleEnabled}" == "true" ]]; then
-        echo "export ${versionScope}_V_CONFIG_VFILE=false" >> $tmpVariable
+        echo "export ${versionScope}_V_CONFIG_VFILE_NAME=false" >> $tmpVariable
         echo "export ${vCurrentVersionFile}=false" >> $tmpVariable
     fi
     source ./$tmpVariable
@@ -145,10 +145,14 @@ function degaussVersionReplacementVariables() {
 
     local branchEnabled=${versionScope}_V_RULE_BRANCH_ENABLED
     local tagRuleEnabled=${versionScope}_V_RULE_TAG_ENABLED
+    local labelRuleEnabled=${versionScope}_V_RULE_LABEL_ENABLED
+    local msgTagRuleEnabled=${versionScope}_V_RULE_MSGTAG_ENABLED
     local versionFileRuleEnabled=${versionScope}_V_RULE_VFILE_ENABLED
 
     local vCurrentBranch=${versionScope}_GH_CURRENT_BRANCH
     local vCurrentTag=${versionScope}_GH_CURRENT_TAG
+    local vCurrentLabel=${versionScope}_GH_CURRENT_LABEL
+    local vCurrentMsgTag=${versionScope}_GH_CURRENT_MSGTAG
     local vCurrentVersionFile=${versionScope}_GH_CURRENT_VFILE
 
     echo "export ${vCurrentBranch}=$currentBranch" >> $tmpVariable
@@ -159,12 +163,20 @@ function degaussVersionReplacementVariables() {
         echo "export ${versionScope}_V_CONFIG_BRANCHES=false" >> $tmpVariable
         echo "export ${vCurrentBranch}=false" >> $tmpVariable
     fi
+    if [[ ! "${!labelRuleEnabled}" == "true" ]]; then
+        echo "export ${versionScope}_V_CONFIG_LABELS=false" >> $tmpVariable
+        echo "export ${vCurrentLabel}=false" >> $tmpVariable
+    fi
+    if [[ ! "${!msgTagRuleEnabled}" == "true" ]]; then
+        echo "export ${versionScope}_V_CONFIG_MSGTAGS=false" >> $tmpVariable
+        echo "export ${vCurrentMsgTag}=false" >> $tmpVariable
+    fi
     if [[ ! "${!tagRuleEnabled}" == "true" ]]; then
         echo "export ${versionScope}_V_CONFIG_TAGS=false" >> $tmpVariable
         echo "export ${vCurrentTag}=false" >> $tmpVariable
     fi
     if [[ ! "${!versionFileRuleEnabled}" == "true" ]]; then
-        echo "export ${versionScope}_V_CONFIG_VFILE=false" >> $tmpVariable
+        echo "export ${versionScope}_V_CONFIG_VFILE_NAME=false" >> $tmpVariable
         echo "export ${vCurrentVersionFile}=false" >> $tmpVariable
     fi
     source ./$tmpVariable
@@ -176,7 +188,7 @@ function incrementCoreVersionByFile() {
     local versionPos=$2
     local versionScope=$3
        
-    local vConfigVersionFile=${versionScope}_V_CONFIG_VFILE
+    local vConfigVersionFile=${versionScope}_V_CONFIG_VFILE_NAME
     local vConfigVersionFileKey=${versionScope}_V_CONFIG_VFILE_KEY
     if [[ ! -f ${!vConfigVersionFile} ]]; then
         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate version file: [${!vConfigVersionFile}]"
@@ -198,7 +210,7 @@ function incrementCoreVersionByFile() {
 function checkCoreVersionFeatureFlag() {
     local versionScope=$1
     
-    local vUpdate=${versionScope}_V_RULES_ENABLED
+    local vRulesEnabled=${versionScope}_V_RULES_ENABLED
     local vConfigBranches=${versionScope}_V_CONFIG_BRANCHES
     local ghCurrentBranch=${versionScope}_GH_CURRENT_BRANCH
     local vConfigLabels=${versionScope}_V_CONFIG_LABELS
@@ -208,7 +220,7 @@ function checkCoreVersionFeatureFlag() {
     local vConfigMsgTags=${versionScope}_V_CONFIG_MSGTAGS
     local ghCurrentMsgTag=${versionScope}_GH_CURRENT_MSGTAG
 
-    if [[ "${!vUpdate}" == "true" ]] && [[ "${!vConfigBranches}" == *"${!ghCurrentBranch}"* ]] && [[ "${!vConfigLabels}" == *"${!ghCurrentLabel}"* ]] && [[ "${!vConfigTags}" == *"${!ghCurrentTag}"* ]] && [[ "${!vConfigMsgTags}" == *"${!ghCurrentMsgTag}"* ]]; then
+    if [[ "$VERSIONING_BOT_ENABLED" == "true" ]] && [[ "${!vRulesEnabled}" == "true" ]] && [[ "${!vConfigBranches}" == *"${!ghCurrentBranch}"* ]] && [[ "${!vConfigLabels}" == *"${!ghCurrentLabel}"* ]] && [[ "${!vConfigTags}" == *"${!ghCurrentTag}"* ]] && [[ "${!vConfigMsgTags}" == *"${!ghCurrentMsgTag}"* ]]; then
         echo "true"
     else
         echo "false"
@@ -218,13 +230,13 @@ function checkCoreVersionFeatureFlag() {
 function checkPreReleaseVersionFeatureFlag() {
     local versionScope=$1
     
-    local vUpdate=${versionScope}_V_RULES_ENABLED
+    local vRulesEnabled=${versionScope}_V_RULES_ENABLED
     local vConfigBranches=${versionScope}_V_CONFIG_BRANCHES
     local ghCurrentBranch=${versionScope}_GH_CURRENT_BRANCH
     local vConfigTags=${versionScope}_V_CONFIG_TAGS
     local ghCurrentTag=${versionScope}_GH_CURRENT_TAG
 
-    if [[ "${!vUpdate}" == "true" ]] && [[ "${!vConfigBranches}" == *"${!ghCurrentBranch}"* ]] && [[ "${!vConfigTags}" == *"${!ghCurrentTag}"* ]] && [[ ! "$(checkCoreVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "$(checkCoreVersionFeatureFlag ${MINOR_SCOPE})" == "true" ]] && [[ ! "$(checkCoreVersionFeatureFlag ${PATCH_SCOPE})" == "true" ]]; then
+    if [[ "$VERSIONING_BOT_ENABLED" == "true" ]] && [[ "${!vRulesEnabled}" == "true" ]] && [[ "${!vConfigBranches}" == *"${!ghCurrentBranch}"* ]] && [[ "${!vConfigTags}" == *"${!ghCurrentTag}"* ]] && [[ ! "$(checkCoreVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "$(checkCoreVersionFeatureFlag ${MINOR_SCOPE})" == "true" ]] && [[ ! "$(checkCoreVersionFeatureFlag ${PATCH_SCOPE})" == "true" ]]; then
         echo "true"
     else
         echo "false"
@@ -234,11 +246,11 @@ function checkPreReleaseVersionFeatureFlag() {
 function checkBuildVersionFeatureFlag() {
     local versionScope=$1
     
-    local vUpdate=${versionScope}_V_RULES_ENABLED
+    local vRulesEnabled=${versionScope}_V_RULES_ENABLED
     local vConfigBranches=${versionScope}_V_CONFIG_BRANCHES
     local ghCurrentBranch=${versionScope}_GH_CURRENT_BRANCH
 
-    if [[ "${!vUpdate}" == "true" ]] && [[ "${!vConfigBranches}" == *"${!ghCurrentBranch}"* ]]; then
+    if [[ "$VERSIONING_BOT_ENABLED" == "true" ]] && [[ "${!vRulesEnabled}" == "true" ]] && [[ "${!vConfigBranches}" == *"${!ghCurrentBranch}"* ]]; then
         echo "true"
     else
         echo "false"
@@ -248,8 +260,8 @@ function checkBuildVersionFeatureFlag() {
 function checkReplacementFeatureFlag() {
     local versionScope=$1
     
-    local vUpdate=${versionScope}_V_RULES_ENABLED
-    if [[ "${!vUpdate}" == "true" ]]; then
+    local vRulesEnabled=${versionScope}_V_RULES_ENABLED
+    if [[ "$VERSIONING_BOT_ENABLED" == "true" ]] && [[ "${!vRulesEnabled}" == "true" ]]; then
         echo "true"
     else
         echo "false"
@@ -326,7 +338,7 @@ function debugCoreVersionVariables() {
     echo ==========================================
     echo [DEBUG] SCOPE: $versionScope
 
-    local vUpdate=${versionScope}_V_RULES_ENABLED
+    local vRulesEnabled=${versionScope}_V_RULES_ENABLED
     local vConfigBranches=${versionScope}_V_CONFIG_BRANCHES
     local vConfigLabels=${versionScope}_V_CONFIG_LABELS
     local vConfigTags=${versionScope}_V_CONFIG_TAGS 
@@ -340,7 +352,7 @@ function debugCoreVersionVariables() {
     local ruleBranchEnabled=${versionScope}_V_RULE_BRANCH_ENABLED
     local ruleVersionFileEnabled=${versionScope}_V_RULE_VFILE_ENABLED
 
-    echo $vUpdate=${!vUpdate} 
+    echo $vRulesEnabled=${!vRulesEnabled} 
     echo $ruleBranchEnabled=${!ruleBranchEnabled} 
     echo $ruleVersionFileEnabled=${!ruleVersionFileEnabled} 
     echo $vConfigBranches=${!vConfigBranches} 
@@ -359,7 +371,7 @@ function debugPreReleaseVersionVariables() {
     echo ==========================================
     echo [DEBUG] SCOPE: $versionScope
 
-    local vUpdate=${versionScope}_V_RULES_ENABLED
+    local vRulesEnabled=${versionScope}_V_RULES_ENABLED
     local vConfigBranches=${versionScope}_V_CONFIG_BRANCHES
     local vConfigTags=${versionScope}_V_CONFIG_TAGS 
     
@@ -369,7 +381,7 @@ function debugPreReleaseVersionVariables() {
     local ruleBranchEnabled=${versionScope}_V_RULE_BRANCH_ENABLED
     local ruleVersionFileEnabled=${versionScope}_V_RULE_VFILE_ENABLED
 
-    echo $vUpdate=${!vUpdate} 
+    echo $vRulesEnabled=${!vRulesEnabled} 
     echo $ruleBranchEnabled=${!ruleBranchEnabled} 
     echo $ruleVersionFileEnabled=${!ruleVersionFileEnabled} 
     echo $vConfigBranches=${!vConfigBranches} 
