@@ -32,13 +32,13 @@ runs:
         TESTVAR1=123456
       shell: bash
     - run: |
-        echo $TESTVAR1
+        echo TESTVAR1=$TESTVAR1
       shell: bash
     - run: |
-        TESTVAR2=abcde >> ${GITHUB_ENV}
+        echo TESTVAR2=abcde >> $GITHUB_ENV
       shell: bash
     - run: |
-        echo $TESTVAR2
+        echo TESTVAR2=$TESTVAR2
       shell: bash
     # - run: ${{ github.action_path }}/scripts/get_latest_version.sh "${{ inputs.artifactory-base-url }}" "${{ inputs.artifactory-target-dev-repo }}" "${{ inputs.artifactory-target-release-repo }}" "${{ inputs.artifactory-target-group }}" "${{ inputs.artifactory-target-artifact-name }}" "${{ inputs.artifact-type }}"  "${{ inputs.branch-name }}" "${{ inputs.artifactory-username }}" "${{ inputs.artifactory-password }}"
     #   shell: bash
