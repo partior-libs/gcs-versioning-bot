@@ -1,11 +1,7 @@
 name: Test Auto Versioning
 on: [push, pull_request, workflow_dispatch]
 
-permissions:
-  repository-projects: read 
-  contents: read
-  actions: read
-
+ 
 jobs:
   read-config:
     runs-on: ubuntu-latest
@@ -17,6 +13,7 @@ jobs:
         with:
           repository: partior-quorum/controller-smc-pipelines
           ref: main
+          token: ${{ secrets.GH_PAT_TOKEN }}
 
       - name: Get repo details
         id: get-repo
