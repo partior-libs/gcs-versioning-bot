@@ -4,6 +4,10 @@ on: [push, pull_request, workflow_dispatch]
 jobs:
   read-config:
     runs-on: ubuntu-latest
+    permissions:
+      repository-projects: read 
+      contents: read
+      actions: read
     outputs:
       ENABLE-GITLEAKS: ${{ steps.pipeline-branch-config.outputs.gitleaks_enabled }}
       ARTIFACT-BASE-NAME: ${{ steps.pipeline-config.outputs.artifact-base-name }}
@@ -12,7 +16,7 @@ jobs:
         with:
           repository: partior-quorum/controller-smc-pipelines
           ref: main
-          token: ${{ github.token }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Get repo details
         id: get-repo
