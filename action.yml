@@ -9,22 +9,6 @@ inputs:
     description: 'Password for artifactory'
     required: true
     default: 'NIL'
-  artifactory-target-dev-repo:  
-    description: 'Path of developmemt/RC repository target'
-    required: true
-    default: 'NIL'
-  artifactory-target-release-repo:  
-    description: 'Path of release/prod repository'
-    required: true
-    default: 'NIL'
-  artifactory-target-group:  
-    description: 'Artifact group'
-    required: false
-    default: 'partior'
-  artifactory-target-artifact-name:  
-    description: 'Artifact name'
-    required: true
-    default: 'NIL'
   artifactory-base-url:  
     description: 'Artifactory base URL'
     required: false
@@ -33,14 +17,6 @@ inputs:
     description: 'Branch name'
     required: true
     default: 'feature'
-  artifact-package-cache-name:  
-    description: 'Temporary file to cache tar gzip file'
-    required: false
-    default: 'NIL'
-  short-hash:  
-    description: 'Short hash for the code base'
-    required: false
-    default: 'FFFFFFF'
   artifact-type:  
     description: 'Artifact definition type'
     required: false
@@ -52,12 +28,24 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - run: ${{ github.action_path }}/scripts/get_latest_version.sh "${{ inputs.artifactory-base-url }}" "${{ inputs.artifactory-target-dev-repo }}" "${{ inputs.artifactory-target-release-repo }}" "${{ inputs.artifactory-target-group }}" "${{ inputs.artifactory-target-artifact-name }}" "${{ inputs.artifact-type }}"  "${{ inputs.branch-name }}" "${{ inputs.artifactory-username }}" "${{ inputs.artifactory-password }}"
+    - run: |
+        TESTVAR1=123456
       shell: bash
-    - run: ${{ github.action_path }}/scripts/generate_package_version.sh "${{ inputs.artifactory-target-artifact-name }}" "${{ inputs.branch-name }}" "${{ inputs.short-hash }}"
+    - run: |
+        echo $TESTVAR1
       shell: bash
-    - id: final-version
-      run: echo "::set-output name=name::$(echo $(${{ github.action_path }}/scripts/read_new_version.sh))"
+    - run: |
+        TESTVAR2=abcde >> ${GITHUB_ENV}
       shell: bash
+    - run: |
+        echo $TESTVAR2
+      shell: bash
+    # - run: ${{ github.action_path }}/scripts/get_latest_version.sh "${{ inputs.artifactory-base-url }}" "${{ inputs.artifactory-target-dev-repo }}" "${{ inputs.artifactory-target-release-repo }}" "${{ inputs.artifactory-target-group }}" "${{ inputs.artifactory-target-artifact-name }}" "${{ inputs.artifact-type }}"  "${{ inputs.branch-name }}" "${{ inputs.artifactory-username }}" "${{ inputs.artifactory-password }}"
+    #   shell: bash
+    # - run: ${{ github.action_path }}/scripts/generate_package_version.sh "${{ inputs.artifactory-target-artifact-name }}" "${{ inputs.branch-name }}" "${{ inputs.short-hash }}"
+    #   shell: bash
+    # - id: final-version
+    #   run: echo "::set-output name=name::$(echo $(${{ github.action_path }}/scripts/read_new_version.sh))"
+    #   shell: bash
     - run: echo Done versioning
       shell: bash

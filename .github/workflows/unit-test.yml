@@ -3,7 +3,7 @@ on: [push, pull_request, workflow_dispatch]
 
 env:
   YAML_CONFIG_IMPORTER: yaml_importer_${{ github.run_id }}_${{ github.run_number }}
-  
+
 jobs:
   read-config:
     runs-on: ubuntu-latest
@@ -33,11 +33,15 @@ jobs:
           query-path-for-default: .smc.ci
           upload: true
 
-      - name: Start import pipeline config
-        id: pipeline-config
-        run: |
-          echo Importing ...${{ env.YAML_CONFIG_IMPORTER }}
-          source ./${{ env.YAML_CONFIG_IMPORTER }}
+      - name: Start versioning bot
+        id: version-bot
+        uses: partior-libs/gcs-versioning-bot@main
+        with:
+          artifactory-username: svc-smc-read
+          artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
+          rules-importer-file: ${{ env.YAML_CONFIG_IMPORTER }}
+          branch-name: ${GITHUB_REF#refs/heads/}
+
           
   # test-generic-versioning:
   #   runs-on: ubuntu-latest
