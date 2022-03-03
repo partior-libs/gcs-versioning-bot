@@ -21,10 +21,14 @@ if [[ ! -f "$iniFile" ]]; then
     echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate INI file: [$iniFile]"
     exit 1
 fi
-
+echo ANTZ=${ARTIFACT_LAST_DEV_VERSION_FILE}
 rm -f $tempRunFile
-cat $iniFile | grep -v "^#" | grep "=" | awk -F'=' '{print "echo " $1"=${"$1"}" }' >> $tempRunFile
+cat $iniFile | grep -v "^#" | grep "=" | awk -F'=' '{print "export "$1"="$2 }' > $tempRunFile
+
+source ./$tempRunFile
+cat $iniFile | grep -v "^#" | grep "=" | awk -F'=' '{print "echo " $1"=${"$1"}" }' > $tempRunFile
 chmod 755 $tempRunFile
+
 echo "[INFO] Listing variables..."
-./$tempRunFile
+ ./$tempRunFile
 rm -f $tempRunFile
