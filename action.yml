@@ -37,10 +37,6 @@ runs:
       shell: bash
 
     - run: |
-        cat antz.tmp
-      shell: bash
-
-    - run: |
         echo TEST_ANTZ=$TEST_ANTZ
       shell: bash
 
