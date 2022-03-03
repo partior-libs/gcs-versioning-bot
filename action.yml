@@ -34,7 +34,8 @@ runs:
   steps:
     - name: Convert to normal bash env export format
       run: ${{ github.action_path }}/scripts/inject_config_vars.sh "${{ inputs.rules-importer-file }}"
-
+      shell: bash
+      
     - run: |
         set
       shell: bash
