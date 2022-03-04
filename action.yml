@@ -40,7 +40,7 @@ runs:
     - name: Import importer files
       id: yaml-config
       run: |
-        for i in ${${{ inputs.rules-importer-file }}//,/ }
+        for i in ${${{ inputs.rules-importer-files }}//,/ }
         do 
           Sourcing $i
           if [[ ! -f "$i" ]]; then
@@ -70,7 +70,7 @@ runs:
           "${{ inputs.artifactory-username }}" \
           "${{ inputs.artifactory-password }}"
       shell: bash
-      
+
     - run: |
         ${{ github.action_path }}/scripts/generate_package_version.sh "${{ inputs.artifactory-target-artifact-name }}" \
           "${{ inputs.branch-name }}" \
