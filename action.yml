@@ -54,6 +54,8 @@ runs:
           echo [ERROR] Unable to locate branch packager rule importer file: [$branchPackagerRuleImporterFile]
           exit 1
         fi
+        source $versioningRuleImporterFile
+        source $branchPackagerRuleImporterFile
       shell: bash
 
     - name: Convert to normal bash env export format
@@ -65,23 +67,24 @@ runs:
       run: ${{ github.action_path }}/scripts/list_config_variables.sh ${{ github.action_path }}/config/general.ini
       shell: bash
 
-    # - run: |
-    #    ${{ github.action_path }}/scripts/get_latest_version.sh "${{ inputs.artifactory-base-url }}" \
-    #       "${{ steps.yaml-config.outputs.artifact_packager_artifactory-dev-repo }}" \
-    #       "${{ steps.yaml-config.outputs.artifact_packager_artifactory-release-repo }}" \
-    #       "${{ steps.yaml-config.outputs.artifact_packager_group }}" \
-    #       "${{ steps.yaml-config.outputs.artifact-base-name }}" \
-    #       "${{ inputs.artifact-type }}" \
-    #       "${{ inputs.branch-name }}" \
-    #       "${{ inputs.artifactory-username }}" \
-    #       "${{ inputs.artifactory-password }}"
-    #   shell: bash
+    - run: |
+       ${{ github.action_path }}/scripts/get_latest_version.sh "${{ inputs.artifactory-base-url }}" \
+          "${{ steps.yaml-config.outputs.artifact_packager_artifactory-dev-repo }}" \
+          "${{ steps.yaml-config.outputs.artifact_packager_artifactory-release-repo }}" \
+          "${{ steps.yaml-config.outputs.artifact_packager_group }}" \
+          "${{ steps.yaml-config.outputs.artifact-base-name }}" \
+          "${{ inputs.artifact-type }}" \
+          "${{ inputs.branch-name }}" \
+          "${{ inputs.artifactory-username }}" \
+          "${{ inputs.artifactory-password }}"
+      shell: bash
 
-    # - run: |
-    #     ${{ github.action_path }}/scripts/generate_package_version.sh "${{ inputs.artifactory-target-artifact-name }}" \
-    #       "${{ inputs.branch-name }}" \
-    #       "${{ inputs.short-hash }}"
-    #   shell: bash
+    - run: |
+        ${{ github.action_path }}/scripts/generate_package_version.sh "${{ inputs.artifactory-target-artifact-name }}" \
+          "${{ inputs.branch-name }}" \
+          "${{ inputs.short-hash }}"
+      shell: bash
+
     # - id: final-version
     #   run: echo "::set-output name=name::$(echo $(${{ github.action_path }}/scripts/read_new_version.sh))"
     #   shell: bash
