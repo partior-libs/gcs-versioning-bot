@@ -95,11 +95,11 @@ jobs:
 
 
   trigger-by-main-branch:
-    needs: [ read-config, read-std-config, read-build-config, read-replace-file-version-config, read-replace-file-version-config, read-replace-maven-pom-config ]
+    needs: [ read-config, read-std-config, read-build-config, read-replace-file-version-config, read-replace-maven-pom-config ]
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        rule: [ env.YAML_STD_CI_CONFIG_IMPORTER, env.YAML_BUILD_CI_CONFIG_IMPORTER, env.YAML_REPLACE_FILE_CI_CONFIG_IMPORTER, env.YAML_REPLACE_MVNPOM_CI_CONFIG_IMPORTER]
+        rule: [ ${{ env.YAML_STD_CI_CONFIG_IMPORTER }}, ${{ env.YAML_BUILD_CI_CONFIG_IMPORTER }}, ${{ env.YAML_REPLACE_FILE_CI_CONFIG_IMPORTER }}, ${{ env.YAML_REPLACE_MVNPOM_CI_CONFIG_IMPORTER }} ]
     env:
       BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
       REPO_NAME: ${{ needs.read-config.outputs.repo-name }}
