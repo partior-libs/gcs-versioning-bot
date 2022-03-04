@@ -49,6 +49,25 @@ jobs:
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@partior-stable
         with:
+          yaml-file: controller-config-files/projects/enable-std-rules.yml
+          query-path: .smc.ci
+          output-file: ${{ env.YAML_BUILD_CI_CONFIG_IMPORTER }}
+          yaml-file-for-default: controller-config-files/projects/defaults.yml
+          query-path-for-default: .smc.ci
+          upload: true
+
+  read-build-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          repository: partior-libs/gcs-versioning-bot
+          ref: ${GITHUB_REF}
+          token: ${{ secrets.GH_PAT_TOKEN }}
+
+      - name: Generate CI branch importer
+        uses: partior-libs/gcs-yaml-importer@partior-stable
+        with:
           yaml-file: controller-config-files/projects/enable-build-rules.yml
           query-path: .smc.ci
           output-file: ${{ env.YAML_BUILD_CI_CONFIG_IMPORTER }}
@@ -75,7 +94,7 @@ jobs:
           query-path-for-default: .smc.ci
           upload: true
 
-  read-replace-file-version-config:
+  read-replace-maven-pom-config:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -96,7 +115,7 @@ jobs:
 
 
   trigger-by-main-branch:
-    needs: [ read-config, read-std-config ] ]
+    needs: [ read-config, read-std-config, read-build-config, read-replace-file-version-config, read-replace-file-version-config, read-replace-maven-pom-config ]
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -111,7 +130,7 @@ jobs:
 
       - uses: actions/download-artifact@v2
         with:
-          name: ${{ env.YAML_STD_CI_CONFIG_IMPORTER }}
+          name: ${{ matrix.rule }}
 
       - name: Start versioning bot
         id: version-bot
@@ -119,8 +138,8 @@ jobs:
         with:
           artifactory-username: svc-smc-read
           artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
-          versioning-rules-importer-file: ${{ env.YAML_STD_CI_CONFIG_IMPORTER }}
-          branch-packager-rules-importer-file: ${{ matrix.rule }}
+          versioning-rules-importer-file: ${{ matrix.rule }}
+          branch-packager-rules-importer-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
           branch-name: main
 
   # trigger-by-release-branch:
