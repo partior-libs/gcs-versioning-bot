@@ -112,6 +112,6 @@ fi
 checkArtifactLastVersion "$artifactoryTargetDevRepo" "$ARTIFACT_LAST_DEV_VERSION_FILE" "Dev/RC" "$DEV_SCOPE"
 checkArtifactLastVersion "$artifactoryTargetRelRepo" "$ARTIFACT_LAST_REL_VERSION_FILE" "Release" "$RC_SCOPE"
 
-echo [DEBUG] yeah
-./scripts/generate_package_version.sh "$artifactoryTargetArtifactName" "$sourceBranchName" "MAJOR" "TAG" "MSGTAG" "test-files/app-version.cfg"
+# echo [DEBUG] yeah
+# ./scripts/generate_package_version.sh "$artifactoryTargetArtifactName" "$sourceBranchName" "MAJOR" "TAG" "MSGTAG" "test-files/app-version.cfg"
 
