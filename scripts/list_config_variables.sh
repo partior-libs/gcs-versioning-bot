@@ -16,4 +16,6 @@ chmod 755 $tempRunFile
 
 echo "[INFO] Listing variables..."
  ./$tempRunFile
+ echo "[INFO] Listing env variables..."
+ set
 rm -f $tempRunFile
