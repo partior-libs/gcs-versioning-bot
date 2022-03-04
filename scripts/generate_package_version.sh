@@ -210,6 +210,27 @@ function incrementCoreVersionByFile() {
 
 }
 
+function checkIsSubstring(){
+    local listString=$1
+    local subString=$2
+    local listArray=''
+
+    if [[ -z $listString ]] && [[ -z $subString ]]; then
+        echo "true"
+        return 0
+    fi
+
+    IFS=', ' read -r -a listArray <<< "$listString"
+    for eachString in "${listArray[@]}";
+    do 
+        if [[ "$eachString" == "$subString" ]]; then
+            echo "true"
+            return 0
+        fi
+    done
+    echo "false"
+}
+
 function checkCoreVersionFeatureFlag() {
     local versionScope=$1
     
@@ -223,7 +244,7 @@ function checkCoreVersionFeatureFlag() {
     local vConfigMsgTags=${versionScope}_V_CONFIG_MSGTAGS
     local ghCurrentMsgTag=${versionScope}_GH_CURRENT_MSGTAG
 
-    if [[ "$VERSIONING_BOT_ENABLED" == "true" ]] && [[ "${!vRulesEnabled}" == "true" ]] && [[ "${!vConfigBranches}" == *"${!ghCurrentBranch}"* ]] && [[ "${!vConfigLabels}" == *"${!ghCurrentLabel}"* ]] && [[ "${!vConfigTags}" == *"${!ghCurrentTag}"* ]] && [[ "${!vConfigMsgTags}" == *"${!ghCurrentMsgTag}"* ]]; then
+    if [[ "$VERSIONING_BOT_ENABLED" == "true" ]] && [[ "${!vRulesEnabled}" == "true" ]] && [[ "$(checkIsSubstring \"${!vConfigBranches}\" \"${!ghCurrentBranch}\")" == "true" ]] && [[ "$(checkIsSubstring \"${!vConfigLabels}\" \"${!ghCurrentLabel}\")" == "true" ]] && [[ "$(checkIsSubstring \"${!vConfigTags}\" \"${!ghCurrentTag}\")" == "true" ]] && [[ "$(checkIsSubstring \"${!vConfigMsgTags}\" \"${!ghCurrentMsgTag}\")" == "true" ]]; then
         echo "true"
     else
         echo "false"
@@ -239,7 +260,7 @@ function checkPreReleaseVersionFeatureFlag() {
     local vConfigTags=${versionScope}_V_CONFIG_TAGS
     local ghCurrentTag=${versionScope}_GH_CURRENT_TAG
 
-    if [[ "$VERSIONING_BOT_ENABLED" == "true" ]] && [[ "${!vRulesEnabled}" == "true" ]] && [[ "${!vConfigBranches}" == *"${!ghCurrentBranch}"* ]] && [[ "${!vConfigTags}" == *"${!ghCurrentTag}"* ]] && [[ ! "$(checkCoreVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "$(checkCoreVersionFeatureFlag ${MINOR_SCOPE})" == "true" ]] && [[ ! "$(checkCoreVersionFeatureFlag ${PATCH_SCOPE})" == "true" ]]; then
+    if [[ "$VERSIONING_BOT_ENABLED" == "true" ]] && [[ "${!vRulesEnabled}" == "true" ]] &&  [[ "$(checkIsSubstring \"${!vConfigBranches}\" \"${!ghCurrentBranch}\")" == "true" ]] && [[ "$(checkIsSubstring \"${!vConfigTags}\" \"${!ghCurrentTag}\")" == "true" ]] && [[ ! "$(checkCoreVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "$(checkCoreVersionFeatureFlag ${MINOR_SCOPE})" == "true" ]] && [[ ! "$(checkCoreVersionFeatureFlag ${PATCH_SCOPE})" == "true" ]]; then
         echo "true"
     else
         echo "false"
@@ -253,7 +274,7 @@ function checkBuildVersionFeatureFlag() {
     local vConfigBranches=${versionScope}_V_CONFIG_BRANCHES
     local ghCurrentBranch=${versionScope}_GH_CURRENT_BRANCH
 
-    if [[ "$VERSIONING_BOT_ENABLED" == "true" ]] && [[ "${!vRulesEnabled}" == "true" ]] && [[ "${!vConfigBranches}" == *"${!ghCurrentBranch}"* ]]; then
+    if [[ "$VERSIONING_BOT_ENABLED" == "true" ]] && [[ "${!vRulesEnabled}" == "true" ]] && [[ "$(checkIsSubstring \"${!vConfigBranches}\" \"${!ghCurrentBranch}\")" == "true" ]]; then
         echo "true"
     else
         echo "false"
