@@ -2,11 +2,11 @@ name: Test Auto Versioning
 on: [push, pull_request, workflow_dispatch]
 
 env:
-  YAML_STD_CI_CONFIG_IMPORTER: yaml_std_ci_importer
+  YAML_STD_CI_CONFIG_IMPORTER: std_rule
   YAML_CI_BRANCH_CONFIG_IMPORTER: yaml_ci_branch_importer
-  YAML_BUILD_CI_CONFIG_IMPORTER: yaml_build_ci_importer
-  YAML_REPLACE_FILE_CI_CONFIG_IMPORTER: yaml_replace_file_ci_importer
-  YAML_REPLACE_MVNPOM_CI_CONFIG_IMPORTER: yaml_replace_mvnpom_ci_importer
+  YAML_BUILD_CI_CONFIG_IMPORTER: enable_build_info
+  YAML_REPLACE_FILE_CI_CONFIG_IMPORTER: enable_file_replacement
+  YAML_REPLACE_MVNPOM_CI_CONFIG_IMPORTER: enable_mavenpom_replacement
 
 jobs:
   read-config:
@@ -99,7 +99,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rule: [ yaml_std_ci_importer, yaml_build_ci_importer, yaml_replace_file_ci_importer, yaml_replace_mvnpom_ci_importer ]
+        rule: [ std_rule, enable_build_info, enable_file_replacement, enable_mavenpom_replacement ]
+        branch: [ main, release, develop, feature ]
     env:
       BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
       REPO_NAME: ${{ needs.read-config.outputs.repo-name }}
@@ -112,6 +113,16 @@ jobs:
         with:
           name: ${{ matrix.rule }}
 
+      - name: View Version File - Before
+        run: |
+          echo [INFO] Viewing versioning file - Pre Activity
+          cat ./test-files/sample-version-file.xml
+
+      - name: View Maven POM File - Before
+        run: |
+          echo [INFO] Viewing Maven POM file - Pre Activity
+          cat ./test-files/sample-pom-file.xml
+
       - name: Start versioning bot
         id: version-bot
         uses: partior-libs/gcs-versioning-bot@main
@@ -121,6 +132,16 @@ jobs:
           versioning-rules-importer-file: ${{ matrix.rule }}
           branch-packager-rules-importer-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
           branch-name: main
+
+      - name: View Version File - After
+        run: |
+          echo [INFO] Viewing versioning file - Post Activity
+          cat ./test-files/sample-version-file.xml
+
+      - name: View Maven POM File - After
+        run: |
+          echo [INFO] Viewing Maven POM file - Post Activity
+          cat ./test-files/sample-pom-file.xml
 
   # trigger-by-release-branch:
   #   needs: [ read-config ]
