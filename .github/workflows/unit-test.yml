@@ -16,10 +16,6 @@ jobs:
       repo-name: ${{ steps.get-repo.outputs.name }}
     steps:
       - uses: actions/checkout@v2
-        with:
-          repository: partior-libs/gcs-versioning-bot
-          ref: ${GITHUB_REF}
-          token: ${{ secrets.GH_PAT_TOKEN }}
 
       - name: Get repo details
         id: get-repo
@@ -41,10 +37,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-        with:
-          repository: partior-libs/gcs-versioning-bot
-          ref: ${GITHUB_REF}
-          token: ${{ secrets.GH_PAT_TOKEN }}
 
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@partior-stable
@@ -60,10 +52,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-        with:
-          repository: partior-libs/gcs-versioning-bot
-          ref: ${GITHUB_REF}
-          token: ${{ secrets.GH_PAT_TOKEN }}
 
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@partior-stable
@@ -79,10 +67,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-        with:
-          repository: partior-libs/gcs-versioning-bot
-          ref: ${GITHUB_REF}
-          token: ${{ secrets.GH_PAT_TOKEN }}
 
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@partior-stable
@@ -98,10 +82,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-        with:
-          repository: partior-libs/gcs-versioning-bot
-          ref: ${GITHUB_REF}
-          token: ${{ secrets.GH_PAT_TOKEN }}
 
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@partior-stable
