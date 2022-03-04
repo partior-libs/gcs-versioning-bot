@@ -17,8 +17,12 @@ inputs:
     description: 'Branch name'
     required: true
     default: 'feature'
-  rules-importer-files:
-    description: 'File generated from partior-libs/gcs-yaml-importer. Support comma delimited for multiple'
+  versioning-rules-importer-file:
+    description: 'File generated from partior-libs/gcs-yaml-importer'
+    required: true
+    default: 'NIL'
+  branch-packager-rules-importer-file:
+    description: 'File generated from partior-libs/gcs-yaml-importer'
     required: true
     default: 'NIL'
   debug:
@@ -40,21 +44,20 @@ runs:
     - name: Import importer files
       id: yaml-config
       run: |
-        ls -ltrah
-        importerFile=${{ inputs.rules-importer-files }}
-        for eachImporter in ${importerFile//,/ }
-        do 
-          echo [INFO] Sourcing $eachImporter
-          if [[ ! -f "$eachImporter" ]]; then
-            echo [ERROR] Unable to locate importer file: [$eachImporter]
-            exit 1
-          fi
-          source "$eachImporter"
-        done
+        versioningRuleImporterFile=${{ inputs.versioning-rules-importer-file }}
+        branchPackagerRuleImporterFile=${{ inputs.branch-packager-rules-importer-file }}
+        if [[ ! -f "$versioningRuleImporterFile" ]]; then
+          echo [ERROR] Unable to locate versioning rule importer file: [$versioningRuleImporterFile]
+          exit 1
+        fi
+        if [[ ! -f "$branchPackagerRuleImporterFile" ]]; then
+          echo [ERROR] Unable to locate branch packager rule importer file: [$branchPackagerRuleImporterFile]
+          exit 1
+        fi
       shell: bash
 
     - name: Convert to normal bash env export format
-      run: ${{ github.action_path }}/scripts/inject_config_vars.sh "${{ inputs.rules-importer-files }}"
+      run: ${{ github.action_path }}/scripts/inject_config_vars.sh "${{ inputs.versioning-rules-importer-file }}"
       shell: bash
 
     - name: List all config variables
