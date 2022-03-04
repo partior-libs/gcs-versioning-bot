@@ -17,8 +17,8 @@ inputs:
     description: 'Branch name'
     required: true
     default: 'feature'
-  rules-importer-file:
-    description: 'File generated from partior-libs/gcs-yaml-importer'
+  rules-importer-files:
+    description: 'File generated from partior-libs/gcs-yaml-importer. Support comma delimited for multiple'
     required: true
     default: 'NIL'
   debug:
@@ -37,9 +37,17 @@ runs:
   using: "composite"
   steps:
 
-    - name: Import the importer file
+    - name: Import importer files
       id: yaml-config
-      run: source "${{ inputs.rules-importer-file }}"
+      run: |
+        for i in ${${{ inputs.rules-importer-file }}//,/ }
+        do 
+          Sourcing $i
+          if [[ ! -f "$i" ]]; then
+            echo [ERROR] Unable to locate importer file: [$i]
+          fi
+          source "$i"
+        done
       shell: bash
 
     - name: Convert to normal bash env export format
@@ -53,17 +61,21 @@ runs:
 
     - run: |
        ${{ github.action_path }}/scripts/get_latest_version.sh "${{ inputs.artifactory-base-url }}" \
-          "${{ steps.yaml-config.outputs.branches_default_artifact_packager_artifactory-dev-repo }}" \
-          "${{ steps.yaml-config.outputs.branches_default_artifact_packager_artifactory-release-repo }}" \
-          "${{ steps.yaml-config.outputs.branches_default_artifact_packager_group }}" \
+          "${{ steps.yaml-config.outputs.artifact_packager_artifactory-dev-repo }}" \
+          "${{ steps.yaml-config.outputs.artifact_packager_artifactory-release-repo }}" \
+          "${{ steps.yaml-config.outputs.artifact_packager_group }}" \
           "${{ steps.yaml-config.outputs.artifact-base-name }}" \
           "${{ inputs.artifact-type }}" \
           "${{ inputs.branch-name }}" \
           "${{ inputs.artifactory-username }}" \
           "${{ inputs.artifactory-password }}"
       shell: bash
-    # - run: ${{ github.action_path }}/scripts/generate_package_version.sh "${{ inputs.artifactory-target-artifact-name }}" "${{ inputs.branch-name }}" "${{ inputs.short-hash }}"
-    #   shell: bash
+      
+    - run: |
+        ${{ github.action_path }}/scripts/generate_package_version.sh "${{ inputs.artifactory-target-artifact-name }}" \
+          "${{ inputs.branch-name }}" \
+          "${{ inputs.short-hash }}"
+      shell: bash
     # - id: final-version
     #   run: echo "::set-output name=name::$(echo $(${{ github.action_path }}/scripts/read_new_version.sh))"
     #   shell: bash
