@@ -7,6 +7,7 @@ env:
   YAML_BUILD_CI_CONFIG_IMPORTER: enable_build_info
   YAML_REPLACE_FILE_CI_CONFIG_IMPORTER: enable_file_replacement
   YAML_REPLACE_MVNPOM_CI_CONFIG_IMPORTER: enable_mavenpom_replacement
+  YAML_VERSION_FROM_FILE_CI_CONFIG_IMPORTER: enable_external_version
 
 jobs:
   read-config:
@@ -93,13 +94,28 @@ jobs:
           query-path-for-default: .smc.ci
           upload: true
 
+  read-external-version-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Generate CI branch importer
+        uses: partior-libs/gcs-yaml-importer@partior-stable
+        with:
+          yaml-file: controller-config-files/projects/enable-ver-fom-file.yml
+          query-path: .smc.ci
+          output-file: ${{ env.YAML_VERSION_FROM_FILE_CI_CONFIG_IMPORTER }}
+          yaml-file-for-default: controller-config-files/projects/default.yml
+          query-path-for-default: .smc.ci
+          upload: true
+
   trigger-with-matrix:
-    needs: [ read-config, read-std-config, read-build-config, read-replace-file-version-config, read-replace-maven-pom-config ]
+    needs: [ read-config, read-std-config, read-build-config, read-replace-file-version-config, read-replace-maven-pom-config, read-external-version-config ]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        rule: [ std_rule, enable_build_info, enable_file_replacement, enable_mavenpom_replacement ]
+        rule: [ std_rule, enable_build_info, enable_file_replacement, enable_mavenpom_replacement, enable_external_version ]
         branch: [ main, release, develop, feature ]
     env:
       BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
