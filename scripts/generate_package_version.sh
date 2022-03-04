@@ -27,7 +27,7 @@ lastRelVersion=$(cat $ARTIFACT_LAST_REL_VERSION_FILE | cut -d"+" -f1)
 
 echo "[INFO] Start generating package version..."
 echo "[INFO] Artifact Name: $artifactName"
-echo "[INFO] Source branch: $branchName"
+echo "[INFO] Source branch: $currentBranch"
 echo "[INFO] Last Dev version in Artifactory: $lastDevVersion"
 echo "[INFO] Last Rel version in Artifactory: $lastRelVersion"
 

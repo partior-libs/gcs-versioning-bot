@@ -80,7 +80,7 @@ runs:
       shell: bash
 
     - run: |
-        ${{ github.action_path }}/scripts/generate_package_version.sh "${{ inputs.artifactory-target-artifact-name }}" \
+        ${{ github.action_path }}/scripts/generate_package_version.sh "${{ steps.yaml-config.outputs..artifact-base-name }}" \
           "${{ inputs.branch-name }}" \
           "${{ inputs.short-hash }}"
       shell: bash
