@@ -212,15 +212,16 @@ function incrementCoreVersionByFile() {
 function incrementPreReleaseVersionByFile() {
     local inputVersion=$1
     local preIdentifider=$2
+    local versionScope=$3
 
-    local vConfigVersionFile=${versionScope}_V_CONFIG_VFILE_NAME
+    local vConfigVersionFileName=${versionScope}_V_CONFIG_VFILE_NAME
     local vConfigVersionFileKey=${versionScope}_V_CONFIG_VFILE_KEY
 
-    if [[ ! -f ${!vConfigVersionFile} ]]; then
-        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate version file: [${!vConfigVersionFile}]"
+    if [[ ! -f ${!vConfigVersionFileName} ]]; then
+        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate version file: [${!vConfigVersionFileName}]"
         return 1
     fi
-    local tmpVersion=$(cat ./${!vConfigVersionFile} | grep -E "^${!vConfigVersionFileKey}" 2>/dev/null | cut -d"=" -f2)
+    local tmpVersion=$(cat ./${!vConfigVersionFileName} | grep -E "^${!vConfigVersionFileKey}" 2>/dev/null | cut -d"=" -f2)
 
     local currentSemanticVersion=$(echo $inputVersion | awk -F"-$preIdentifider." '{print $1}')
     local nextPreReleaseNumber=$(( $(echo $inputVersion | awk -F"-$preIdentifider." '{print $2}') + 1 ))
@@ -535,7 +536,7 @@ echo [INFO] After prerelease version incremented: $nextVersion
 
 ## Process incrementation on RC and DEV with version file
 if [[ "$(checkPreReleaseVersionFeatureFlag ${RC_SCOPE})" == "true" ]] && [[ "${RC_V_RULE_VFILE_ENABLED}" == "true" ]]; then
-    nextVersion=$(incrementPreReleaseVersionByFile "$lastRelVersion" "$RC_V_IDENTIFIER")
+    nextVersion=$(incrementPreReleaseVersionByFile "$lastRelVersion" "$RC_V_IDENTIFIER" "${RC_SCOPE}")
     if [[ "$MOCK_ENABLED" == "true" ]]; then
         if [[ ! -f $MOCK_FILE ]]; then
             echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate mock file: [$MOCK_FILE]"
@@ -546,7 +547,7 @@ if [[ "$(checkPreReleaseVersionFeatureFlag ${RC_SCOPE})" == "true" ]] && [[ "${R
         echo ${MOCK_REL_VERSION_KEYNAME}=$nextVersion >> $MOCK_FILE
     fi
 elif [[ "$(checkPreReleaseVersionFeatureFlag ${DEV_SCOPE})" == "true" ]] && [[ "${DEV_V_RULE_VFILE_ENABLED}" == "true" ]]; then
-    nextVersion=$(incrementPreReleaseVersionByFile "$lastDevVersion" "$DEV_V_IDENTIFIER")
+    nextVersion=$(incrementPreReleaseVersionByFile "$lastDevVersion" "$DEV_V_IDENTIFIER" "${DEV_SCOPE}")
     if [[ "$MOCK_ENABLED" == "true" ]]; then
         if [[ ! -f $MOCK_FILE ]]; then
             echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate mock file: [$MOCK_FILE]"
