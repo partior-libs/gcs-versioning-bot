@@ -99,6 +99,7 @@ jobs:
     strategy:
       matrix:
         rule: [ yaml_std_ci_importer, yaml_build_ci_importer, yaml_replace_file_ci_importer, yaml_replace_mvnpom_ci_importer ]
+        fail-fast: false
     env:
       BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
       REPO_NAME: ${{ needs.read-config.outputs.repo-name }}
