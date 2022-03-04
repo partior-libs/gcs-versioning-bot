@@ -53,10 +53,10 @@ smc:
             enabled: true
           message-tag: 
             target: PATCH-VERSION 
-            enabled: true
+            enabled: false
           labels: 
             target: PATCH-VERSION
-            enabled: true
+            enabled: false
           file:
             enabled: false
             target: test-files/app-version.cfg
@@ -72,7 +72,7 @@ smc:
             target: RC-VERSION
             enabled: false
           file:
-            enabled: false
+            enabled: true
             target: test-files/app-version.cfg
             key: RC-VERSION
       development-version:
@@ -86,7 +86,7 @@ smc:
             target: DEV-VERSION
             enabled: false
           file:
-            enabled: false
+            enabled: true
             target: test-files/app-version.cfg
             key: DEV-VERSION
       build-version:
