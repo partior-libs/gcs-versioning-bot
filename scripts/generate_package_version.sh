@@ -55,7 +55,7 @@ function incrementPreReleaseVersion() {
     local currentSemanticVersion=$(echo $inputVersion | awk -F"-$preIdentifider." '{print $1}')
     local nextPreReleaseNumber=$(( $(echo $inputVersion | awk -F"-$preIdentifider." '{print $2}') + 1 ))
     ## If not pre-release, then increment the core version too
-    if [[ "$inputVersion" == *"-"* ]]; then
+    if [[ ! "$inputVersion" == *"-"* ]]; then
         currentSemanticVersion=$(incrementCoreVersion $currentSemanticVersion ${PATCH_POSITION})
     fi
     echo $currentSemanticVersion-$preIdentifider.$nextPreReleaseNumber
