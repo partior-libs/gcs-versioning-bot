@@ -97,9 +97,9 @@ jobs:
     needs: [ read-config, read-std-config, read-build-config, read-replace-file-version-config, read-replace-maven-pom-config ]
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         rule: [ yaml_std_ci_importer, yaml_build_ci_importer, yaml_replace_file_ci_importer, yaml_replace_mvnpom_ci_importer ]
-        fail-fast: false
     env:
       BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
       REPO_NAME: ${{ needs.read-config.outputs.repo-name }}
