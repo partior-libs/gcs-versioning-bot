@@ -102,7 +102,7 @@ jobs:
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@partior-stable
         with:
-          yaml-file: controller-config-files/projects/enable-ver-fom-file.yml
+          yaml-file: controller-config-files/projects/enable-ver-from-file.yml
           query-path: .smc.ci
           output-file: ${{ env.YAML_VERSION_FROM_FILE_CI_CONFIG_IMPORTER }}
           yaml-file-for-default: controller-config-files/projects/default.yml
