@@ -5,7 +5,7 @@
 
 	<groupId>com.partior</groupId>
 	<artifactId>transaction-manager</artifactId>
-	<versionz>1.0.0</versionz>
+	<version>1.0.0</version>
 	<packaging>jar</packaging>
 	<name>transaction-manager</name>
 
