@@ -36,7 +36,12 @@ outputs:
 runs:
   using: "composite"
   steps:
-  
+
+    - name: Import the importer file
+      id: yaml-config
+      run: source "${{ inputs.rules-importer-file }}"
+      shell: bash
+
     - name: Convert to normal bash env export format
       run: ${{ github.action_path }}/scripts/inject_config_vars.sh "${{ inputs.rules-importer-file }}"
       shell: bash
@@ -45,8 +50,18 @@ runs:
       if: inputs.debug == 'true'
       run: ${{ github.action_path }}/scripts/list_config_variables.sh ${{ github.action_path }}/config/general.ini
       shell: bash
-    # - run: ${{ github.action_path }}/scripts/get_latest_version.sh "${{ inputs.artifactory-base-url }}" "${{ inputs.artifactory-target-dev-repo }}" "${{ inputs.artifactory-target-release-repo }}" "${{ inputs.artifactory-target-group }}" "${{ inputs.artifactory-target-artifact-name }}" "${{ inputs.artifact-type }}"  "${{ inputs.branch-name }}" "${{ inputs.artifactory-username }}" "${{ inputs.artifactory-password }}"
-    #   shell: bash
+
+    - run: |
+       ${{ github.action_path }}/scripts/get_latest_version.sh "${{ inputs.artifactory-base-url }}" \
+          "${{ steps.yaml-config.outputs.branches_default_artifact_packager_artifactory-dev-repo }}" \
+          "${{ steps.yaml-config.outputs.branches_default_artifact_packager_artifactory-release-repo }}" \
+          "${{ steps.yaml-config.outputs.branches_default_artifact_packager_group }}" \
+          "${{ steps.yaml-config.outputs.artifact-base-name }}" \
+          "${{ inputs.artifact-type }}" \
+          "${{ inputs.branch-name }}" \
+          "${{ inputs.artifactory-username }}" \
+          "${{ inputs.artifactory-password }}"
+      shell: bash
     # - run: ${{ github.action_path }}/scripts/generate_package_version.sh "${{ inputs.artifactory-target-artifact-name }}" "${{ inputs.branch-name }}" "${{ inputs.short-hash }}"
     #   shell: bash
     # - id: final-version
