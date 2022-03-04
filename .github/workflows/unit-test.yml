@@ -26,10 +26,10 @@ jobs:
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@partior-stable
         with:
-          yaml-file: controller-config-files/projects/defaults.yml
+          yaml-file: controller-config-files/projects/default.yml
           query-path: .smc.ci.branches.${{ steps.get-repo.outputs.branch-name }}
           output-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
-          yaml-file-for-default: controller-config-files/projects/defaults.yml
+          yaml-file-for-default: controller-config-files/projects/default.yml
           query-path-for-default: .smc.ci.branches.default
           upload: true
 
@@ -44,7 +44,7 @@ jobs:
           yaml-file: controller-config-files/projects/enable-std-rules.yml
           query-path: .smc.ci
           output-file: ${{ env.YAML_BUILD_CI_CONFIG_IMPORTER }}
-          yaml-file-for-default: controller-config-files/projects/defaults.yml
+          yaml-file-for-default: controller-config-files/projects/default.yml
           query-path-for-default: .smc.ci
           upload: true
 
@@ -59,7 +59,7 @@ jobs:
           yaml-file: controller-config-files/projects/enable-build-rules.yml
           query-path: .smc.ci
           output-file: ${{ env.YAML_BUILD_CI_CONFIG_IMPORTER }}
-          yaml-file-for-default: controller-config-files/projects/defaults.yml
+          yaml-file-for-default: controller-config-files/projects/default.yml
           query-path-for-default: .smc.ci
           upload: true
 
@@ -74,7 +74,7 @@ jobs:
           yaml-file: controller-config-files/projects/enable-replace-file-version.yml
           query-path: .smc.ci
           output-file: ${{ env.YAML_REPLACE_FILE_CI_CONFIG_IMPORTER }}
-          yaml-file-for-default: controller-config-files/projects/defaults.yml
+          yaml-file-for-default: controller-config-files/projects/default.yml
           query-path-for-default: .smc.ci
           upload: true
 
@@ -89,7 +89,7 @@ jobs:
           yaml-file: controller-config-files/projects/enable-replace-maven-pom.yml
           query-path: .smc.ci
           output-file: ${{ env.YAML_REPLACE_MVNPOM_CI_CONFIG_IMPORTER }}
-          yaml-file-for-default: controller-config-files/projects/defaults.yml
+          yaml-file-for-default: controller-config-files/projects/default.yml
           query-path-for-default: .smc.ci
           upload: true
 
