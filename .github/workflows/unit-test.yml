@@ -43,7 +43,7 @@ jobs:
         with:
           yaml-file: controller-config-files/projects/enable-std-rules.yml
           query-path: .smc.ci
-          output-file: ${{ env.YAML_BUILD_CI_CONFIG_IMPORTER }}
+          output-file: ${{ env.YAML_STD_CI_CONFIG_IMPORTER }}
           yaml-file-for-default: controller-config-files/projects/default.yml
           query-path-for-default: .smc.ci
           upload: true
