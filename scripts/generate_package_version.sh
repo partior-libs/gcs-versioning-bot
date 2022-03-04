@@ -425,17 +425,17 @@ echo [INFO] Before incremented: $currentRelSemanticVersion
 if [[ "$(checkCoreVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "${MAJOR_V_RULE_VFILE_ENABLED}" == "true" ]]; then
     # echo [DEBUG] currentRelSemanticVersion=$nextVersion
     nextVersion=$(incrementCoreVersion $nextVersion ${MAJOR_POSITION})
-    # echo [DEBUG] MAJOR INCREMENTED $nextVersion
+    echo [DEBUG] MAJOR INCREMENTED $nextVersion
 elif [[ "$(checkCoreVersionFeatureFlag ${MINOR_SCOPE})" == "true" ]] && [[ ! "${MINOR_V_RULE_VFILE_ENABLED}" == "true" ]]; then
     # echo [DEBUG] currentRelSemanticVersion=$nextVersion
     nextVersion=$(incrementCoreVersion $nextVersion ${MINOR_POSITION})
-    # echo [DEBUG] MINOR INCREMENTED $nextVersion
+    echo [DEBUG] MINOR INCREMENTED $nextVersion
 elif [[ "$(checkCoreVersionFeatureFlag ${PATCH_SCOPE})" == "true" ]] && [[ ! "${PATCH_V_RULE_VFILE_ENABLED}" == "true" ]]; then
     # echo [DEBUG] currentRelSemanticVersion=$nextVersion
     nextVersion=$(incrementCoreVersion $nextVersion ${PATCH_POSITION})
-    # echo [DEBUG] PATCH INCREMENTED $nextVersion
+    echo [DEBUG] PATCH INCREMENTED $nextVersion
 fi
-
+echo [INFO] After core version incremented: $nextVersion
 ## Process incrementation on MAJOR, MINOR and PATCH via version file (manual)
 nextVersion=$(processWithCoreVersionFile ${nextVersion} ${MAJOR_POSITION} ${MAJOR_SCOPE})
 if [[ $? -ne 0 ]]; then
@@ -455,7 +455,7 @@ if [[ $? -ne 0 ]]; then
     echo "[ERROR_MSG] $nextVersion"
     exit 1
 fi
-echo [INFO] After core version incremented: $nextVersion
+echo [INFO] After core version file incremented: $nextVersion
 
 
 
