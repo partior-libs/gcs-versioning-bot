@@ -22,11 +22,11 @@ if [[ ! -f "$iniFile" ]]; then
     exit 1
 fi
 
-rm -f $tempRunFile
+head -15 $BASH_SOURCE > $tempRunFile
 # cat $iniFile | grep -v "^#" | grep "=" | awk -F'=' '{print "export "$1"="$2 }' > $tempRunFile
 # source ./$tempRunFile
 
-cat $iniFile | grep -v "^#" | grep "=" | awk -F'=' '{print "echo " $1"=${"$1"}" }' > $tempRunFile
+cat $iniFile | grep -v "^#" | grep "=" | awk -F'=' '{print "echo " $1"=${"$1"}" }' >> $tempRunFile
 chmod 755 $tempRunFile
 
 echo "[INFO] Listing variables..."
