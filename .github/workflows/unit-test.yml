@@ -2,11 +2,11 @@ name: Test Auto Versioning
 on: [push, pull_request, workflow_dispatch]
 
 env:
-  YAML_STD_CI_CONFIG_IMPORTER: yaml_std_ci_importer_${{ github.run_id }}_${{ github.run_number }}
-  YAML_CI_BRANCH_CONFIG_IMPORTER: yaml_ci_branch_importer_${{ github.run_id }}_${{ github.run_number }}
-  YAML_BUILD_CI_CONFIG_IMPORTER: yaml_build_ci_importer_${{ github.run_id }}_${{ github.run_number }}
-  YAML_REPLACE_FILE_CI_CONFIG_IMPORTER: yaml_replace_file_ci_importer_${{ github.run_id }}_${{ github.run_number }}
-  YAML_REPLACE_MVNPOM_CI_CONFIG_IMPORTER: yaml_replace_mvnpom_ci_importer_${{ github.run_id }}_${{ github.run_number }}
+  YAML_STD_CI_CONFIG_IMPORTER: yaml_std_ci_importer
+  YAML_CI_BRANCH_CONFIG_IMPORTER: yaml_ci_branch_importer
+  YAML_BUILD_CI_CONFIG_IMPORTER: yaml_build_ci_importer
+  YAML_REPLACE_FILE_CI_CONFIG_IMPORTER: yaml_replace_file_ci_importer
+  YAML_REPLACE_MVNPOM_CI_CONFIG_IMPORTER: yaml_replace_mvnpom_ci_importer
 
 jobs:
   read-config:
@@ -93,13 +93,12 @@ jobs:
           query-path-for-default: .smc.ci
           upload: true
 
-
   trigger-by-main-branch:
     needs: [ read-config, read-std-config, read-build-config, read-replace-file-version-config, read-replace-maven-pom-config ]
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        rule: [ $YAML_STD_CI_CONFIG_IMPORTER, $YAML_BUILD_CI_CONFIG_IMPORTER, $YAML_REPLACE_FILE_CI_CONFIG_IMPORTER, $YAML_REPLACE_MVNPOM_CI_CONFIG_IMPORTER ]
+        rule: [ yaml_std_ci_importer, yaml_build_ci_importer, yaml_replace_file_ci_importer, yaml_replace_mvnpom_ci_importer ]
     env:
       BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
       REPO_NAME: ${{ needs.read-config.outputs.repo-name }}
