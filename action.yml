@@ -42,7 +42,7 @@ runs:
       run: |
         for i in ${${{ inputs.rules-importer-files }}//,/ }
         do 
-          Sourcing $i
+          echo [INFO] Sourcing $i
           if [[ ! -f "$i" ]]; then
             echo [ERROR] Unable to locate importer file: [$i]
           fi
