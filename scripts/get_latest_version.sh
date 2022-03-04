@@ -52,7 +52,7 @@ function checkArtifactLastVersion() {
         if [[ "$mockType" == "$DEV_SCOPE" ]]; then
             response=$(cat $MOCK_FILE | grep -E "^${MOCK_DEV_VERSION_KEYNAME}=" | cut -d"=" -f1 --complement)
             if [[ "$response" == "" ]]; then
-                response=1.0.0-dev.1
+                response=1.0.0-dev.0
             fi
         elif [[ "$mockType" == "$RC_SCOPE" ]]; then
 
@@ -85,7 +85,9 @@ function checkArtifactLastVersion() {
 
         if [[ $responseStatus -ne 200 ]]; then
             if (cat $versionStoreFilename | grep -q "Unable to find artifact versions");then
-                resetVersion="1.0.0"
+                local preReleaseIdentifier=${mockTyp}_V_IDENTIFIER
+                local resetVersion="1.0.0-${!preReleaseIdentifier}.0"
+
                 echo "[INFO] Unable to find last version. Resetting to: $resetVersion"
                 echo $resetVersion > $versionStoreFilename
             else
@@ -93,7 +95,6 @@ function checkArtifactLastVersion() {
                 echo " $(cat $versionStoreFilename)" 
                 exit 1
             fi
-            
         fi
     fi
 
