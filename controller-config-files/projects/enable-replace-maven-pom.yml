@@ -21,7 +21,7 @@ smc:
             enabled: true
           file:
             enabled: false
-            target: ./app-version.cfg
+            target: test-files/app-version.cfg
             key: MAJOR-VERSION
       minor-version:
         enabled: true
@@ -40,7 +40,7 @@ smc:
             enabled: false
           file:
             enabled: false
-            target: ./app-version.cfg
+            target: test-files/app-version.cfg
             key: MINOR-VERSION
       patch-version:
         enabled: true
@@ -59,7 +59,7 @@ smc:
             enabled: true
           file:
             enabled: false
-            target: ./app-version.cfg
+            target: test-files/app-version.cfg
             key: PATCH-VERSION
       release-candidate-version:
         enabled: true
@@ -73,7 +73,7 @@ smc:
             enabled: false
           file:
             enabled: false
-            target: ./app-version.cfg
+            target: test-files/app-version.cfg
             key: RC-VERSION
       development-version:
         enabled: true
@@ -87,7 +87,7 @@ smc:
             enabled: false
           file:
             enabled: false
-            target: ./app-version.cfg
+            target: test-files/app-version.cfg
             key: DEV-VERSION
       build-version:
         enabled: true
