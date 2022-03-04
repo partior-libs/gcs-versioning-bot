@@ -1,0 +1,159 @@
+---
+smc:
+  ci:
+    artifact-base-name: default-artifact-name
+    artifact-auto-versioning:
+      enabled: false
+      major-version:
+        enabled: true
+        rules:
+          branches: 
+            target: release
+            enabled: true
+          labels: 
+            target: MAJOR-VERSION 
+            enabled: true
+          tag: 
+            target: MAJOR-VERSION 
+            enabled: true
+          message-tag: 
+            target: MAJOR-VERSION 
+            enabled: true
+          file:
+            enabled: false
+            target: ./app-version.cfg
+            key: MAJOR-VERSION
+      minor-version:
+        enabled: true
+        rules:
+          branches: 
+            target: release
+            enabled: true
+          tag: 
+            target: MINOR-VERSION 
+            enabled: true
+          message-tag: 
+            target: MINOR-VERSION 
+            enabled: true
+          labels: 
+            target: MINOR-VERSION  
+            enabled: true
+          file:
+            enabled: false
+            target: ./app-version.cfg
+            key: MINOR-VERSION
+      patch-version:
+        enabled: true
+        rules:
+          branches: 
+            target: release
+            enabled: true
+          tag: 
+            target: PATCH-VERSION 
+            enabled: true
+          message-tag: 
+            target: PATCH-VERSION 
+            enabled: true
+          labels: 
+            target: PATCH-VERSION
+            enabled: true
+          file:
+            enabled: false
+            target: ./app-version.cfg
+            key: PATCH-VERSION
+      release-candidate-version:
+        enabled: true
+        identifier: rc
+        rules:
+          branches: 
+            target: release
+            enabled: true
+          tag: 
+            target: RC-VERSION
+            enabled: false
+          file:
+            enabled: false
+            target: ./app-version.cfg
+            key: RC-VERSION
+      development-version:
+        enabled: true
+        identifier: dev
+        rules:
+          branches: 
+            target: develop,feature
+            enabled: true
+          tag: 
+            target: DEV-VERSION
+            enabled: false
+          file:
+            enabled: false
+            target: ./app-version.cfg
+            key: DEV-VERSION
+      build-version:
+        enabled: false
+        identifier: bld
+        rules:
+          branches: 
+            target: develop,feature
+            enabled: true
+      replacement:
+        enabled: false
+        file-token: 
+          enabled: false
+          target: pom.xml
+          token: '@@VERSION_BOT_TOKEN@@'
+        maven-pom: 
+          enabled: false
+          target: pom.xml
+
+    branches:
+      default:
+        node-version: 14
+        truffle-compile:
+          enabled: true
+        solc-compile:
+          enabled: false
+        gitleaks:
+          enabled: true
+          scan-depth: 2
+        codacy:
+          upload-coverage:
+            enabled: true
+            coverage-file: ./coverage/lcov.info
+          spotbugs:
+            enabled: false
+        unit-test:
+          enabled: true
+        artifact:
+          packager:
+            enabled: false
+            group: partior
+            artifactory-username: svc-smc-read
+            artifactory-dev-repo: smc-generic-dev
+            artifactory-release-repo: smc-generic-release
+            folder-list: build,config,migrations,scripts
+            file-list: deployment.conf,truffle-config.js,deploy.sh,compile.sh,package.json,package-lock.json
+      main:
+        artifact:
+          packager:
+            group: antztest
+      feature:
+        artifact:
+          packager:
+            group: antztest
+      release:
+        artifact:
+          packager:
+            group: antztest
+      hotfix:
+        artifact:
+          packager:
+            group: antztest
+      bugfix:
+        artifact:
+          packager:
+            group: antztest
+      develop:
+        artifact:
+          packager:
+            group: antztest

@@ -2,8 +2,11 @@ name: Test Auto Versioning
 on: [push, pull_request, workflow_dispatch]
 
 env:
-  YAML_CI_CONFIG_IMPORTER: yaml_ci_importer_${{ github.run_id }}_${{ github.run_number }}
+  YAML_STD_CI_CONFIG_IMPORTER: yaml_std_ci_importer_${{ github.run_id }}_${{ github.run_number }}
   YAML_CI_BRANCH_CONFIG_IMPORTER: yaml_ci_branch_importer_${{ github.run_id }}_${{ github.run_number }}
+  YAML_BUILD_CI_CONFIG_IMPORTER: yaml_build_ci_importer_${{ github.run_id }}_${{ github.run_number }}
+  YAML_REPLACE_FILE_CI_CONFIG_IMPORTER: yaml_replace_file_ci_importer_${{ github.run_id }}_${{ github.run_number }}
+  YAML_REPLACE_MVNPOM_CI_CONFIG_IMPORTER: yaml_replace_mvnpom_ci_importer_${{ github.run_id }}_${{ github.run_number }}
 
 jobs:
   read-config:
@@ -14,8 +17,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          repository: partior-quorum/controller-smc-pipelines
-          ref: main
+          repository: partior-libs/gcs-versioning-bot
+          ref: ${GITHUB_REF}
           token: ${{ secrets.GH_PAT_TOKEN }}
 
       - name: Get repo details
@@ -24,64 +27,80 @@ jobs:
           echo ::set-output name=branch-name::$(echo ${GITHUB_REF#refs/heads/} | cut -d"/" -f1)
           echo ::set-output name=name::$(echo ${GITHUB_REPOSITORY}  | cut -d"/" -f2)
 
-      - name: Generate CI config importer
+      - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@partior-stable
         with:
-          yaml-file: projects/${{ steps.get-repo.outputs.name }}.yml
-          query-path: .smc.ci
-          output-file: ${{ env.YAML_CI_CONFIG_IMPORTER }}
-          yaml-file-for-default: projects/smc-default.yml
-          query-path-for-default: .smc.ci
-          upload: true
-
-      - name: Generate CI Branch config importer
-        uses: partior-libs/gcs-yaml-importer@partior-stable
-        with:
-          yaml-file: projects/${{ steps.get-repo.outputs.name }}.yml
+          yaml-file: controller-config-files/projects/defaults.yml
           query-path: .smc.ci.branches.${{ steps.get-repo.outputs.branch-name }}
           output-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
-          yaml-file-for-default: projects/${{ steps.get-repo.outputs.name }}.yml
+          yaml-file-for-default: controller-config-files/projects/defaults.yml
           query-path-for-default: .smc.ci.branches.default
           upload: true
 
-      - name: Start versioning bot
-        id: version-bot
-        uses: partior-libs/gcs-versioning-bot@main
-        with:
-          artifactory-username: svc-smc-read
-          artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
-          versioning-rules-importer-file: ${{ env.YAML_CI_CONFIG_IMPORTER }}
-          branch-packager-rules-importer-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
-          branch-name: ${GITHUB_REF#refs/heads/}
-
-  trigger-by-current-branch:
-    needs: [ read-config ]
+  read-std-config:
     runs-on: ubuntu-latest
-    env:
-      BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
-      REPO_NAME: ${{ needs.read-config.outputs.repo-name }}
     steps:
-      - uses: actions/download-artifact@v2
+      - uses: actions/checkout@v2
         with:
-          name: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
+          repository: partior-libs/gcs-versioning-bot
+          ref: ${GITHUB_REF}
+          token: ${{ secrets.GH_PAT_TOKEN }}
 
-      - uses: actions/download-artifact@v2
+      - name: Generate CI branch importer
+        uses: partior-libs/gcs-yaml-importer@partior-stable
         with:
-          name: ${{ env.YAML_CI_CONFIG_IMPORTER }}
+          yaml-file: controller-config-files/projects/enable-build-rules.yml
+          query-path: .smc.ci
+          output-file: ${{ env.YAML_BUILD_CI_CONFIG_IMPORTER }}
+          yaml-file-for-default: controller-config-files/projects/defaults.yml
+          query-path-for-default: .smc.ci
+          upload: true
 
-      - name: Start versioning bot
-        id: version-bot
-        uses: partior-libs/gcs-versioning-bot@main
+  read-replace-file-version-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
         with:
-          artifactory-username: svc-smc-read
-          artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
-          versioning-rules-importer-file: ${{ env.YAML_CI_CONFIG_IMPORTER }}
-          branch-packager-rules-importer-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
-          branch-name: ${BRANCH_NAME}
+          repository: partior-libs/gcs-versioning-bot
+          ref: ${GITHUB_REF}
+          token: ${{ secrets.GH_PAT_TOKEN }}
+
+      - name: Generate CI branch importer
+        uses: partior-libs/gcs-yaml-importer@partior-stable
+        with:
+          yaml-file: controller-config-files/projects/enable-replace-file-version.yml
+          query-path: .smc.ci
+          output-file: ${{ env.YAML_REPLACE_FILE_CI_CONFIG_IMPORTER }}
+          yaml-file-for-default: controller-config-files/projects/defaults.yml
+          query-path-for-default: .smc.ci
+          upload: true
+
+  read-replace-file-version-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          repository: partior-libs/gcs-versioning-bot
+          ref: ${GITHUB_REF}
+          token: ${{ secrets.GH_PAT_TOKEN }}
+
+      - name: Generate CI branch importer
+        uses: partior-libs/gcs-yaml-importer@partior-stable
+        with:
+          yaml-file: controller-config-files/projects/enable-replace-maven-pom.yml
+          query-path: .smc.ci
+          output-file: ${{ env.YAML_REPLACE_MVNPOM_CI_CONFIG_IMPORTER }}
+          yaml-file-for-default: controller-config-files/projects/defaults.yml
+          query-path-for-default: .smc.ci
+          upload: true
+
 
   trigger-by-main-branch:
-    needs: [ read-config ]
+    needs: [ read-config, read-std-config ] ]
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rule: [ env.YAML_STD_CI_CONFIG_IMPORTER, env.YAML_BUILD_CI_CONFIG_IMPORTER, env.YAML_REPLACE_FILE_CI_CONFIG_IMPORTER, env.YAML_REPLACE_MVNPOM_CI_CONFIG_IMPORTER]
     env:
       BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
       REPO_NAME: ${{ needs.read-config.outputs.repo-name }}
@@ -92,7 +111,7 @@ jobs:
 
       - uses: actions/download-artifact@v2
         with:
-          name: ${{ env.YAML_CI_CONFIG_IMPORTER }}
+          name: ${{ env.YAML_STD_CI_CONFIG_IMPORTER }}
 
       - name: Start versioning bot
         id: version-bot
@@ -100,84 +119,84 @@ jobs:
         with:
           artifactory-username: svc-smc-read
           artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
-          versioning-rules-importer-file: ${{ env.YAML_CI_CONFIG_IMPORTER }}
-          branch-packager-rules-importer-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
+          versioning-rules-importer-file: ${{ env.YAML_STD_CI_CONFIG_IMPORTER }}
+          branch-packager-rules-importer-file: ${{ matrix.rule }}
           branch-name: main
 
-  trigger-by-release-branch:
-    needs: [ read-config ]
-    runs-on: ubuntu-latest
-    env:
-      BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
-      REPO_NAME: ${{ needs.read-config.outputs.repo-name }}
-    steps:
-      - uses: actions/download-artifact@v2
-        with:
-          name: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
+  # trigger-by-release-branch:
+  #   needs: [ read-config ]
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
+  #     REPO_NAME: ${{ needs.read-config.outputs.repo-name }}
+  #   steps:
+  #     - uses: actions/download-artifact@v2
+  #       with:
+  #         name: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
 
-      - uses: actions/download-artifact@v2
-        with:
-          name: ${{ env.YAML_CI_CONFIG_IMPORTER }}
+  #     - uses: actions/download-artifact@v2
+  #       with:
+  #         name: ${{ env.YAML_CI_CONFIG_IMPORTER }}
 
-      - name: Start versioning bot
-        id: version-bot
-        uses: partior-libs/gcs-versioning-bot@main
-        with:
-          artifactory-username: svc-smc-read
-          artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
-          versioning-rules-importer-file: ${{ env.YAML_CI_CONFIG_IMPORTER }}
-          branch-packager-rules-importer-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
-          branch-name: release
+  #     - name: Start versioning bot
+  #       id: version-bot
+  #       uses: partior-libs/gcs-versioning-bot@main
+  #       with:
+  #         artifactory-username: svc-smc-read
+  #         artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
+  #         versioning-rules-importer-file: ${{ env.YAML_CI_CONFIG_IMPORTER }}
+  #         branch-packager-rules-importer-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
+  #         branch-name: release
 
-  trigger-by-develop-branch:
-    needs: [ read-config ]
-    runs-on: ubuntu-latest
-    env:
-      BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
-      REPO_NAME: ${{ needs.read-config.outputs.repo-name }}
-    steps:
-      - uses: actions/download-artifact@v2
-        with:
-          name: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
+  # trigger-by-develop-branch:
+  #   needs: [ read-config ]
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
+  #     REPO_NAME: ${{ needs.read-config.outputs.repo-name }}
+  #   steps:
+  #     - uses: actions/download-artifact@v2
+  #       with:
+  #         name: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
 
-      - uses: actions/download-artifact@v2
-        with:
-          name: ${{ env.YAML_CI_CONFIG_IMPORTER }}
+  #     - uses: actions/download-artifact@v2
+  #       with:
+  #         name: ${{ env.YAML_CI_CONFIG_IMPORTER }}
 
-      - name: Start versioning bot
-        id: version-bot
-        uses: partior-libs/gcs-versioning-bot@main
-        with:
-          artifactory-username: svc-smc-read
-          artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
-          versioning-rules-importer-file: ${{ env.YAML_CI_CONFIG_IMPORTER }}
-          branch-packager-rules-importer-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
-          branch-name: develop
+  #     - name: Start versioning bot
+  #       id: version-bot
+  #       uses: partior-libs/gcs-versioning-bot@main
+  #       with:
+  #         artifactory-username: svc-smc-read
+  #         artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
+  #         versioning-rules-importer-file: ${{ env.YAML_CI_CONFIG_IMPORTER }}
+  #         branch-packager-rules-importer-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
+  #         branch-name: develop
 
-  trigger-by-feature-branch:
-    needs: [ read-config ]
-    runs-on: ubuntu-latest
-    env:
-      BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
-      REPO_NAME: ${{ needs.read-config.outputs.repo-name }}
-    steps:
-      - uses: actions/download-artifact@v2
-        with:
-          name: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
+  # trigger-by-feature-branch:
+  #   needs: [ read-config ]
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
+  #     REPO_NAME: ${{ needs.read-config.outputs.repo-name }}
+  #   steps:
+  #     - uses: actions/download-artifact@v2
+  #       with:
+  #         name: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
 
-      - uses: actions/download-artifact@v2
-        with:
-          name: ${{ env.YAML_CI_CONFIG_IMPORTER }}
+  #     - uses: actions/download-artifact@v2
+  #       with:
+  #         name: ${{ env.YAML_CI_CONFIG_IMPORTER }}
 
-      - name: Start versioning bot
-        id: version-bot
-        uses: partior-libs/gcs-versioning-bot@main
-        with:
-          artifactory-username: svc-smc-read
-          artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
-          versioning-rules-importer-file: ${{ env.YAML_CI_CONFIG_IMPORTER }}
-          branch-packager-rules-importer-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
-          branch-name: feature
+  #     - name: Start versioning bot
+  #       id: version-bot
+  #       uses: partior-libs/gcs-versioning-bot@main
+  #       with:
+  #         artifactory-username: svc-smc-read
+  #         artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
+  #         versioning-rules-importer-file: ${{ env.YAML_CI_CONFIG_IMPORTER }}
+  #         branch-packager-rules-importer-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
+  #         branch-name: feature
           
   # test-generic-versioning:
   #   runs-on: ubuntu-latest
