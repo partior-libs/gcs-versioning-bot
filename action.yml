@@ -42,7 +42,8 @@ runs:
       run: |
         ls -ltrah
         echo [DEBUG] start here
-        for eachImporter in ${${{ inputs.rules-importer-files }}//,/ }
+        importerFile=${{ inputs.rules-importer-files }}
+        for eachImporter in ${importerFile//,/ }
         do 
           echo [INFO] Sourcing $eachImporter
           if [[ ! -f "$eachImporter" ]]; then
