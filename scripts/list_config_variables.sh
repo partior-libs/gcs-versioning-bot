@@ -23,9 +23,9 @@ if [[ ! -f "$iniFile" ]]; then
 fi
 
 rm -f $tempRunFile
-cat $iniFile | grep -v "^#" | grep "=" | awk -F'=' '{print "export "$1"="$2 }' > $tempRunFile
+# cat $iniFile | grep -v "^#" | grep "=" | awk -F'=' '{print "export "$1"="$2 }' > $tempRunFile
+# source ./$tempRunFile
 
-source ./$tempRunFile
 cat $iniFile | grep -v "^#" | grep "=" | awk -F'=' '{print "echo " $1"=${"$1"}" }' > $tempRunFile
 chmod 755 $tempRunFile
 
