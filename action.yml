@@ -40,13 +40,16 @@ runs:
     - name: Import importer files
       id: yaml-config
       run: |
-        for i in ${${{ inputs.rules-importer-files }}//,/ }
+        ls -ltrah
+        echo [DEBUG] start here
+        for eachImporter in ${${{ inputs.rules-importer-files }}//,/ }
         do 
-          echo [INFO] Sourcing $i
-          if [[ ! -f "$i" ]]; then
-            echo [ERROR] Unable to locate importer file: [$i]
+          echo [INFO] Sourcing $eachImporter
+          if [[ ! -f "$eachImporter" ]]; then
+            echo [ERROR] Unable to locate importer file: [$eachImporter]
+            exit 1
           fi
-          source "$i"
+          source "$eachImporter"
         done
       shell: bash
 
