@@ -209,6 +209,27 @@ function incrementCoreVersionByFile() {
     echo $(local IFS=. ; echo "${versionArray[*]}")
 
 }
+function incrementPreReleaseVersionByFile() {
+    local inputVersion=$1
+    local preIdentifider=$2
+
+    local vConfigVersionFile=${versionScope}_V_CONFIG_VFILE_NAME
+    local vConfigVersionFileKey=${versionScope}_V_CONFIG_VFILE_KEY
+
+    if [[ ! -f ${!vConfigVersionFile} ]]; then
+        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate version file: [${!vConfigVersionFile}]"
+        return 1
+    fi
+    local tmpVersion=$(cat ./${!vConfigVersionFile} | grep -E "^${!vConfigVersionFileKey}" 2>/dev/null | cut -d"=" -f2)
+
+    local currentSemanticVersion=$(echo $inputVersion | awk -F"-$preIdentifider." '{print $1}')
+    local nextPreReleaseNumber=$(( $(echo $inputVersion | awk -F"-$preIdentifider." '{print $2}') + 1 ))
+    ## If not pre-release, then increment the core version too
+    if [[ ! "$inputVersion" == *"-"* ]]; then
+        currentSemanticVersion=$(incrementCoreVersion $currentSemanticVersion ${PATCH_POSITION})
+    fi
+    echo $currentSemanticVersion-$preIdentifider.$tmpVersion
+}
 
 function checkIsSubstring(){
     local listString=$1
@@ -511,6 +532,32 @@ elif [[ "$(checkPreReleaseVersionFeatureFlag ${DEV_SCOPE})" == "true" ]] && [[ !
     fi
 fi
 echo [INFO] After prerelease version incremented: $nextVersion
+
+## Process incrementation on RC and DEV with version file
+if [[ "$(checkPreReleaseVersionFeatureFlag ${RC_SCOPE})" == "true" ]] && [[ "${RC_V_RULE_VFILE_ENABLED}" == "true" ]]; then
+    nextVersion=$(incrementPreReleaseVersionByFile "$lastRelVersion" "$RC_V_IDENTIFIER")
+    if [[ "$MOCK_ENABLED" == "true" ]]; then
+        if [[ ! -f $MOCK_FILE ]]; then
+            echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate mock file: [$MOCK_FILE]"
+            exit 1
+        fi
+        cat $MOCK_FILE | grep -v "${MOCK_REL_VERSION_KEYNAME}" > $MOCK_FILE.tmp
+        mv $MOCK_FILE.tmp $MOCK_FILE
+        echo ${MOCK_REL_VERSION_KEYNAME}=$nextVersion >> $MOCK_FILE
+    fi
+elif [[ "$(checkPreReleaseVersionFeatureFlag ${DEV_SCOPE})" == "true" ]] && [[ "${DEV_V_RULE_VFILE_ENABLED}" == "true" ]]; then
+    nextVersion=$(incrementPreReleaseVersionByFile "$lastDevVersion" "$DEV_V_IDENTIFIER")
+    if [[ "$MOCK_ENABLED" == "true" ]]; then
+        if [[ ! -f $MOCK_FILE ]]; then
+            echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate mock file: [$MOCK_FILE]"
+            exit 1
+        fi
+        cat $MOCK_FILE | grep -v "${MOCK_DEV_VERSION_KEYNAME}" > $MOCK_FILE.tmp
+        mv $MOCK_FILE.tmp $MOCK_FILE
+        echo ${MOCK_DEV_VERSION_KEYNAME}=$nextVersion >> $MOCK_FILE
+    fi
+fi
+echo [INFO] After prerelease version incremented with input from version file: $nextVersion
 
 ## Append build number infos if enabled
 if [[ "$(checkBuildVersionFeatureFlag ${BUILD_SCOPE})" == "true" ]]; then
