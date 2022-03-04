@@ -104,7 +104,7 @@ smc:
           token: '@@VERSION_BOT_TOKEN@@'
         maven-pom: 
           enabled: false
-          target: pom.xml
+          target: test-files/sample-pom-file.xml
 
     branches:
       default:
