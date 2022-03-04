@@ -415,9 +415,9 @@ degaussPreReleaseVersionVariables $DEV_SCOPE
 
 ## Start incrementing
 ## Debug section
-# debugCoreVersionVariables MAJOR
-# debugCoreVersionVariables MINOR
-# debugCoreVersionVariables PATCH
+debugCoreVersionVariables MAJOR
+debugCoreVersionVariables MINOR
+debugCoreVersionVariables PATCH
 
 nextVersion=$currentRelSemanticVersion
 echo [INFO] Before incremented: $currentRelSemanticVersion
@@ -460,8 +460,8 @@ echo [INFO] After core version incremented: $nextVersion
 
 
 ## Debug section
-# debugPreReleaseVersionVariables $RC_SCOPE
-# debugPreReleaseVersionVariables $DEV_SCOPE
+debugPreReleaseVersionVariables $RC_SCOPE
+debugPreReleaseVersionVariables $DEV_SCOPE
 
 ## Process incrementation on RC and DEV 
 echo [INFO] Before release version incremented: $lastRelVersion
