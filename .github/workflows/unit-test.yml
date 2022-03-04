@@ -48,7 +48,7 @@ jobs:
         id: version-bot
         uses: partior-libs/gcs-versioning-bot@main
         with:
-          artifactory-password: svc-smc-read
+          artifactory-username: svc-smc-read
           artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
           rules-importer-files: ${{ env.YAML_CI_CONFIG_IMPORTER }},${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
           branch-name: ${GITHUB_REF#refs/heads/}
