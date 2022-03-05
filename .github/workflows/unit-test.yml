@@ -169,7 +169,7 @@ jobs:
         with:
           name: ${{ matrix.rule }}_${{ matrix.branch }}__${{ steps.version-bot.outputs.artifact-version-name}}
           path: ${{ matrix.rule }}_${{ matrix.branch }}__${{ steps.version-bot.outputs.artifact-version-name}}
-        retention-days: 1
+          retention-days: 1
 
   # trigger-by-release-branch:
   #   needs: [ read-config ]
