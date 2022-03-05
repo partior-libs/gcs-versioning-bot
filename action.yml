@@ -85,8 +85,9 @@ runs:
           "${{ inputs.short-hash }}"
       shell: bash
 
-    # - id: final-version
-    #   run: echo "::set-output name=name::$(echo $(${{ github.action_path }}/scripts/read_new_version.sh))"
-    #   shell: bash
+    - id: final-version
+      run: echo "::set-output name=name::$(echo $(${{ github.action_path }}/scripts/read_new_version.sh))"
+      shell: bash
+      
     - run: echo Done versioning
       shell: bash

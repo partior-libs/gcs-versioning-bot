@@ -589,7 +589,7 @@ fi
 
 
 # echo "[INFO] nextVersion = $nextVersion"
-# echo $artifactName-$nextVersion > $ARTIFACT_NEXT_VERSION_FILE
+echo $artifactName-$nextVersion > $ARTIFACT_NEXT_VERSION_FILE
 
 
 

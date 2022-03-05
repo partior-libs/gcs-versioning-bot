@@ -160,6 +160,10 @@ jobs:
           echo [INFO] Viewing Maven POM file - Post Activity
           cat ./test-files/sample-pom-file.xml
 
+      - name: Final version - ${{ steps.version-bot.outputs.artifact-version-name}}
+        run: |
+          echo [INFO] FInal version: ${{ steps.version-bot.outputs.artifact-version-name}}
+
   # trigger-by-release-branch:
   #   needs: [ read-config ]
   #   runs-on: ubuntu-latest
