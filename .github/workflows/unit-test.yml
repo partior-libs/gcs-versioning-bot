@@ -29,26 +29,32 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       branch-name: ${{ steps.get-repo.outputs.branch-name }}
+      pr-exist: ${{ steps.get-repo.outputs.is-PR }}
+      pr-target-branch: ${{ steps.get-repo.outputs.pr-target-branch }}
       repo-name: ${{ steps.get-repo.outputs.name }}
     steps:
       - uses: actions/checkout@v2
-
-      - name: List default env
-        run: |
-          set
+        with:
+          fetch-depth: 0
 
       - name: Get repo details
         id: get-repo
         run: |
-          branchName='$(echo ${GITHUB_REF_NAME} | cut -d"/" -f1)'
+          branchName="$(echo ${GITHUB_REF_NAME} | cut -d"/" -f1)"
+          prTargetBranch=''
+          isPR=false
+          commitMessages=''
           if [[ ! -z "$GITHUB_HEAD_REF" ]]; then
-            branchName=$GITHUB_HEAD_REF
-            echo Target PR branch1=${{ github.event.pull_request.base.ref }}
+            branchName=$(echo $GITHUB_HEAD_REF | cut -d"/" -f1)
+            isPR=true
+            prTargetBranch=remotes/origin/${GITHUB_BASE_REF}
+            commitMessages=$(git log $prTargetBranch)..${$GITHUB_HEAD_RE} --pretty=format:"%s")
           fi
-          echo Target PR branch2=${{ github.event.pull_request.base.ref }}
-          echo [DEBUG] ${GITHUB_REF_NAME}
-          echo [DEBUG] $(echo ${GITHUB_REF_NAME} | cut -d"/" -f1)
+
+          
           echo ::set-output name=branch-name::${branchName}
+          echo ::set-output name=is-PR::${isPR}
+          echo ::set-output name=pr-target-branch::${prTargetBranch}
           echo ::set-output name=name::$(echo ${GITHUB_REPOSITORY}  | cut -d"/" -f2)
 
       - name: Generate CI branch importer
