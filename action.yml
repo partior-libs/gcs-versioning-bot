@@ -14,9 +14,9 @@ inputs:
     required: false
     default: 'https://partior.jfrog.io/artifactory'
   branch-name:  
-    description: 'Branch name'
-    required: true
-    default: 'feature'
+    description: 'Override branch name'
+    required: false
+    default: ''
   versioning-rules-importer-file:
     description: 'File generated from partior-libs/gcs-yaml-importer'
     required: true
@@ -43,6 +43,37 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - name: Get PR info
+      id: pr-info
+      run: |
+        #!/bin/bash -e
+
+        branchName="$(echo ${GITHUB_REF_NAME} | cut -d"/" -f1)"
+        prTargetBranch=''
+        isPR=false
+        commitMessages=''
+        BUILD_GH_COMMIT_MESSAGE_FILE=commit-message-$(date +%s).tmp
+
+        if [[ ! -z "$GITHUB_HEAD_REF" ]]; then
+          branchName=$(echo $GITHUB_HEAD_REF | cut -d"/" -f1)
+          isPR=true
+          prTargetBranch=remotes/origin/${GITHUB_BASE_REF}
+          git log ${prTargetBranch}..${$GITHUB_HEAD_RE} --pretty=format:"%s" > $BUILD_GH_COMMIT_MESSAGE_FILE
+        fi
+
+        if [[ ! "${{ inputs.branch-name }}" == "" ]];
+          branchName=${{ inputs.branch-name }}
+        fi
+
+        echo BUILD_GH_BRANCH_NAME=${branchName} >> $GITHUB_ENV
+        echo BUILD_GH_PR_EXIST=${isPR} >> $GITHUB_ENV
+        echo BUILD_GH_PR_TARGET_BRANCH=${prTargetBranch} >> $GITHUB_ENV
+        echo BUILD_GH_COMMIT_MESSAGE_FILE=$BUILD_GH_COMMIT_MESSAGE_FILE >> $GITHUB_ENV
+
+        # echo ::set-output name=branch-name::${branchName}
+        # echo ::set-output name=is-PR::${isPR}
+        # echo ::set-output name=pr-target-branch::${prTargetBranch}
+      shell: bash
 
     - name: Import importer files
       id: yaml-config
@@ -77,16 +108,19 @@ runs:
           "${{ steps.yaml-config.outputs.artifact_packager_group }}" \
           "${{ steps.yaml-config.outputs.artifact-base-name }}" \
           "${{ inputs.artifact-type }}" \
-          "${{ inputs.branch-name }}" \
+          "${BUILD_GH_BRANCH_NAME}" \
           "${{ inputs.artifactory-username }}" \
           "${{ inputs.artifactory-password }}"
       shell: bash
 
     - run: |
         ${{ github.action_path }}/scripts/generate_package_version.sh "${{ steps.yaml-config.outputs.artifact-base-name }}" \
-          "${{ inputs.branch-name }}" \
-          "${{ inputs.short-hash }}"
+          "${BUILD_GH_BRANCH_NAME}" \
+          "${BUILD_GH_LABEL_FILE}" \
+          "${BUILD_GH_TAG_FILE}" \
+          "${BUILD_GH_COMMIT_MESSAGE_FILE}"
       shell: bash
+
 
     - id: final-version
       run: |

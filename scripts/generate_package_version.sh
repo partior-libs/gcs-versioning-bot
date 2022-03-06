@@ -20,7 +20,7 @@ currentBranch=$(echo $2 | cut -d"/" -f1)
 currentLabel=$3
 currentTag=$4
 currentMsgTag=$5
-currentVersionFile=$6
+
 
 ## Trim away the build info
 lastDevVersion=$(cat $ARTIFACT_LAST_DEV_VERSION_FILE | cut -d"+" -f1)
@@ -112,9 +112,9 @@ function degaussCoreVersionVariables() {
     local vCurrentVersionFile=${versionScope}_GH_CURRENT_VFILE
 
     echo "export ${vCurrentBranch}=$currentBranch" >> $tmpVariable
-    echo "export ${vCurrentLabel}=$currentLabel" >> $tmpVariable
-    echo "export ${vCurrentTag}=$currentTag" >> $tmpVariable
-    echo "export ${vCurrentMsgTag}=$currentMsgTag" >> $tmpVariable
+    echo "export ${vCurrentLabel}=$(if [[ -f $currentLabel ]]; then cat $currentLabel;else echo $currentLabel; fi)" >> $tmpVariable
+    echo "export ${vCurrentTag}=$(if [[ -f $currentTag ]]; then cat $currentTag;else echo $currentTag; fi)" >> $tmpVariable
+    echo "export ${vCurrentMsgTag}=$(if [[ -f $currentMsgTag ]]; then cat $currentMsgTag;else echo $currentMsgTag; fi)" >> $tmpVariable
 
     #echo "[DEBUG] branchEnabled==>${!branchEnabled}"
     if [[ ! "${!branchEnabled}" == "true" ]]; then
@@ -299,6 +299,33 @@ function checkIsSubstring(){
     echo "false"
 }
 
+function checkListIsSubstringInFileContent () {
+    local listString=$1
+    local fileContentPath=$2
+    local listArray=''
+
+    if [[ -z $listString ]] && [[ -z $fileContentPath ]]; then
+        echo "true"
+        return 0
+    fi
+
+    if [[ ! -f $fileContentPath ]];
+        echo $(checkIsSubstring "$listString" "$fileContentPath")
+        return 0
+    fi
+
+    IFS=', ' read -r -a listArray <<< "$listString"
+    for eachString in "${listArray[@]}";
+    do 
+        if (grep -q "\[$eachString\]" $fileContentPath); then
+            echo "true"
+            return 0
+        fi
+    done
+    echo "false"
+}
+}
+
 function checkCoreVersionFeatureFlag() {
     local versionScope=$1
     
@@ -312,7 +339,7 @@ function checkCoreVersionFeatureFlag() {
     local vConfigMsgTags=${versionScope}_V_CONFIG_MSGTAGS
     local ghCurrentMsgTag=${versionScope}_GH_CURRENT_MSGTAG
 
-    if [[ "$VERSIONING_BOT_ENABLED" == "true" ]] && [[ "${!vRulesEnabled}" == "true" ]] && [[ $(checkIsSubstring "${!vConfigBranches}" "${!ghCurrentBranch}") == "true" ]] && [[ $(checkIsSubstring "${!vConfigLabels}" "${!ghCurrentLabel}") == "true" ]] && [[ $(checkIsSubstring "${!vConfigTags}" "${!ghCurrentTag}") == "true" ]] && [[ $(checkIsSubstring "${!vConfigMsgTags}" "${!ghCurrentMsgTag}") == "true" ]]; then
+    if [[ "$VERSIONING_BOT_ENABLED" == "true" ]] && [[ "${!vRulesEnabled}" == "true" ]] && [[ $(checkIsSubstring "${!vConfigBranches}" "${!ghCurrentBranch}") == "true" ]] && [[ $(checkListIsSubstringInFileContent "${!vConfigLabels}" "${!ghCurrentLabel}") == "true" ]] && [[ $(checkListIsSubstringInFileContent "${!vConfigTags}" "${!ghCurrentTag}") == "true" ]] && [[ $(checkListIsSubstringInFileContent "${!vConfigMsgTags}" "${!ghCurrentMsgTag}") == "true" ]]; then
         echo "true"
     else
         echo "false"
@@ -328,7 +355,7 @@ function checkPreReleaseVersionFeatureFlag() {
     local vConfigTags=${versionScope}_V_CONFIG_TAGS
     local ghCurrentTag=${versionScope}_GH_CURRENT_TAG
 
-    if [[ "$VERSIONING_BOT_ENABLED" == "true" ]] && [[ "${!vRulesEnabled}" == "true" ]] &&  [[ $(checkIsSubstring "${!vConfigBranches}" "${!ghCurrentBranch}") == "true" ]] && [[ $(checkIsSubstring "${!vConfigTags}" "${!ghCurrentTag}") == "true" ]] && [[ ! "$(checkCoreVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "$(checkCoreVersionFeatureFlag ${MINOR_SCOPE})" == "true" ]] && [[ ! "$(checkCoreVersionFeatureFlag ${PATCH_SCOPE})" == "true" ]]; then
+    if [[ "$VERSIONING_BOT_ENABLED" == "true" ]] && [[ "${!vRulesEnabled}" == "true" ]] &&  [[ $(checkIsSubstring "${!vConfigBranches}" "${!ghCurrentBranch}") == "true" ]] && [[ $(checkListIsSubstringInFileContent "${!vConfigTags}" "${!ghCurrentTag}") == "true" ]] && [[ ! "$(checkCoreVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "$(checkCoreVersionFeatureFlag ${MINOR_SCOPE})" == "true" ]] && [[ ! "$(checkCoreVersionFeatureFlag ${PATCH_SCOPE})" == "true" ]]; then
         echo "true"
     else
         echo "false"

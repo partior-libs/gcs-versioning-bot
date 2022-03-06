@@ -50,7 +50,7 @@ smc:
             enabled: true
           tag: 
             target: PATCH-VERSION 
-            enabled: true
+            enabled: false
           message-tag: 
             target: PATCH-VERSION 
             enabled: true
