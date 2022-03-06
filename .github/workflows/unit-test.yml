@@ -239,7 +239,7 @@ jobs:
 
       - name: Start versioning bot
         id: version-bot
-        uses: partior-libs/gcs-versioning-bot@${{ needs.read-config.outputs.source-branch }}
+        uses: partior-libs/gcs-versioning-bot@feature/test-PR
         with:
           artifactory-username: svc-smc-read
           artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
