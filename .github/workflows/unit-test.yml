@@ -1,5 +1,10 @@
 name: Test Auto Versioning
-on: [push, pull_request, workflow_dispatch]
+on:
+  # push:
+  # pull_request:
+  # workflow_dispatch:
+  pull_request_review:
+    types: [submitted]
 
 env:
   YAML_STD_CI_CONFIG_IMPORTER: std_rule
@@ -42,15 +47,28 @@ jobs:
     env: 
       BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-      - name: List env
+      - name: List defaultenv
+        run: |
+          set
+
+      - name: List custom env
         run: |
           echo lising BRANCH_NAME=${BRANCH_NAME}
+          echo Target PR branch=${{ github.event.pull_request.base.ref }}
+                                ${{ github.event.pull_request.base.ref }}
 
       - name: Git log
         run: |
-          git log main..${GITHUB_REF} --pretty=format:"%s"
+          git branch
+          echo next
+          git branch --all
+          echo next log 
+          
+          git log remotes/origin/main..${GITHUB_REF_NAME} --pretty=format:"%s"
 
 
   read-std-config:
