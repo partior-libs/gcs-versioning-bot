@@ -1,11 +1,11 @@
 name: Test Auto Versioning
 on:
   pull_request:
-    branches: [  main, develop, feature/**, release/**, bugfix/**, hotfix/**, controller/** ]
+    # branches: [  main, develop, feature/**, release/**, bugfix/**, hotfix/**, controller/** ]
   pull_request_review:
     types: [submitted]
-    branches: [  main, develop, feature/**, release/**, bugfix/**, hotfix/**, controller/** ]
-  push:
+    # branches: [  main, develop, feature/**, release/**, bugfix/**, hotfix/**, controller/** ]
+  # push:
   #   branches: [ master, develop, feature/**, release/**, bugfix/**, hotfix/**, controller/** ]
 
   # push:
