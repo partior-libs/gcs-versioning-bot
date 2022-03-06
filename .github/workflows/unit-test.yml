@@ -122,9 +122,9 @@ jobs:
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@partior-stable
         with:
-          yaml-file: controller-config-files/projects/enable-msgtag.yml
+          yaml-file: controller-config-files/projects/enable-std-rules.yml
           query-path: .smc.ci
-          output-file: ${{ env.YAML_ENABLE_MSGTAG_CI_CONFIG_IMPORTER }}
+          output-file: ${{ env.YAML_STD_CI_CONFIG_IMPORTER }}
           yaml-file-for-default: controller-config-files/projects/default.yml
           query-path-for-default: .smc.ci
           upload: true
@@ -137,9 +137,9 @@ jobs:
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@partior-stable
         with:
-          yaml-file: controller-config-files/projects/enable-std-rules.yml
+          yaml-file: controller-config-files/projects/enable-msgtag.yml
           query-path: .smc.ci
-          output-file: ${{ env.YAML_STD_CI_CONFIG_IMPORTER }}
+          output-file: ${{ env.YAML_ENABLE_MSGTAG_CI_CONFIG_IMPORTER }}
           yaml-file-for-default: controller-config-files/projects/default.yml
           query-path-for-default: .smc.ci
           upload: true
