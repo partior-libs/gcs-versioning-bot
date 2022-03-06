@@ -2,3 +2,5 @@ artifact_last_version.txt
 artifact_next_version.txt
 *.versionsBackup
 artifact_last_*_version.txt
+run.sh
+run-*.sh

@@ -22,21 +22,37 @@ currentTag=$4
 currentMsgTag=$5
 currentVersionFile=$6
 
+## Trim away the build info
 lastDevVersion=$(cat $ARTIFACT_LAST_DEV_VERSION_FILE | cut -d"+" -f1)
+lastRCVersion=$(cat $ARTIFACT_LAST_RC_VERSION_FILE | cut -d"+" -f1)
 lastRelVersion=$(cat $ARTIFACT_LAST_REL_VERSION_FILE | cut -d"+" -f1)
 
 echo "[INFO] Start generating package version..."
 echo "[INFO] Artifact Name: $artifactName"
 echo "[INFO] Source branch: $currentBranch"
 echo "[INFO] Last Dev version in Artifactory: $lastDevVersion"
-echo "[INFO] Last Rel version in Artifactory: $lastRelVersion"
+echo "[INFO] Last RC version in Artifactory: $lastRCVersion"
+echo "[INFO] Last Release version in Artifactory: $lastRelVersion"
 
 ## Ensure dev and rel version are in sync
 function versionCompareLessOrEqual() {
     [  "$1" = "`echo -e "$1\n$2" | sort -V | head -n1`" ]
 }
 
-function incrementCoreVersion() {
+# When increment pre-release, make sure the release version is considered
+function needToIncrementRelVersion() {
+    local inputCurrentVersion=$1
+    local inputRelVersion=$2
+    if [[  "$inputRelVersion" == "$(echo $inputCurrentVersion | cut -d'-' -f1)" ]]; then
+        echo "true"
+    elif [[ "$inputCurrentVersion" == "`echo -e "$inputCurrentVersion\n$inputRelVersion" | sort -V | head -n1`" ]]; then
+        echo "true"
+    else    
+        echo "false"
+    fi
+}
+
+function incrementReleaseVersion() {
     local inputVersion=$1
     local versionPos=$2
 
@@ -52,11 +68,28 @@ function incrementPreReleaseVersion() {
     local inputVersion=$1
     local preIdentifider=$2
 
+    # if ($(echo $inputVersion | grep -E -q '[+-]\w*\.\w*')); then
+
+    # fi
     local currentSemanticVersion=$(echo $inputVersion | awk -F"-$preIdentifider." '{print $1}')
     local nextPreReleaseNumber=$(( $(echo $inputVersion | awk -F"-$preIdentifider." '{print $2}') + 1 ))
     ## If not pre-release, then increment the core version too
+    local lastRelVersion=$(cat $ARTIFACT_LAST_REL_VERSION_FILE)
     if [[ ! "$inputVersion" == *"-"* ]]; then
-        currentSemanticVersion=$(incrementCoreVersion $currentSemanticVersion ${PATCH_POSITION})
+        if [[ "$lastRelVersion" = "" ]]; then
+            currentSemanticVersion=$(incrementReleaseVersion $currentSemanticVersion ${PATCH_POSITION})
+        else  ## Increment with last release version if present
+            currentSemanticVersion=$(incrementReleaseVersion $lastRelVersion ${PATCH_POSITION})
+        fi
+    else
+        local needIncreaseVersion=$(needToIncrementRelVersion "$inputVersion" "$lastRelVersion")
+
+        if [[ "$needIncreaseVersion" == "true" ]]; then
+            currentSemanticVersion=$(incrementReleaseVersion $lastRelVersion ${PATCH_POSITION})
+            nextPreReleaseNumber=1
+        elif [[ "$needIncreaseVersion" == "false" ]]; then
+            nextPreReleaseNumber=$(( $(echo $inputVersion | awk -F"-$preIdentifider." '{print $2}') + 1 ))
+        fi       
     fi
     echo $currentSemanticVersion-$preIdentifider.$nextPreReleaseNumber
 }
@@ -186,7 +219,7 @@ function degaussVersionReplacementVariables() {
     rm -f $tmpVariable
 }
 
-function incrementCoreVersionByFile() {
+function incrementReleaseVersionByFile() {
     local inputVersion=$1
     local versionPos=$2
     local versionScope=$3
@@ -221,15 +254,28 @@ function incrementPreReleaseVersionByFile() {
         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate version file: [${!vConfigVersionFileName}]"
         return 1
     fi
-    local tmpVersion=$(cat ./${!vConfigVersionFileName} | grep -E "^${!vConfigVersionFileKey}" 2>/dev/null | cut -d"=" -f2)
+    local preReleaseVersionFromFile=$(cat ./${!vConfigVersionFileName} | grep -E "^${!vConfigVersionFileKey}" 2>/dev/null | cut -d"=" -f2)
+
 
     local currentSemanticVersion=$(echo $inputVersion | awk -F"-$preIdentifider." '{print $1}')
-    local nextPreReleaseNumber=$(( $(echo $inputVersion | awk -F"-$preIdentifider." '{print $2}') + 1 ))
+
     ## If not pre-release, then increment the core version too
+    local lastRelVersion=$(cat $ARTIFACT_LAST_REL_VERSION_FILE)
     if [[ ! "$inputVersion" == *"-"* ]]; then
-        currentSemanticVersion=$(incrementCoreVersion $currentSemanticVersion ${PATCH_POSITION})
+        if [[ "$lastRelVersion" = "" ]]; then
+            currentSemanticVersion=$(incrementReleaseVersion $currentSemanticVersion ${PATCH_POSITION})
+        else  ## Increment with last release version if present
+            currentSemanticVersion=$(incrementReleaseVersion $lastRelVersion ${PATCH_POSITION})
+        fi
+    else
+        local needIncreaseVersion=$(needToIncrementRelVersion "$inputVersion" "$lastRelVersion")
+
+        if [[ "$needIncreaseVersion" == "true" ]]; then
+            currentSemanticVersion=$(incrementReleaseVersion $lastRelVersion ${PATCH_POSITION})
+        fi       
     fi
-    echo $currentSemanticVersion-$preIdentifider.$tmpVersion
+
+    echo $currentSemanticVersion-$preIdentifider.$preReleaseVersionFromFile
 }
 
 function checkIsSubstring(){
@@ -322,7 +368,7 @@ function processWithCoreVersionFile() {
     local versionFileRuleEnabled=${versionScope}_V_RULE_VFILE_ENABLED
     local currentIncrementedVersion="$inputVersion"
     if [[ "$(checkCoreVersionFeatureFlag ${versionScope})" == "true" ]] && [[ "${!versionFileRuleEnabled}" == "true" ]]; then
-        currentIncrementedVersion=$(incrementCoreVersionByFile $currentIncrementedVersion ${versionPos} ${versionScope})
+        currentIncrementedVersion=$(incrementReleaseVersionByFile $currentIncrementedVersion ${versionPos} ${versionScope})
         if [[ $? -ne 0 ]]; then
             echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed retrieving version from version file."
             echo "[ERROR_MSG] $currentIncrementedVersion"
@@ -439,15 +485,16 @@ function debugPreReleaseVersionVariables() {
 
 ## Read the versions generated from get_latest_version.sh
 currentDevSemanticVersion=$(echo $lastDevVersion | awk -F'-dev' '{print $1}')
-currentRelSemanticVersion=$(echo $lastRelVersion | awk -F'-rc' '{print $1}')
+currentRCSemanticVersion=$(echo $lastRCVersion | awk -F'-rc' '{print $1}')
 
 ## Ensure the latest read version sequence is valid
-versionCompareLessOrEqual $currentRelSemanticVersion $currentDevSemanticVersion $ && VERSION_VALID=$(echo "checked") || VERSION_VALID=$(echo "no")
-echo "[INFO] Version validation: [$VERSION_VALID]"
-if [[ "" == "no" ]]; then
-    echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed version validation. Release/PROD version should not be ahead of Dev/RC version"
-    exit 1
-fi
+# versionCompareLessOrEqual $currentRCSemanticVersion $currentDevSemanticVersion && VERSION_VALID=$(echo "checked") || VERSION_VALID=$(echo "no")
+# echo "[INFO] Version validation: [$VERSION_VALID]"
+# if [[ "$VERSION_VALID" == "no" ]]; then
+#     echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed version validation. Release/PROD version should not be ahead of Dev/RC version"
+#     exit 1
+# fi
+
 
 ## Instrument core version variables which can be made dummy based on the config 
 degaussCoreVersionVariables $MAJOR_SCOPE
@@ -462,20 +509,20 @@ debugCoreVersionVariables MAJOR
 debugCoreVersionVariables MINOR
 debugCoreVersionVariables PATCH
 
-nextVersion=$currentRelSemanticVersion
-echo [INFO] Before incremented: $currentRelSemanticVersion
+nextVersion=$currentRCSemanticVersion
+echo [INFO] Before incremented: $currentRCSemanticVersion
 ## Process incrementation on MAJOR, MINOR and PATCH
 if [[ "$(checkCoreVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "${MAJOR_V_RULE_VFILE_ENABLED}" == "true" ]]; then
-    # echo [DEBUG] currentRelSemanticVersion=$nextVersion
-    nextVersion=$(incrementCoreVersion $nextVersion ${MAJOR_POSITION})
+    # echo [DEBUG] currentRCSemanticVersion=$nextVersion
+    nextVersion=$(incrementReleaseVersion $nextVersion ${MAJOR_POSITION})
     echo [DEBUG] MAJOR INCREMENTED $nextVersion
 elif [[ "$(checkCoreVersionFeatureFlag ${MINOR_SCOPE})" == "true" ]] && [[ ! "${MINOR_V_RULE_VFILE_ENABLED}" == "true" ]]; then
-    # echo [DEBUG] currentRelSemanticVersion=$nextVersion
-    nextVersion=$(incrementCoreVersion $nextVersion ${MINOR_POSITION})
+    # echo [DEBUG] currentRCSemanticVersion=$nextVersion
+    nextVersion=$(incrementReleaseVersion $nextVersion ${MINOR_POSITION})
     echo [DEBUG] MINOR INCREMENTED $nextVersion
 elif [[ "$(checkCoreVersionFeatureFlag ${PATCH_SCOPE})" == "true" ]] && [[ ! "${PATCH_V_RULE_VFILE_ENABLED}" == "true" ]]; then
-    # echo [DEBUG] currentRelSemanticVersion=$nextVersion
-    nextVersion=$(incrementCoreVersion $nextVersion ${PATCH_POSITION})
+    # echo [DEBUG] currentRCSemanticVersion=$nextVersion
+    nextVersion=$(incrementReleaseVersion $nextVersion ${PATCH_POSITION})
     echo [DEBUG] PATCH INCREMENTED $nextVersion
 fi
 echo [INFO] After core version incremented: $nextVersion
@@ -507,56 +554,56 @@ debugPreReleaseVersionVariables $RC_SCOPE
 debugPreReleaseVersionVariables $DEV_SCOPE
 
 ## Process incrementation on RC and DEV 
-echo [INFO] Before release version incremented: $lastRelVersion
+echo [INFO] Before RC version incremented: $lastRCVersion
 echo [INFO] Before dev version incremented: $lastDevVersion
 if [[ "$(checkPreReleaseVersionFeatureFlag ${RC_SCOPE})" == "true" ]] && [[ ! "${RC_V_RULE_VFILE_ENABLED}" == "true" ]]; then
-    nextVersion=$(incrementPreReleaseVersion "$lastRelVersion" "$RC_V_IDENTIFIER")
-    if [[ "$MOCK_ENABLED" == "true" ]]; then
-        if [[ ! -f $MOCK_FILE ]]; then
-            echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate mock file: [$MOCK_FILE]"
-            exit 1
-        fi
-        cat $MOCK_FILE | grep -v "${MOCK_REL_VERSION_KEYNAME}" > $MOCK_FILE.tmp
-        mv $MOCK_FILE.tmp $MOCK_FILE
-        echo ${MOCK_REL_VERSION_KEYNAME}=$nextVersion >> $MOCK_FILE
-    fi
+    nextVersion=$(incrementPreReleaseVersion "$nextVersion" "$RC_V_IDENTIFIER")
+    # if [[ "$MOCK_ENABLED" == "true" ]]; then
+    #     if [[ ! -f $MOCK_FILE ]]; then
+    #         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate mock file: [$MOCK_FILE]"
+    #         exit 1
+    #     fi
+    #     cat $MOCK_FILE | grep -v "${MOCK_REL_VERSION_KEYNAME}" > $MOCK_FILE.tmp
+    #     mv $MOCK_FILE.tmp $MOCK_FILE
+    #     echo ${MOCK_REL_VERSION_KEYNAME}=$nextVersion >> $MOCK_FILE
+    # fi
 elif [[ "$(checkPreReleaseVersionFeatureFlag ${DEV_SCOPE})" == "true" ]] && [[ ! "${DEV_V_RULE_VFILE_ENABLED}" == "true" ]]; then
-    nextVersion=$(incrementPreReleaseVersion "$lastDevVersion" "$DEV_V_IDENTIFIER")
-    if [[ "$MOCK_ENABLED" == "true" ]]; then
-        if [[ ! -f $MOCK_FILE ]]; then
-            echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate mock file: [$MOCK_FILE]"
-            exit 1
-        fi
-        cat $MOCK_FILE | grep -v "${MOCK_DEV_VERSION_KEYNAME}" > $MOCK_FILE.tmp
-        mv $MOCK_FILE.tmp $MOCK_FILE
-        echo ${MOCK_DEV_VERSION_KEYNAME}=$nextVersion >> $MOCK_FILE
-    fi
+    nextVersion=$(incrementPreReleaseVersion "$nextVersion" "$DEV_V_IDENTIFIER")
+    # if [[ "$MOCK_ENABLED" == "true" ]]; then
+    #     if [[ ! -f $MOCK_FILE ]]; then
+    #         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate mock file: [$MOCK_FILE]"
+    #         exit 1
+    #     fi
+    #     cat $MOCK_FILE | grep -v "${MOCK_DEV_VERSION_KEYNAME}" > $MOCK_FILE.tmp
+    #     mv $MOCK_FILE.tmp $MOCK_FILE
+    #     echo ${MOCK_DEV_VERSION_KEYNAME}=$nextVersion >> $MOCK_FILE
+    # fi
 fi
 echo [INFO] After prerelease version incremented: $nextVersion
 
 ## Process incrementation on RC and DEV with version file
 if [[ "$(checkPreReleaseVersionFeatureFlag ${RC_SCOPE})" == "true" ]] && [[ "${RC_V_RULE_VFILE_ENABLED}" == "true" ]]; then
-    nextVersion=$(incrementPreReleaseVersionByFile "$lastRelVersion" "$RC_V_IDENTIFIER" "${RC_SCOPE}")
-    if [[ "$MOCK_ENABLED" == "true" ]]; then
-        if [[ ! -f $MOCK_FILE ]]; then
-            echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate mock file: [$MOCK_FILE]"
-            exit 1
-        fi
-        cat $MOCK_FILE | grep -v "${MOCK_REL_VERSION_KEYNAME}" > $MOCK_FILE.tmp
-        mv $MOCK_FILE.tmp $MOCK_FILE
-        echo ${MOCK_REL_VERSION_KEYNAME}=$nextVersion >> $MOCK_FILE
-    fi
+    nextVersion=$(incrementPreReleaseVersionByFile "$nextVersion" "$RC_V_IDENTIFIER" "${RC_SCOPE}")
+    # if [[ "$MOCK_ENABLED" == "true" ]]; then
+    #     if [[ ! -f $MOCK_FILE ]]; then
+    #         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate mock file: [$MOCK_FILE]"
+    #         exit 1
+    #     fi
+    #     cat $MOCK_FILE | grep -v "${MOCK_REL_VERSION_KEYNAME}" > $MOCK_FILE.tmp
+    #     mv $MOCK_FILE.tmp $MOCK_FILE
+    #     echo ${MOCK_REL_VERSION_KEYNAME}=$nextVersion >> $MOCK_FILE
+    # fi
 elif [[ "$(checkPreReleaseVersionFeatureFlag ${DEV_SCOPE})" == "true" ]] && [[ "${DEV_V_RULE_VFILE_ENABLED}" == "true" ]]; then
-    nextVersion=$(incrementPreReleaseVersionByFile "$lastDevVersion" "$DEV_V_IDENTIFIER" "${DEV_SCOPE}")
-    if [[ "$MOCK_ENABLED" == "true" ]]; then
-        if [[ ! -f $MOCK_FILE ]]; then
-            echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate mock file: [$MOCK_FILE]"
-            exit 1
-        fi
-        cat $MOCK_FILE | grep -v "${MOCK_DEV_VERSION_KEYNAME}" > $MOCK_FILE.tmp
-        mv $MOCK_FILE.tmp $MOCK_FILE
-        echo ${MOCK_DEV_VERSION_KEYNAME}=$nextVersion >> $MOCK_FILE
-    fi
+    nextVersion=$(incrementPreReleaseVersionByFile "$nextVersion" "$DEV_V_IDENTIFIER" "${DEV_SCOPE}")
+    # if [[ "$MOCK_ENABLED" == "true" ]]; then
+    #     if [[ ! -f $MOCK_FILE ]]; then
+    #         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate mock file: [$MOCK_FILE]"
+    #         exit 1
+    #     fi
+    #     cat $MOCK_FILE | grep -v "${MOCK_DEV_VERSION_KEYNAME}" > $MOCK_FILE.tmp
+    #     mv $MOCK_FILE.tmp $MOCK_FILE
+    #     echo ${MOCK_DEV_VERSION_KEYNAME}=$nextVersion >> $MOCK_FILE
+    # fi
 fi
 echo [INFO] After prerelease version incremented with input from version file: $nextVersion
 
