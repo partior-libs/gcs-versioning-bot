@@ -48,7 +48,7 @@ jobs:
             branchName=$(echo $GITHUB_HEAD_REF | cut -d"/" -f1)
             isPR=true
             prTargetBranch=remotes/origin/${GITHUB_BASE_REF}
-            commitMessages=$(git log $prTargetBranch..${$GITHUB_HEAD_RE} --pretty=format:"%s")
+            commitMessages=$(git log $prTargetBranch..${$GITHUB_HEAD_REF} --pretty=format:"%s")
           fi
 
           
@@ -68,41 +68,41 @@ jobs:
           query-path-for-default: .smc.ci.branches.default
           upload: true
 
-  read-env:
-    needs: [ read-config ]  
-    runs-on: ubuntu-latest
-    env: 
-      BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
+  # read-env:
+  #   needs: [ read-config ]  
+  #   runs-on: ubuntu-latest
+  #   env: 
+  #     BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #       with:
+  #         fetch-depth: 0
 
-      - name: Dump GitHub context
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: |
-          echo start:
-          echo "$GITHUB_CONTEXT"
+  #     - name: Dump GitHub context
+  #       env:
+  #         GITHUB_CONTEXT: ${{ toJson(github) }}
+  #       run: |
+  #         echo start:
+  #         echo "$GITHUB_CONTEXT"
 
-      - name: List default env
-        run: |
-          set
+  #     - name: List default env
+  #       run: |
+  #         set
 
-      - name: List custom env
-        run: |
-          echo lising BRANCH_NAME=${BRANCH_NAME}
-          echo Target PR branch=${{ github.event.pull_request.base.ref }}
-                                ${{ github.event.pull_request.base.ref }}
+  #     - name: List custom env
+  #       run: |
+  #         echo lising BRANCH_NAME=${BRANCH_NAME}
+  #         echo Target PR branch=${{ github.event.pull_request.base.ref }}
+  #                               ${{ github.event.pull_request.base.ref }}
 
-      - name: Git log
-        run: |
-          git branch
-          echo next
-          git branch --all
-          echo next log 
+  #     - name: Git log
+  #       run: |
+  #         git branch
+  #         echo next
+  #         git branch --all
+  #         echo next log 
           
-          git log remotes/origin/main..${GITHUB_REF_NAME} --pretty=format:"%s"
+  #         git log remotes/origin/main..${GITHUB_REF_NAME} --pretty=format:"%s"
 
 
   read-std-config:
