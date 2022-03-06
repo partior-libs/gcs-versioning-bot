@@ -54,7 +54,7 @@ jobs:
             echo git log $prTargetBranch..HEAD
             commitMessages=$(git log $prTargetBranch..HEAD --pretty=format:"%s")
           fi
-
+          echo [DEBUG] antz1 {{ github.ref_name }}
           
           echo ::set-output name=branch-name::${branchName}
           echo ::set-output name=is-PR::${isPR}
@@ -205,10 +205,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rule: [ std_rule, enable_build_info, enable_file_replacement, enable_mavenpom_replacement, enable_external_version, enable_msgtag ]
-        branch: [ main, release, develop, feature ]
-        # rule: [ std_rule ]
-        # branch: [ feature ]
+        # rule: [ std_rule, enable_build_info, enable_file_replacement, enable_mavenpom_replacement, enable_external_version, enable_msgtag ]
+        # branch: [ main, release, develop, feature ]
+        rule: [ std_rule ]
+        branch: [ feature ]
     env:
       BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
       REPO_NAME: ${{ needs.read-config.outputs.repo-name }}
@@ -235,7 +235,7 @@ jobs:
 
       - name: Start versioning bot
         id: version-bot
-        uses: partior-libs/gcs-versioning-bot@${GITHUB_REF_NAME}
+        uses: partior-libs/gcs-versioning-bot@${{ github.ref_name }}
         with:
           artifactory-username: svc-smc-read
           artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
