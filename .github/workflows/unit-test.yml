@@ -1,11 +1,12 @@
 name: Test Auto Versioning
 on:
-  push:
-    branches: [ master, develop, feature/**, release/**, bugfix/**, hotfix/**, controller/** ]
   pull_request:
-    branches: [  develop, feature/**, release/**, bugfix/**, hotfix/**, controller/** ]
+    branches: [  main, develop, feature/**, release/**, bugfix/**, hotfix/**, controller/** ]
   pull_request_review:
-    branches: [  develop, feature/**, release/**, bugfix/**, hotfix/**, controller/** ]
+    branches: [  main, develop, feature/**, release/**, bugfix/**, hotfix/**, controller/** ]
+  # push:
+  #   branches: [ master, develop, feature/**, release/**, bugfix/**, hotfix/**, controller/** ]
+
   # push:
   # pull_request:
   # workflow_dispatch:
