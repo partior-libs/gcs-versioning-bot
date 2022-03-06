@@ -65,7 +65,7 @@ runs:
           echo "${{ inputs.consolidated-commit-msg }}" > $BUILD_GH_COMMIT_MESSAGE_FILE
         fi
 
-        if [[ ! "${{ inputs.branch-name }}" == "" ]];
+        if [[ ! "${{ inputs.branch-name }}" == "" ]]; then
           branchName=${{ inputs.branch-name }}
         fi
 
