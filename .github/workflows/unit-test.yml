@@ -37,6 +37,7 @@ jobs:
           upload: true
 
   read-env:
+    needs: [ read-config ]  
     runs-on: ubuntu-latest
       env: 
         BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
