@@ -62,7 +62,7 @@ runs:
           branchName=$(echo $GITHUB_HEAD_REF | cut -d"/" -f1)
           isPR=true
           prTargetBranch=remotes/origin/${GITHUB_BASE_REF}
-          echo "${{ input.consolidated-commit-msg }}" > $BUILD_GH_COMMIT_MESSAGE_FILE
+          echo "${{ inputs.consolidated-commit-msg }}" > $BUILD_GH_COMMIT_MESSAGE_FILE
         fi
 
         if [[ ! "${{ inputs.branch-name }}" == "" ]];
