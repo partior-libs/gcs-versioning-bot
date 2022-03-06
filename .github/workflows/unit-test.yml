@@ -1,6 +1,11 @@
 name: Test Auto Versioning
-on: [push, pull_request, workflow_dispatch]
-
+on: 
+  - push
+  - pull_request
+  - workflow_dispatch
+  - pull_request_review:
+      types: [submitted]
+      
 env:
   YAML_STD_CI_CONFIG_IMPORTER: std_rule
   YAML_CI_BRANCH_CONFIG_IMPORTER: yaml_ci_branch_importer
@@ -54,6 +59,7 @@ jobs:
         run: |
           echo lising BRANCH_NAME=${BRANCH_NAME}
           echo Target PR branch=${{ github.event.pull_request.base.ref }}
+                                ${{ github.event.pull_request.base.ref }}
 
       - name: Git log
         run: |
