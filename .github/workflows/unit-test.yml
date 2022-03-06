@@ -44,7 +44,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: List env
+      - name: List defaultenv
+        run: |
+          set
+
+      - name: List custom env
         run: |
           echo lising BRANCH_NAME=${BRANCH_NAME}
 
