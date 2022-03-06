@@ -54,7 +54,7 @@ jobs:
             echo git log $prTargetBranch..HEAD
             commitMessages=$(git log $prTargetBranch..HEAD --pretty=format:"%s")
           fi
-          echo [DEBUG] antz1 {{ github.ref_name }}
+          echo [DEBUG] antz1 ${{ github.ref_name }}
           
           echo ::set-output name=branch-name::${branchName}
           echo ::set-output name=is-PR::${isPR}
