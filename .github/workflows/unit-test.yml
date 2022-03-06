@@ -53,6 +53,7 @@ jobs:
       - name: List custom env
         run: |
           echo lising BRANCH_NAME=${BRANCH_NAME}
+          echo Target PR branch=${{ github.event.pull_request.base.ref }}
 
       - name: Git log
         run: |
