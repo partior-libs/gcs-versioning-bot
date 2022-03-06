@@ -21,6 +21,7 @@ env:
   YAML_REPLACE_FILE_CI_CONFIG_IMPORTER: enable_file_replacement
   YAML_REPLACE_MVNPOM_CI_CONFIG_IMPORTER: enable_mavenpom_replacement
   YAML_VERSION_FROM_FILE_CI_CONFIG_IMPORTER: enable_external_version
+  YAML_ENABLE_MSGTAG_CI_CONFIG_IMPORTER: enable_msgtag
 
 jobs:
 
@@ -116,6 +117,21 @@ jobs:
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@partior-stable
         with:
+          yaml-file: controller-config-files/projects/enable-msgtag.yml
+          query-path: .smc.ci
+          output-file: ${{ env.YAML_ENABLE_MSGTAG_CI_CONFIG_IMPORTER }}
+          yaml-file-for-default: controller-config-files/projects/default.yml
+          query-path-for-default: .smc.ci
+          upload: true
+
+  read-std-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Generate CI branch importer
+        uses: partior-libs/gcs-yaml-importer@partior-stable
+        with:
           yaml-file: controller-config-files/projects/enable-std-rules.yml
           query-path: .smc.ci
           output-file: ${{ env.YAML_STD_CI_CONFIG_IMPORTER }}
@@ -189,10 +205,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # rule: [ std_rule, enable_build_info, enable_file_replacement, enable_mavenpom_replacement, enable_external_version ]
-        # branch: [ main, release, develop, feature ]
-        rule: [ std_rule ]
-        branch: [ feature ]
+        rule: [ std_rule, enable_build_info, enable_file_replacement, enable_mavenpom_replacement, enable_external_version, enable_msgtag ]
+        branch: [ main, release, develop, feature ]
+        # rule: [ std_rule ]
+        # branch: [ feature ]
     env:
       BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
       REPO_NAME: ${{ needs.read-config.outputs.repo-name }}
@@ -347,3 +363,4 @@ jobs:
   #     - name: Get version
   #       run: |
   #         echo Version: [${{ steps.versioning.outputs.name }}]
+

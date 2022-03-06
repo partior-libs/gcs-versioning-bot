@@ -27,7 +27,7 @@ smc:
         enabled: true
         rules:
           branches: 
-            target: release
+            target: release,feature
             enabled: true
           tag: 
             target: MINOR-VERSION 
