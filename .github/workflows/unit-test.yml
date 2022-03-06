@@ -56,7 +56,7 @@ jobs:
 
       - name: Git log
         run: |
-          git log main..${GITHUB_REF_NAME} --pretty=format:"%s"
+          git log main..HEAD --pretty=format:"%s"
 
 
   read-std-config:
