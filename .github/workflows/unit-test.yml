@@ -10,6 +10,8 @@ env:
   YAML_VERSION_FROM_FILE_CI_CONFIG_IMPORTER: enable_external_version
 
 jobs:
+
+
   read-config:
     runs-on: ubuntu-latest
     outputs:
@@ -33,6 +35,23 @@ jobs:
           yaml-file-for-default: controller-config-files/projects/default.yml
           query-path-for-default: .smc.ci.branches.default
           upload: true
+
+  read-env:
+    needs: [ read-config ]  
+    runs-on: ubuntu-latest
+    env: 
+      BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: List env
+        run: |
+          echo lising BRANCH_NAME=${BRANCH_NAME}
+
+      - name: Git log
+        run: |
+          git log main..${GITHUB_REF} --pretty=format:"%s"
+
 
   read-std-config:
     runs-on: ubuntu-latest
@@ -115,9 +134,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rule: [ std_rule, enable_build_info, enable_file_replacement, enable_mavenpom_replacement, enable_external_version ]
-        branch: [ main, release, develop, feature ]
-        # rule: [ std_rule ]
+        # rule: [ std_rule, enable_build_info, enable_file_replacement, enable_mavenpom_replacement, enable_external_version ]
+        # branch: [ main, release, develop, feature ]
+        rule: [ std_rule ]
         # branch: [ main ]
     env:
       BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
@@ -150,7 +169,7 @@ jobs:
           artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
           versioning-rules-importer-file: ${{ matrix.rule }}
           branch-packager-rules-importer-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
-          branch-name: ${{ matrix.branch }}
+          branch-name: ${BRANCH_NAME}
 
       - name: View Version File - After
         run: |
