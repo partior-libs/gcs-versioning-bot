@@ -254,8 +254,9 @@ jobs:
           artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
           versioning-rules-importer-file: ${{ matrix.rule }}
           branch-packager-rules-importer-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
-          branch-name: ${{ env.BRANCH_NAME }}
           consolidated-commit-msg: ${{ env.ALL_DELTA_COMMIT_MSG }}
+          branch-name: ${{ matrix.branch }}
+          # branch-name: ${{ env.BRANCH_NAME }}
 
       - name: View Version File - After
         run: |

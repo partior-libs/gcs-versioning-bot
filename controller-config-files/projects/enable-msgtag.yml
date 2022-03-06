@@ -8,7 +8,7 @@ smc:
         enabled: true
         rules:
           branches: 
-            target: release
+            target: release,feature
             enabled: true
           labels: 
             target: MAJOR-VERSION 
