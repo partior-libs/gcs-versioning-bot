@@ -61,7 +61,7 @@ jobs:
           git branch --all
           echo next log 
           git checkout ${GITHUB_REF_NAME}
-          git log main..HEAD --pretty=format:"%s"
+          git log main..${GITHUB_REF_NAME} --pretty=format:"%s"
 
 
   read-std-config:
