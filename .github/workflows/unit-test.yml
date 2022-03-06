@@ -42,11 +42,13 @@ jobs:
         id: get-repo
         run: |
           branchName="$(echo ${GITHUB_REF_NAME} | cut -d"/" -f1)"
+          sourceBranch=${GITHUB_REF_NAME}
           prTargetBranch=''
           isPR=false
           commitMessages=''
           if [[ ! -z "$GITHUB_HEAD_REF" ]]; then
             branchName=$(echo $GITHUB_HEAD_REF | cut -d"/" -f1)
+            sourceBranch=${$GITHUB_HEAD_REF}
             isPR=true
             prTargetBranch=remotes/origin/${GITHUB_BASE_REF}
             git fetch --all
@@ -54,13 +56,14 @@ jobs:
             echo git log $prTargetBranch..HEAD
             commitMessages=$(git log $prTargetBranch..HEAD --pretty=format:"%s")
           fi
-          echo [DEBUG] antz1 ${{ github.ref_name }}
+          echo [DEBUG] antz1 ${{ env.GITHUB_REF_NAME }}
           
           echo ::set-output name=branch-name::${branchName}
           echo ::set-output name=is-PR::${isPR}
           echo ::set-output name=pr-target-branch::${prTargetBranch}
           echo ::set-output name=name::$(echo ${GITHUB_REPOSITORY}  | cut -d"/" -f2)
           echo ::set-output name=delta-commit-msg::$(commitMessages)
+          echo ::set-output name=source-branch::$(sourceBranch)
 
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@partior-stable
@@ -213,6 +216,7 @@ jobs:
       BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
       REPO_NAME: ${{ needs.read-config.outputs.repo-name }}
       ALL_DELTA_COMMIT_MSG: ${{ needs.read-config.outputs.delta-commit-msg }}
+      SOURCE_BRANCH: ${{ needs.read-config.outputs.source-branch }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
@@ -235,7 +239,7 @@ jobs:
 
       - name: Start versioning bot
         id: version-bot
-        uses: partior-libs/gcs-versioning-bot@${{ github.ref_name }}
+        uses: partior-libs/gcs-versioning-bot@${{ env.SOURCE_BRANCH }}
         with:
           artifactory-username: svc-smc-read
           artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
