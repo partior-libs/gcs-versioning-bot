@@ -60,7 +60,7 @@ jobs:
           echo next
           git branch --all
           echo next log 
-          git fetch
+          git fetch --all
           git log main..HEAD --pretty=format:"%s"
 
 
