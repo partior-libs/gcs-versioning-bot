@@ -59,7 +59,6 @@ jobs:
         with:
           fetch-depth: 0
 
-<<<<<<< HEAD
       - name: Dump GitHub context
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
@@ -67,8 +66,6 @@ jobs:
           echo start:
           echo "$GITHUB_CONTEXT"
 
-=======
->>>>>>> main
       - name: List defaultenv
         run: |
           set
