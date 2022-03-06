@@ -200,6 +200,7 @@ getArtifactLastVersion "$artifactoryTargetDevRepo,$artifactoryTargetRelRepo" "$v
 storeLatestVersionIntoFile "$versionListFile" "$DEV_V_IDENTIFIER" "$ARTIFACT_LAST_DEV_VERSION_FILE"
 storeLatestVersionIntoFile "$versionListFile" "$RC_V_IDENTIFIER" "$ARTIFACT_LAST_RC_VERSION_FILE"
 storeLatestVersionIntoFile "$versionListFile" "$REL_SCOPE" "$ARTIFACT_LAST_REL_VERSION_FILE"
+
 rm -f $versionListFile
 #checkArtifactLastVersion "$artifactoryTargetRelRepo" "$ARTIFACT_LAST_REL_VERSION_FILE" "Release" "$RC_SCOPE"
 
