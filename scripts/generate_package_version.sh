@@ -20,7 +20,7 @@ currentBranch=$(echo $2 | cut -d"/" -f1)
 currentLabel=$3
 currentTag=$4
 currentMsgTag=$5
-currentVersionFile=$6
+
 
 ## Trim away the build info
 lastDevVersion=$(cat $ARTIFACT_LAST_DEV_VERSION_FILE | cut -d"+" -f1)
@@ -50,6 +50,23 @@ function needToIncrementRelVersion() {
     else    
         echo "false"
     fi
+}
+
+function getNeededIncrementReleaseVersion() {
+    local devVersion=$1
+    local rcVersion=$2
+    local relVersion=$3
+
+    local devIncrease=$(needToIncrementRelVersion "$devVersion" "$relVersion")
+    local newRelVersion=$relVersion
+    if [[ "$devIncrease" == "true" ]]; then
+        newRelVersion=$(echo $devVersion | cut -d"-" -f1)
+    fi
+    local rcIncrease=$(needToIncrementRelVersion "$rcVersion" "$newRelVersion")
+    if [[ "$rcVersion" == "true" ]]; then
+        newRelVersion=$(echo $rcVersion | cut -d"-" -f1)
+    fi
+    echo $newRelVersion
 }
 
 function incrementReleaseVersion() {
@@ -112,9 +129,28 @@ function degaussCoreVersionVariables() {
     local vCurrentVersionFile=${versionScope}_GH_CURRENT_VFILE
 
     echo "export ${vCurrentBranch}=$currentBranch" >> $tmpVariable
-    echo "export ${vCurrentLabel}=$currentLabel" >> $tmpVariable
-    echo "export ${vCurrentTag}=$currentTag" >> $tmpVariable
-    echo "export ${vCurrentMsgTag}=$currentMsgTag" >> $tmpVariable
+
+    if [[ -f $currentLabel ]]; then 
+        cat $vCurrentTag > $vCurrentLabel
+        echo "export ${vCurrentLabel}=${vCurrentLabel}" >> $tmpVariable
+    else 
+        echo "export ${vCurrentLabel}=${currentLabel}" >> $tmpVariable
+    fi
+
+    if [[ -f $currentTag ]]; then 
+        cat $vCurrentTag > $vCurrentTag
+        echo "export ${vCurrentTag}=${vCurrentTag}" >> $tmpVariable
+    else 
+        echo "export ${vCurrentTag}=${currentTag}" >> $tmpVariable
+    fi
+
+    if [[ -f $currentMsgTag ]]; then 
+        cat $currentMsgTag > $vCurrentMsgTag
+        echo "export ${vCurrentMsgTag}=${vCurrentMsgTag}" >> $tmpVariable
+    else 
+        echo "export ${vCurrentMsgTag}=${currentMsgTag}" >> $tmpVariable
+    fi
+
 
     #echo "[DEBUG] branchEnabled==>${!branchEnabled}"
     if [[ ! "${!branchEnabled}" == "true" ]]; then
@@ -299,6 +335,33 @@ function checkIsSubstring(){
     echo "false"
 }
 
+function checkListIsSubstringInFileContent () {
+    local listString=$1
+    local fileContentPath=$2
+    local listArray=''
+
+    if [[ -z $listString ]] && [[ -z $fileContentPath ]]; then
+        echo "true"
+        return 0
+    fi
+
+    if [[ ! -f $fileContentPath ]]; then
+        echo $(checkIsSubstring "$listString" "$fileContentPath")
+        return 0
+    fi
+
+    IFS=', ' read -r -a listArray <<< "$listString"
+    for eachString in "${listArray[@]}";
+    do 
+        if (grep -q "\[$eachString\]" $fileContentPath); then
+            echo "true"
+            return 0
+        fi
+    done
+    echo "false"
+}
+
+
 function checkCoreVersionFeatureFlag() {
     local versionScope=$1
     
@@ -312,7 +375,7 @@ function checkCoreVersionFeatureFlag() {
     local vConfigMsgTags=${versionScope}_V_CONFIG_MSGTAGS
     local ghCurrentMsgTag=${versionScope}_GH_CURRENT_MSGTAG
 
-    if [[ "$VERSIONING_BOT_ENABLED" == "true" ]] && [[ "${!vRulesEnabled}" == "true" ]] && [[ $(checkIsSubstring "${!vConfigBranches}" "${!ghCurrentBranch}") == "true" ]] && [[ $(checkIsSubstring "${!vConfigLabels}" "${!ghCurrentLabel}") == "true" ]] && [[ $(checkIsSubstring "${!vConfigTags}" "${!ghCurrentTag}") == "true" ]] && [[ $(checkIsSubstring "${!vConfigMsgTags}" "${!ghCurrentMsgTag}") == "true" ]]; then
+    if [[ "$VERSIONING_BOT_ENABLED" == "true" ]] && [[ "${!vRulesEnabled}" == "true" ]] && [[ $(checkIsSubstring "${!vConfigBranches}" "${!ghCurrentBranch}") == "true" ]] && [[ $(checkListIsSubstringInFileContent "${!vConfigLabels}" "${!ghCurrentLabel}") == "true" ]] && [[ $(checkListIsSubstringInFileContent "${!vConfigTags}" "${!ghCurrentTag}") == "true" ]] && [[ $(checkListIsSubstringInFileContent "${!vConfigMsgTags}" "${!ghCurrentMsgTag}") == "true" ]]; then
         echo "true"
     else
         echo "false"
@@ -328,7 +391,7 @@ function checkPreReleaseVersionFeatureFlag() {
     local vConfigTags=${versionScope}_V_CONFIG_TAGS
     local ghCurrentTag=${versionScope}_GH_CURRENT_TAG
 
-    if [[ "$VERSIONING_BOT_ENABLED" == "true" ]] && [[ "${!vRulesEnabled}" == "true" ]] &&  [[ $(checkIsSubstring "${!vConfigBranches}" "${!ghCurrentBranch}") == "true" ]] && [[ $(checkIsSubstring "${!vConfigTags}" "${!ghCurrentTag}") == "true" ]] && [[ ! "$(checkCoreVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "$(checkCoreVersionFeatureFlag ${MINOR_SCOPE})" == "true" ]] && [[ ! "$(checkCoreVersionFeatureFlag ${PATCH_SCOPE})" == "true" ]]; then
+    if [[ "$VERSIONING_BOT_ENABLED" == "true" ]] && [[ "${!vRulesEnabled}" == "true" ]] &&  [[ $(checkIsSubstring "${!vConfigBranches}" "${!ghCurrentBranch}") == "true" ]] && [[ $(checkListIsSubstringInFileContent "${!vConfigTags}" "${!ghCurrentTag}") == "true" ]] && [[ ! "$(checkCoreVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "$(checkCoreVersionFeatureFlag ${MINOR_SCOPE})" == "true" ]] && [[ ! "$(checkCoreVersionFeatureFlag ${PATCH_SCOPE})" == "true" ]]; then
         echo "true"
     else
         echo "false"
@@ -484,8 +547,8 @@ function debugPreReleaseVersionVariables() {
 }
 
 ## Read the versions generated from get_latest_version.sh
-currentDevSemanticVersion=$(echo $lastDevVersion | awk -F'-dev' '{print $1}')
-currentRCSemanticVersion=$(echo $lastRCVersion | awk -F'-rc' '{print $1}')
+# currentDevSemanticVersion=$(echo $lastDevVersion | awk -F'-dev' '{print $1}')
+# currentRCSemanticVersion=$(echo $lastRCVersion | awk -F'-rc' '{print $1}')
 
 ## Ensure the latest read version sequence is valid
 # versionCompareLessOrEqual $currentRCSemanticVersion $currentDevSemanticVersion && VERSION_VALID=$(echo "checked") || VERSION_VALID=$(echo "no")
@@ -509,7 +572,7 @@ debugCoreVersionVariables MAJOR
 debugCoreVersionVariables MINOR
 debugCoreVersionVariables PATCH
 
-nextVersion=$currentRCSemanticVersion
+nextVersion=$(getNeededIncrementReleaseVersion "$lastDevVersion" "$lastRCVersion" "$lastRelVersion")
 echo [INFO] Before incremented: $currentRCSemanticVersion
 ## Process incrementation on MAJOR, MINOR and PATCH
 if [[ "$(checkCoreVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "${MAJOR_V_RULE_VFILE_ENABLED}" == "true" ]]; then

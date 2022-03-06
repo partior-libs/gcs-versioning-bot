@@ -8,7 +8,7 @@ smc:
         enabled: true
         rules:
           branches: 
-            target: release
+            target: release,feature
             enabled: true
           labels: 
             target: MAJOR-VERSION 
@@ -27,13 +27,13 @@ smc:
         enabled: true
         rules:
           branches: 
-            target: release
+            target: release,feature
             enabled: true
           tag: 
             target: MINOR-VERSION 
             enabled: false
           message-tag: 
-            target: MINOR-VERSION 
+            target: MINOR 
             enabled: true
           labels: 
             target: MINOR-VERSION  
@@ -46,17 +46,17 @@ smc:
         enabled: true
         rules:
           branches: 
-            target: release,main,master
+            target: release
             enabled: true
           tag: 
             target: PATCH-VERSION 
             enabled: false
           message-tag: 
             target: PATCH-VERSION 
-            enabled: false
+            enabled: true
           labels: 
             target: PATCH-VERSION
-            enabled: false
+            enabled: true
           file:
             enabled: false
             target: test-files/app-version.cfg

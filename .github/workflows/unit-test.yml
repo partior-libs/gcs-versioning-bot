@@ -1,10 +1,18 @@
 name: Test Auto Versioning
 on:
+  pull_request:
+    # branches: [  main, develop, feature/**, release/**, bugfix/**, hotfix/**, controller/** ]
+  pull_request_review:
+    types: [submitted]
+    # branches: [  main, develop, feature/**, release/**, bugfix/**, hotfix/**, controller/** ]
+  # push:
+  #   branches: [ master, develop, feature/**, release/**, bugfix/**, hotfix/**, controller/** ]
+
   # push:
   # pull_request:
   # workflow_dispatch:
-  pull_request_review:
-    types: [submitted]
+  # pull_request_review:
+  # pull_request:
 
 env:
   YAML_STD_CI_CONFIG_IMPORTER: std_rule
@@ -13,6 +21,7 @@ env:
   YAML_REPLACE_FILE_CI_CONFIG_IMPORTER: enable_file_replacement
   YAML_REPLACE_MVNPOM_CI_CONFIG_IMPORTER: enable_mavenpom_replacement
   YAML_VERSION_FROM_FILE_CI_CONFIG_IMPORTER: enable_external_version
+  YAML_ENABLE_MSGTAG_CI_CONFIG_IMPORTER: enable_msgtag
 
 jobs:
 
@@ -21,15 +30,41 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       branch-name: ${{ steps.get-repo.outputs.branch-name }}
+      pr-exist: ${{ steps.get-repo.outputs.is-PR }}
+      pr-target-branch: ${{ steps.get-repo.outputs.pr-target-branch }}
       repo-name: ${{ steps.get-repo.outputs.name }}
+      source-branch: ${{ steps.get-repo.outputs.source-branch }}
+      delta-commit-msg: ${{ steps.get-repo.outputs.delta-commit-msg }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Get repo details
         id: get-repo
         run: |
-          echo ::set-output name=branch-name::$(echo ${GITHUB_REF#refs/heads/} | cut -d"/" -f1)
+          branchName="$(echo ${GITHUB_REF_NAME} | cut -d"/" -f1)"
+          sourceBranch=${GITHUB_REF_NAME}
+          prTargetBranch=''
+          isPR=false
+          commitMessages=''
+          if [[ ! -z "$GITHUB_HEAD_REF" ]]; then
+            branchName=$(echo $GITHUB_HEAD_REF | cut -d"/" -f1)
+            sourceBranch=${GITHUB_HEAD_REF}
+            isPR=true
+            prTargetBranch=remotes/origin/${GITHUB_BASE_REF}
+            git fetch --all
+            git branch --all
+            echo git log $prTargetBranch..HEAD
+            commitMessages=$(git log $prTargetBranch..HEAD --pretty=format:"%s")
+          fi
+          
+          echo ::set-output name=branch-name::${branchName}
+          echo ::set-output name=is-PR::${isPR}
+          echo ::set-output name=pr-target-branch::${prTargetBranch}
           echo ::set-output name=name::$(echo ${GITHUB_REPOSITORY}  | cut -d"/" -f2)
+          echo ::set-output name=delta-commit-msg::${commitMessages}
+          echo ::set-output name=source-branch::${sourceBranch}
 
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@partior-stable
@@ -41,34 +76,41 @@ jobs:
           query-path-for-default: .smc.ci.branches.default
           upload: true
 
-  read-env:
-    needs: [ read-config ]  
-    runs-on: ubuntu-latest
-    env: 
-      BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
+  # read-env:
+  #   needs: [ read-config ]  
+  #   runs-on: ubuntu-latest
+  #   env: 
+  #     BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #       with:
+  #         fetch-depth: 0
 
-      - name: List defaultenv
-        run: |
-          set
+  #     - name: Dump GitHub context
+  #       env:
+  #         GITHUB_CONTEXT: ${{ toJson(github) }}
+  #       run: |
+  #         echo start:
+  #         echo "$GITHUB_CONTEXT"
 
-      - name: List custom env
-        run: |
-          echo lising BRANCH_NAME=${BRANCH_NAME}
-          echo Target PR branch=${{ github.event.pull_request.base.ref }}
-                                ${{ github.event.pull_request.base.ref }}
+  #     - name: List default env
+  #       run: |
+  #         set
 
-      - name: Git log
-        run: |
-          git branch
-          echo next
-          git branch --all
-          echo next log 
+  #     - name: List custom env
+  #       run: |
+  #         echo lising BRANCH_NAME=${BRANCH_NAME}
+  #         echo Target PR branch=${{ github.event.pull_request.base.ref }}
+  #                               ${{ github.event.pull_request.base.ref }}
+
+  #     - name: Git log
+  #       run: |
+  #         git branch
+  #         echo next
+  #         git branch --all
+  #         echo next log 
           
-          git log remotes/origin/main..${GITHUB_REF_NAME} --pretty=format:"%s"
+  #         git log remotes/origin/main..${GITHUB_REF_NAME} --pretty=format:"%s"
 
 
   read-std-config:
@@ -82,6 +124,21 @@ jobs:
           yaml-file: controller-config-files/projects/enable-std-rules.yml
           query-path: .smc.ci
           output-file: ${{ env.YAML_STD_CI_CONFIG_IMPORTER }}
+          yaml-file-for-default: controller-config-files/projects/default.yml
+          query-path-for-default: .smc.ci
+          upload: true
+
+  read-enable-msgtag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Generate CI branch importer
+        uses: partior-libs/gcs-yaml-importer@partior-stable
+        with:
+          yaml-file: controller-config-files/projects/enable-msgtag.yml
+          query-path: .smc.ci
+          output-file: ${{ env.YAML_ENABLE_MSGTAG_CI_CONFIG_IMPORTER }}
           yaml-file-for-default: controller-config-files/projects/default.yml
           query-path-for-default: .smc.ci
           upload: true
@@ -147,18 +204,21 @@ jobs:
           upload: true
 
   trigger-with-matrix:
-    needs: [ read-config, read-std-config, read-build-config, read-replace-file-version-config, read-replace-maven-pom-config, read-external-version-config ]
+    needs: [ read-config, read-std-config, read-build-config, read-replace-file-version-config, read-replace-maven-pom-config, read-external-version-config, read-enable-msgtag ]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        # rule: [ std_rule, enable_build_info, enable_file_replacement, enable_mavenpom_replacement, enable_external_version ]
-        # branch: [ main, release, develop, feature ]
-        rule: [ std_rule ]
-        # branch: [ main ]
+        rule: [ std_rule, enable_build_info, enable_file_replacement, enable_mavenpom_replacement, enable_external_version, enable_msgtag ]
+        branch: [ main, release, develop, feature ]
+        # rule: [ std_rule ]
+        # rule: [ enable_msgtag ]
+        # branch: [ feature ]
     env:
       BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
       REPO_NAME: ${{ needs.read-config.outputs.repo-name }}
+      ALL_DELTA_COMMIT_MSG: ${{ needs.read-config.outputs.delta-commit-msg }}
+      SOURCE_BRANCH: ${{ needs.read-config.outputs.source-branch }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
@@ -179,15 +239,24 @@ jobs:
           echo [INFO] Viewing Maven POM file - Pre Activity
           cat ./test-files/sample-pom-file.xml
 
+      - name: View commit message
+        run: |
+          echo [INFO] Start viewing
+          echo ${{ env.ALL_DELTA_COMMIT_MSG }}
+          echo [INFO] Another
+          echo ${{ needs.read-config.outputs.delta-commit-msg }}
+
       - name: Start versioning bot
         id: version-bot
-        uses: partior-libs/gcs-versioning-bot@main
+        uses: partior-libs/gcs-versioning-bot@feature/test-PR
         with:
           artifactory-username: svc-smc-read
           artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
           versioning-rules-importer-file: ${{ matrix.rule }}
           branch-packager-rules-importer-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
-          branch-name: ${BRANCH_NAME}
+          consolidated-commit-msg: ${{ env.ALL_DELTA_COMMIT_MSG }}
+          branch-name: ${{ matrix.branch }}
+          # branch-name: ${{ env.BRANCH_NAME }}
 
       - name: View Version File - After
         run: |
@@ -308,3 +377,4 @@ jobs:
   #     - name: Get version
   #       run: |
   #         echo Version: [${{ steps.versioning.outputs.name }}]
+
