@@ -262,6 +262,28 @@ function degaussVersionReplacementVariables() {
     rm -f $tmpVariable
 }
 
+## Reset variables that's not used, to simplify requirement evaluation later
+function degaussBuildVersionVariables() {
+    local versionScope=$1
+    local tmpVariable=source-$(date +%s).tmp
+    rm -f $tmpVariable
+
+    local branchEnabled=${versionScope}_V_RULE_BRANCH_ENABLED
+    local vCurrentBranch=${versionScope}_GH_CURRENT_BRANCH
+
+    echo "export ${vCurrentBranch}=$currentBranch" >> $tmpVariable
+    echo "export ${vCurrentTag}=$currentTag" >> $tmpVariable
+
+    #echo "[DEBUG] branchEnabled==>${!branchEnabled}"
+    if [[ ! "${!branchEnabled}" == "true" ]]; then
+        echo "export ${versionScope}_V_CONFIG_BRANCHES=false" >> $tmpVariable
+        echo "export ${vCurrentBranch}=false" >> $tmpVariable
+    fi
+    source ./$tmpVariable
+    rm -f $tmpVariable
+}
+
+
 ## Instead of increment with logical 1, this function allow user to pick version from defined file and keyword, to increment release version
 function incrementReleaseVersionByFile() {
     local inputVersion=$1
@@ -696,9 +718,11 @@ elif [[ "$(checkPreReleaseVersionFeatureFlag ${DEV_SCOPE})" == "true" ]] && [[ "
 fi
 echo [INFO] After prerelease version incremented with input from version file: $nextVersion
 
+
+degaussBuildVersionVariables "$BUILD_SCOPE"
 ## Debug section
 if [[ "$isDebug" == "true" ]]; then
-    debugBuildVersionVariables $BUILD_SCOPE
+    debugBuildVersionVariables "$BUILD_SCOPE"
 fi
 ## Append build number infos if enabled
 if [[ "$(checkBuildVersionFeatureFlag ${BUILD_SCOPE})" == "true" ]]; then
