@@ -33,6 +33,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: List default env
+        run: |
+          set
+          
       - name: Get repo details
         id: get-repo
         run: |
@@ -68,7 +72,7 @@ jobs:
           echo start:
           echo "$GITHUB_CONTEXT"
 
-      - name: List defaultenv
+      - name: List default env
         run: |
           set
 
