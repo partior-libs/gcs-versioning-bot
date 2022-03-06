@@ -60,7 +60,7 @@ jobs:
           echo next
           git branch --all
           echo next log 
-          git fetch --all
+          git checkout ${GITHUB_REF_NAME}
           git log main..HEAD --pretty=format:"%s"
 
 
