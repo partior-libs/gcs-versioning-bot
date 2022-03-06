@@ -49,6 +49,7 @@ jobs:
             isPR=true
             prTargetBranch=remotes/origin/${GITHUB_BASE_REF}
             git fetch --all
+            git branch --all
             commitMessages=$(git log $prTargetBranch..${GITHUB_HEAD_REF} --pretty=format:"%s")
           fi
 
