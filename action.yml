@@ -73,10 +73,6 @@ runs:
         echo BUILD_GH_PR_EXIST=${isPR} >> $GITHUB_ENV
         echo BUILD_GH_PR_TARGET_BRANCH=${prTargetBranch} >> $GITHUB_ENV
         echo BUILD_GH_COMMIT_MESSAGE_FILE=$BUILD_GH_COMMIT_MESSAGE_FILE >> $GITHUB_ENV
-
-        # echo ::set-output name=branch-name::${branchName}
-        # echo ::set-output name=is-PR::${isPR}
-        # echo ::set-output name=pr-target-branch::${prTargetBranch}
       shell: bash
 
     - name: Import importer files

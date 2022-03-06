@@ -58,7 +58,6 @@ jobs:
             echo git log $prTargetBranch..HEAD
             commitMessages=$(git log $prTargetBranch..HEAD --pretty=format:"%s")
           fi
-          echo [DEBUG] antz1 $(echo $commitMessages)
           
           echo ::set-output name=branch-name::${branchName}
           echo ::set-output name=is-PR::${isPR}
@@ -210,11 +209,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # rule: [ std_rule, enable_build_info, enable_file_replacement, enable_mavenpom_replacement, enable_external_version, enable_msgtag ]
-        # branch: [ main, release, develop, feature ]
+        rule: [ std_rule, enable_build_info, enable_file_replacement, enable_mavenpom_replacement, enable_external_version, enable_msgtag ]
+        branch: [ main, release, develop, feature ]
         # rule: [ std_rule ]
-        rule: [ enable_msgtag ]
-        branch: [ feature ]
+        # rule: [ enable_msgtag ]
+        # branch: [ feature ]
     env:
       BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
       REPO_NAME: ${{ needs.read-config.outputs.repo-name }}
