@@ -238,6 +238,11 @@ jobs:
           echo [INFO] Viewing Maven POM file - Pre Activity
           cat ./test-files/sample-pom-file.xml
 
+      - name: View commit message
+        run: |
+          echo [INFO] Start viewing
+          cat ${{ env.ALL_DELTA_COMMIT_MSG }}
+
       - name: Start versioning bot
         id: version-bot
         uses: partior-libs/gcs-versioning-bot@feature/test-PR
