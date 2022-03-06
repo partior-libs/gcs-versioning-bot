@@ -39,8 +39,8 @@ jobs:
   read-env:
     needs: [ read-config ]  
     runs-on: ubuntu-latest
-      env: 
-        BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
+    env: 
+      BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
     steps:
       - uses: actions/checkout@v2
 
