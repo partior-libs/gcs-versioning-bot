@@ -581,7 +581,7 @@ if [[ "$isDebug" == "true" ]]; then
 fi
 
 nextVersion=$(getNeededIncrementReleaseVersion "$lastDevVersion" "$lastRCVersion" "$lastRelVersion")
-echo [INFO] Before incremented: $currentRCSemanticVersion
+echo [INFO] Before incremented: $nextVersion
 ## Process incrementation on MAJOR, MINOR and PATCH
 if [[ "$(checkReleaseVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "${MAJOR_V_RULE_VFILE_ENABLED}" == "true" ]]; then
     # echo [DEBUG] currentRCSemanticVersion=$nextVersion
