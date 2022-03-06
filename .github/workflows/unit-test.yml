@@ -33,7 +33,7 @@ jobs:
       pr-target-branch: ${{ steps.get-repo.outputs.pr-target-branch }}
       repo-name: ${{ steps.get-repo.outputs.name }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
@@ -50,6 +50,7 @@ jobs:
             prTargetBranch=remotes/origin/${GITHUB_BASE_REF}
             git fetch --all
             git branch --all
+            echo git log $prTargetBranch..${GITHUB_HEAD_REF}
             commitMessages=$(git log $prTargetBranch..${GITHUB_HEAD_REF} --pretty=format:"%s")
           fi
 
