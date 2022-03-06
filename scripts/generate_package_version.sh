@@ -115,16 +115,16 @@ function degaussCoreVersionVariables() {
 
     if [[ -f $currentLabel ]]; then 
         cat $vCurrentTag > $vCurrentLabel
-        echo "export ${vCurrentLabel}=${vCurrentLabel} >> $tmpVariable"
+        echo "export ${vCurrentLabel}=${vCurrentLabel}" >> $tmpVariable
     else 
-        echo "export ${vCurrentLabel}=${currentLabel} >> $tmpVariable"
+        echo "export ${vCurrentLabel}=${currentLabel}" >> $tmpVariable
     fi
 
     if [[ -f $currentTag ]]; then 
         cat $vCurrentTag > $vCurrentTag
-        echo "export ${vCurrentTag}=${vCurrentTag} >> $tmpVariable"
+        echo "export ${vCurrentTag}=${vCurrentTag}" >> $tmpVariable
     else 
-        echo "export ${vCurrentTag}=${currentTag} >> $tmpVariable"
+        echo "export ${vCurrentTag}=${currentTag}" >> $tmpVariable
     fi
 
     if [[ -f $currentMsgTag ]]; then 
@@ -135,9 +135,9 @@ function degaussCoreVersionVariables() {
         ls -ltrah
         echo "[DEBUG] antz is catting $currentMsgTag"
         cat $currentMsgTag 
-        echo "export ${vCurrentMsgTag}=${vCurrentMsgTag} >> $tmpVariable"
+        echo "export ${vCurrentMsgTag}=${vCurrentMsgTag}" >> $tmpVariable
     else 
-        echo "export ${vCurrentMsgTag}=${currentMsgTag} >> $tmpVariable"
+        echo "export ${vCurrentMsgTag}=${currentMsgTag}" >> $tmpVariable
     fi
 
 
