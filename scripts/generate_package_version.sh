@@ -565,6 +565,24 @@ function debugPreReleaseVersionVariables() {
     echo ==========================================
 }
 
+## For debugging purpose
+function debugBuildVersionVariables() {
+    local versionScope=$1
+    echo ==========================================
+    echo [DEBUG] SCOPE: $versionScope
+    
+    local vRulesEnabled=${versionScope}_V_RULES_ENABLED
+    local vConfigBranches=${versionScope}_V_CONFIG_BRANCHES
+    local ghCurrentBranch=${versionScope}_GH_CURRENT_BRANCH
+
+   
+    echo checkBuildVersionFeatureFlag=$(checkBuildVersionFeatureFlag "$versionScope") 
+    echo $vRulesEnabled=${!vRulesEnabled} 
+    echo $vConfigBranches=${!vConfigBranches} 
+    echo $ghCurrentBranch=${!ghCurrentBranch} 
+    echo ==========================================
+}
+
 ## Instrument core version variables which can be made dummy based on the config 
 degaussCoreVersionVariables $MAJOR_SCOPE
 degaussCoreVersionVariables $MINOR_SCOPE
@@ -678,6 +696,10 @@ elif [[ "$(checkPreReleaseVersionFeatureFlag ${DEV_SCOPE})" == "true" ]] && [[ "
 fi
 echo [INFO] After prerelease version incremented with input from version file: $nextVersion
 
+## Debug section
+if [[ "$isDebug" == "true" ]]; then
+    debugBuildVersionVariables $BUILD_SCOPE
+fi
 ## Append build number infos if enabled
 if [[ "$(checkBuildVersionFeatureFlag ${BUILD_SCOPE})" == "true" ]]; then
     if [[ -z "$BUILD_V_IDENTIFIER" ]]; then
