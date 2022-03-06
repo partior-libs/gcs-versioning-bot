@@ -48,7 +48,7 @@ jobs:
             branchName=$(echo $GITHUB_HEAD_REF | cut -d"/" -f1)
             isPR=true
             prTargetBranch=remotes/origin/${GITHUB_BASE_REF}
-            commitMessages=$(git log $prTargetBranch)..${$GITHUB_HEAD_RE} --pretty=format:"%s")
+            commitMessages=$(git log $prTargetBranch..${$GITHUB_HEAD_RE} --pretty=format:"%s")
           fi
 
           
@@ -56,6 +56,7 @@ jobs:
           echo ::set-output name=is-PR::${isPR}
           echo ::set-output name=pr-target-branch::${prTargetBranch}
           echo ::set-output name=name::$(echo ${GITHUB_REPOSITORY}  | cut -d"/" -f2)
+          echo ::set-output name=delta-commit-msg::$(commitMessages)
 
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@partior-stable
@@ -188,10 +189,11 @@ jobs:
         # rule: [ std_rule, enable_build_info, enable_file_replacement, enable_mavenpom_replacement, enable_external_version ]
         # branch: [ main, release, develop, feature ]
         rule: [ std_rule ]
-        # branch: [ main ]
+        branch: [ feature ]
     env:
       BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
       REPO_NAME: ${{ needs.read-config.outputs.repo-name }}
+      ALL_DELTA_COMMIT_MSG: ${{ needs.read-config.outputs.delta-commit-msg }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
@@ -220,7 +222,8 @@ jobs:
           artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
           versioning-rules-importer-file: ${{ matrix.rule }}
           branch-packager-rules-importer-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
-          branch-name: ${BRANCH_NAME}
+          branch-name: ${{ env.BRANCH_NAME }}
+          consolidated-commit-msg: ${{ env.ALL_DELTA_COMMIT_MSG }}
 
       - name: View Version File - After
         run: |

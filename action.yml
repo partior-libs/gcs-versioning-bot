@@ -25,6 +25,10 @@ inputs:
     description: 'File generated from partior-libs/gcs-yaml-importer'
     required: true
     default: 'NIL'
+  consolidated-commit-msg:
+    description: 'Consolidated commit message from git log'
+    required: false
+    default: '' 
   debug:
     description: 'Debug mode for more logging'
     required: false
@@ -58,7 +62,7 @@ runs:
           branchName=$(echo $GITHUB_HEAD_REF | cut -d"/" -f1)
           isPR=true
           prTargetBranch=remotes/origin/${GITHUB_BASE_REF}
-          git log ${prTargetBranch}..${$GITHUB_HEAD_RE} --pretty=format:"%s" > $BUILD_GH_COMMIT_MESSAGE_FILE
+          echo "${{ input.consolidated-commit-msg }}" > $BUILD_GH_COMMIT_MESSAGE_FILE
         fi
 
         if [[ ! "${{ inputs.branch-name }}" == "" ]];
