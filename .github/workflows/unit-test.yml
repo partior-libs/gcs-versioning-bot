@@ -33,6 +33,8 @@ jobs:
       pr-exist: ${{ steps.get-repo.outputs.is-PR }}
       pr-target-branch: ${{ steps.get-repo.outputs.pr-target-branch }}
       repo-name: ${{ steps.get-repo.outputs.name }}
+      source-branch: ${{ steps.get-repo.outputs.source-branch }}
+      delta-commit-msg: ${{ steps.get-repo.outputs.delta-commit-msg }}
     steps:
       - uses: actions/checkout@v3
         with:
