@@ -128,7 +128,13 @@ function degaussCoreVersionVariables() {
     fi
 
     if [[ -f $currentMsgTag ]]; then 
+        echo "[DEBUG] antz is listing:"
+        ls -ltrah
         cat $currentMsgTag > $vCurrentMsgTag
+        echo "[DEBUG] antz is listing again:"
+        ls -ltrah
+        echo "[DEBUG] antz is catting $currentMsgTag"
+        cat $currentMsgTag 
         echo "export ${vCurrentMsgTag}=${vCurrentMsgTag} >> $tmpVariable"
     else 
         echo "export ${vCurrentMsgTag}=${currentMsgTag} >> $tmpVariable"
