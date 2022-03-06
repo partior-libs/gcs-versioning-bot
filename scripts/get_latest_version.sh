@@ -21,10 +21,9 @@ artifactoryTargetDevRepo=$2
 artifactoryTargetRelRepo=$3
 artifactoryTargetGroup=$4
 artifactoryTargetArtifactName=$5
-artifactType=$6
-sourceBranchName=$7
-artifactoryUsername=$8
-artifactoryPassword=$9
+sourceBranchName=$6
+artifactoryUsername=$7
+artifactoryPassword=$8
 
 
 echo "[INFO] Branch name: $sourceBranchName"
@@ -184,14 +183,6 @@ function getArtifactLastVersion() {
 
 
 }
-## Validate supported artifact type first. It must be handled in packaging_xxx.sh files
-if [[ "$artifactType" == "tgz" ]]; then
-    echo "[INFO] Supported artifact type: [$artifactType]"
-else
-    echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unsupported artifact type: [$artifactType]"
-    exit 1
-fi
-
 
 versionListFile=versionlist.tmp
 ## Get all the last 1000 versions and store into file

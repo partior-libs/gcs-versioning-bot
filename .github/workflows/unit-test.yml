@@ -5,8 +5,8 @@ on:
   pull_request_review:
     types: [submitted]
     # branches: [  main, develop, feature/**, release/**, bugfix/**, hotfix/**, controller/** ]
-  # push:
-  #   branches: [ master, develop, feature/**, release/**, bugfix/**, hotfix/**, controller/** ]
+  push:
+    branches: [ master, main ]
 
   # push:
   # pull_request:
@@ -75,43 +75,6 @@ jobs:
           yaml-file-for-default: controller-config-files/projects/default.yml
           query-path-for-default: .smc.ci.branches.default
           upload: true
-
-  # read-env:
-  #   needs: [ read-config ]  
-  #   runs-on: ubuntu-latest
-  #   env: 
-  #     BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #       with:
-  #         fetch-depth: 0
-
-  #     - name: Dump GitHub context
-  #       env:
-  #         GITHUB_CONTEXT: ${{ toJson(github) }}
-  #       run: |
-  #         echo start:
-  #         echo "$GITHUB_CONTEXT"
-
-  #     - name: List default env
-  #       run: |
-  #         set
-
-  #     - name: List custom env
-  #       run: |
-  #         echo lising BRANCH_NAME=${BRANCH_NAME}
-  #         echo Target PR branch=${{ github.event.pull_request.base.ref }}
-  #                               ${{ github.event.pull_request.base.ref }}
-
-  #     - name: Git log
-  #       run: |
-  #         git branch
-  #         echo next
-  #         git branch --all
-  #         echo next log 
-          
-  #         git log remotes/origin/main..${GITHUB_REF_NAME} --pretty=format:"%s"
-
 
   read-std-config:
     runs-on: ubuntu-latest
@@ -243,12 +206,10 @@ jobs:
         run: |
           echo [INFO] Start viewing
           echo ${{ env.ALL_DELTA_COMMIT_MSG }}
-          echo [INFO] Another
-          echo ${{ needs.read-config.outputs.delta-commit-msg }}
 
       - name: Start versioning bot
         id: version-bot
-        uses: partior-libs/gcs-versioning-bot@feature/test-PR
+        uses: partior-libs/gcs-versioning-bot@main
         with:
           artifactory-username: svc-smc-read
           artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
@@ -282,99 +243,3 @@ jobs:
           name: rslt-${{ matrix.rule }}_${{ matrix.branch }}--${{ steps.version-bot.outputs.artifact-version-name}}
           path: rslt-${{ matrix.rule }}_${{ matrix.branch }}--${{ steps.version-bot.outputs.artifact-version-name}}
           retention-days: 1
-
-  # trigger-by-release-branch:
-  #   needs: [ read-config ]
-  #   runs-on: ubuntu-latest
-  #   env:
-  #     BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
-  #     REPO_NAME: ${{ needs.read-config.outputs.repo-name }}
-  #   steps:
-  #     - uses: actions/download-artifact@v2
-  #       with:
-  #         name: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
-
-  #     - uses: actions/download-artifact@v2
-  #       with:
-  #         name: ${{ env.YAML_CI_CONFIG_IMPORTER }}
-
-  #     - name: Start versioning bot
-  #       id: version-bot
-  #       uses: partior-libs/gcs-versioning-bot@main
-  #       with:
-  #         artifactory-username: svc-smc-read
-  #         artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
-  #         versioning-rules-importer-file: ${{ env.YAML_CI_CONFIG_IMPORTER }}
-  #         branch-packager-rules-importer-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
-  #         branch-name: release
-
-  # trigger-by-develop-branch:
-  #   needs: [ read-config ]
-  #   runs-on: ubuntu-latest
-  #   env:
-  #     BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
-  #     REPO_NAME: ${{ needs.read-config.outputs.repo-name }}
-  #   steps:
-  #     - uses: actions/download-artifact@v2
-  #       with:
-  #         name: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
-
-  #     - uses: actions/download-artifact@v2
-  #       with:
-  #         name: ${{ env.YAML_CI_CONFIG_IMPORTER }}
-
-  #     - name: Start versioning bot
-  #       id: version-bot
-  #       uses: partior-libs/gcs-versioning-bot@main
-  #       with:
-  #         artifactory-username: svc-smc-read
-  #         artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
-  #         versioning-rules-importer-file: ${{ env.YAML_CI_CONFIG_IMPORTER }}
-  #         branch-packager-rules-importer-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
-  #         branch-name: develop
-
-  # trigger-by-feature-branch:
-  #   needs: [ read-config ]
-  #   runs-on: ubuntu-latest
-  #   env:
-  #     BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
-  #     REPO_NAME: ${{ needs.read-config.outputs.repo-name }}
-  #   steps:
-  #     - uses: actions/download-artifact@v2
-  #       with:
-  #         name: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
-
-  #     - uses: actions/download-artifact@v2
-  #       with:
-  #         name: ${{ env.YAML_CI_CONFIG_IMPORTER }}
-
-  #     - name: Start versioning bot
-  #       id: version-bot
-  #       uses: partior-libs/gcs-versioning-bot@main
-  #       with:
-  #         artifactory-username: svc-smc-read
-  #         artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
-  #         versioning-rules-importer-file: ${{ env.YAML_CI_CONFIG_IMPORTER }}
-  #         branch-packager-rules-importer-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
-  #         branch-name: feature
-          
-  # test-generic-versioning:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #     - id: versioning
-  #       uses: partior-libs/gcs-versioning-bot@main
-  #       with:
-  #         artifactory-username: svc-smc-read
-  #         artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
-  #         artifactory-target-dev-repo: smc-generic-dev
-  #         artifactory-target-release-repo: smc-generic-release
-  #         artifactory-target-group: antztest
-  #         artifactory-target-artifact-name: dummy-artifact
-  #         branch-name: ${GITHUB_REF#refs/heads/}
-  #         short-hash: ${GITHUB_SHA::8}
-
-  #     - name: Get version
-  #       run: |
-  #         echo Version: [${{ steps.versioning.outputs.name }}]
-

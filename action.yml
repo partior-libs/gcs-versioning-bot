@@ -14,7 +14,7 @@ inputs:
     required: false
     default: 'https://partior.jfrog.io/artifactory'
   branch-name:  
-    description: 'Override branch name'
+    description: 'Override branch type name. Use only for testing purpose'
     required: false
     default: ''
   versioning-rules-importer-file:
@@ -32,11 +32,7 @@ inputs:
   debug:
     description: 'Debug mode for more logging'
     required: false
-    default: 'true'
-  artifact-type:  
-    description: 'Artifact definition type'
-    required: false
-    default: 'tgz'
+    default: 'false'
 outputs:
   artifact-version-name:
     description: "Final output"
@@ -114,7 +110,6 @@ runs:
           "${{ steps.yaml-config.outputs.artifact_packager_artifactory-release-repo }}" \
           "${{ steps.yaml-config.outputs.artifact_packager_group }}" \
           "${{ steps.yaml-config.outputs.artifact-base-name }}" \
-          "${{ inputs.artifact-type }}" \
           "${BUILD_GH_BRANCH_NAME}" \
           "${{ inputs.artifactory-username }}" \
           "${{ inputs.artifactory-password }}"
@@ -125,7 +120,8 @@ runs:
           "${BUILD_GH_BRANCH_NAME}" \
           "${BUILD_GH_LABEL_FILE}" \
           "${BUILD_GH_TAG_FILE}" \
-          "${BUILD_GH_COMMIT_MESSAGE_FILE}"
+          "${BUILD_GH_COMMIT_MESSAGE_FILE}" \
+          "${{ inputs.debug }}"
       shell: bash
 
 

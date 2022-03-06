@@ -20,6 +20,7 @@ currentBranch=$(echo $2 | cut -d"/" -f1)
 currentLabel=$3
 currentTag=$4
 currentMsgTag=$5
+isDebug=$6
 
 
 ## Trim away the build info
@@ -52,6 +53,7 @@ function needToIncrementRelVersion() {
     fi
 }
 
+## Derive the top release version to be incremented
 function getNeededIncrementReleaseVersion() {
     local devVersion=$1
     local rcVersion=$2
@@ -69,6 +71,7 @@ function getNeededIncrementReleaseVersion() {
     echo $newRelVersion
 }
 
+## Increment the release version based on semantic position
 function incrementReleaseVersion() {
     local inputVersion=$1
     local versionPos=$2
@@ -81,6 +84,7 @@ function incrementReleaseVersion() {
     echo $(local IFS=. ; echo "${versionArray[*]}")
 }
 
+## Increment pre-release version based on identifier
 function incrementPreReleaseVersion() {
     local inputVersion=$1
     local preIdentifider=$2
@@ -111,6 +115,7 @@ function incrementPreReleaseVersion() {
     echo $currentSemanticVersion-$preIdentifider.$nextPreReleaseNumber
 }
 
+## Reset variables that's not used, to simplify requirement evaluation later
 function degaussCoreVersionVariables() {
     local versionScope=$1
     local tmpVariable=source-$(date +%s).tmp
@@ -177,6 +182,7 @@ function degaussCoreVersionVariables() {
     rm -f $tmpVariable
 }
 
+## Reset variables that's not used, to simplify requirement evaluation later
 function degaussPreReleaseVersionVariables() {
     local versionScope=$1
     local tmpVariable=source-$(date +%s).tmp
@@ -210,6 +216,7 @@ function degaussPreReleaseVersionVariables() {
     rm -f $tmpVariable
 }
 
+## Reset variables that's not used, to simplify requirement evaluation later
 function degaussVersionReplacementVariables() {
     local versionScope=$1
     local tmpVariable=source-$(date +%s).tmp
@@ -255,6 +262,7 @@ function degaussVersionReplacementVariables() {
     rm -f $tmpVariable
 }
 
+## Instead of increment with logical 1, this function allow user to pick version from defined file and keyword, to increment release version
 function incrementReleaseVersionByFile() {
     local inputVersion=$1
     local versionPos=$2
@@ -278,6 +286,8 @@ function incrementReleaseVersionByFile() {
     echo $(local IFS=. ; echo "${versionArray[*]}")
 
 }
+
+## Instead of increment with logical 1, this function allow user to pick version from defined file and keyword, to increment pre-release version
 function incrementPreReleaseVersionByFile() {
     local inputVersion=$1
     local preIdentifider=$2
@@ -314,6 +324,8 @@ function incrementPreReleaseVersionByFile() {
     echo $currentSemanticVersion-$preIdentifider.$preReleaseVersionFromFile
 }
 
+
+## Check if given substring is in the comma delimited list
 function checkIsSubstring(){
     local listString=$1
     local subString=$2
@@ -335,6 +347,7 @@ function checkIsSubstring(){
     echo "false"
 }
 
+## Check if given comma delimited string is in the content of a file
 function checkListIsSubstringInFileContent () {
     local listString=$1
     local fileContentPath=$2
@@ -361,8 +374,8 @@ function checkListIsSubstringInFileContent () {
     echo "false"
 }
 
-
-function checkCoreVersionFeatureFlag() {
+## Check if required flags for incrementing Release version (Major, Minor or Patch) is enabled
+function checkReleaseVersionFeatureFlag() {
     local versionScope=$1
     
     local vRulesEnabled=${versionScope}_V_RULES_ENABLED
@@ -382,6 +395,7 @@ function checkCoreVersionFeatureFlag() {
     fi
 }
 
+## Check if required flags for incrementing Pre-Release version (Dev or RC) is enabled
 function checkPreReleaseVersionFeatureFlag() {
     local versionScope=$1
     
@@ -391,13 +405,14 @@ function checkPreReleaseVersionFeatureFlag() {
     local vConfigTags=${versionScope}_V_CONFIG_TAGS
     local ghCurrentTag=${versionScope}_GH_CURRENT_TAG
 
-    if [[ "$VERSIONING_BOT_ENABLED" == "true" ]] && [[ "${!vRulesEnabled}" == "true" ]] &&  [[ $(checkIsSubstring "${!vConfigBranches}" "${!ghCurrentBranch}") == "true" ]] && [[ $(checkListIsSubstringInFileContent "${!vConfigTags}" "${!ghCurrentTag}") == "true" ]] && [[ ! "$(checkCoreVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "$(checkCoreVersionFeatureFlag ${MINOR_SCOPE})" == "true" ]] && [[ ! "$(checkCoreVersionFeatureFlag ${PATCH_SCOPE})" == "true" ]]; then
+    if [[ "$VERSIONING_BOT_ENABLED" == "true" ]] && [[ "${!vRulesEnabled}" == "true" ]] &&  [[ $(checkIsSubstring "${!vConfigBranches}" "${!ghCurrentBranch}") == "true" ]] && [[ $(checkListIsSubstringInFileContent "${!vConfigTags}" "${!ghCurrentTag}") == "true" ]] && [[ ! "$(checkReleaseVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "$(checkReleaseVersionFeatureFlag ${MINOR_SCOPE})" == "true" ]] && [[ ! "$(checkReleaseVersionFeatureFlag ${PATCH_SCOPE})" == "true" ]]; then
         echo "true"
     else
         echo "false"
     fi
 }
 
+## Check if required flags for incrementing Build version (Build) is enabled
 function checkBuildVersionFeatureFlag() {
     local versionScope=$1
     
@@ -412,6 +427,7 @@ function checkBuildVersionFeatureFlag() {
     fi
 }
 
+## Check if required flags for incrementing version with external file is enabled
 function checkReplacementFeatureFlag() {
     local versionScope=$1
     
@@ -423,14 +439,15 @@ function checkReplacementFeatureFlag() {
     fi
 }
 
-function processWithCoreVersionFile() {
+## Engine to increment Release Version with external file value
+function processWithReleaseVersionFile() {
     local inputVersion=$1
     local versionPos=$2
     local versionScope=$3
 
     local versionFileRuleEnabled=${versionScope}_V_RULE_VFILE_ENABLED
     local currentIncrementedVersion="$inputVersion"
-    if [[ "$(checkCoreVersionFeatureFlag ${versionScope})" == "true" ]] && [[ "${!versionFileRuleEnabled}" == "true" ]]; then
+    if [[ "$(checkReleaseVersionFeatureFlag ${versionScope})" == "true" ]] && [[ "${!versionFileRuleEnabled}" == "true" ]]; then
         currentIncrementedVersion=$(incrementReleaseVersionByFile $currentIncrementedVersion ${versionPos} ${versionScope})
         if [[ $? -ne 0 ]]; then
             echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed retrieving version from version file."
@@ -464,6 +481,7 @@ function replaceVersionInFile() {
     fi
 }
 
+## Replace version in maven POM file
 function replaceVersionForMaven() {
     local inputVersion=$1
     local targetPomFile=$2
@@ -487,8 +505,8 @@ function replaceVersionForMaven() {
     fi
 }
 
-
-function debugCoreVersionVariables() {
+## For debugging purpose
+function debugReleaseVersionVariables() {
     local versionScope=$1
     echo ==========================================
     echo [DEBUG] SCOPE: $versionScope
@@ -521,6 +539,7 @@ function debugCoreVersionVariables() {
     echo ==========================================
 }
 
+## For debugging purpose
 function debugPreReleaseVersionVariables() {
     local versionScope=$1
     echo ==========================================
@@ -546,19 +565,6 @@ function debugPreReleaseVersionVariables() {
     echo ==========================================
 }
 
-## Read the versions generated from get_latest_version.sh
-# currentDevSemanticVersion=$(echo $lastDevVersion | awk -F'-dev' '{print $1}')
-# currentRCSemanticVersion=$(echo $lastRCVersion | awk -F'-rc' '{print $1}')
-
-## Ensure the latest read version sequence is valid
-# versionCompareLessOrEqual $currentRCSemanticVersion $currentDevSemanticVersion && VERSION_VALID=$(echo "checked") || VERSION_VALID=$(echo "no")
-# echo "[INFO] Version validation: [$VERSION_VALID]"
-# if [[ "$VERSION_VALID" == "no" ]]; then
-#     echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed version validation. Release/PROD version should not be ahead of Dev/RC version"
-#     exit 1
-# fi
-
-
 ## Instrument core version variables which can be made dummy based on the config 
 degaussCoreVersionVariables $MAJOR_SCOPE
 degaussCoreVersionVariables $MINOR_SCOPE
@@ -568,41 +574,43 @@ degaussPreReleaseVersionVariables $DEV_SCOPE
 
 ## Start incrementing
 ## Debug section
-debugCoreVersionVariables MAJOR
-debugCoreVersionVariables MINOR
-debugCoreVersionVariables PATCH
+if [[ "$isDebug" == "true" ]]; then
+    debugReleaseVersionVariables MAJOR
+    debugReleaseVersionVariables MINOR
+    debugReleaseVersionVariables PATCH
+fi
 
 nextVersion=$(getNeededIncrementReleaseVersion "$lastDevVersion" "$lastRCVersion" "$lastRelVersion")
 echo [INFO] Before incremented: $currentRCSemanticVersion
 ## Process incrementation on MAJOR, MINOR and PATCH
-if [[ "$(checkCoreVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "${MAJOR_V_RULE_VFILE_ENABLED}" == "true" ]]; then
+if [[ "$(checkReleaseVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "${MAJOR_V_RULE_VFILE_ENABLED}" == "true" ]]; then
     # echo [DEBUG] currentRCSemanticVersion=$nextVersion
     nextVersion=$(incrementReleaseVersion $nextVersion ${MAJOR_POSITION})
     echo [DEBUG] MAJOR INCREMENTED $nextVersion
-elif [[ "$(checkCoreVersionFeatureFlag ${MINOR_SCOPE})" == "true" ]] && [[ ! "${MINOR_V_RULE_VFILE_ENABLED}" == "true" ]]; then
+elif [[ "$(checkReleaseVersionFeatureFlag ${MINOR_SCOPE})" == "true" ]] && [[ ! "${MINOR_V_RULE_VFILE_ENABLED}" == "true" ]]; then
     # echo [DEBUG] currentRCSemanticVersion=$nextVersion
     nextVersion=$(incrementReleaseVersion $nextVersion ${MINOR_POSITION})
     echo [DEBUG] MINOR INCREMENTED $nextVersion
-elif [[ "$(checkCoreVersionFeatureFlag ${PATCH_SCOPE})" == "true" ]] && [[ ! "${PATCH_V_RULE_VFILE_ENABLED}" == "true" ]]; then
+elif [[ "$(checkReleaseVersionFeatureFlag ${PATCH_SCOPE})" == "true" ]] && [[ ! "${PATCH_V_RULE_VFILE_ENABLED}" == "true" ]]; then
     # echo [DEBUG] currentRCSemanticVersion=$nextVersion
     nextVersion=$(incrementReleaseVersion $nextVersion ${PATCH_POSITION})
     echo [DEBUG] PATCH INCREMENTED $nextVersion
 fi
 echo [INFO] After core version incremented: $nextVersion
 ## Process incrementation on MAJOR, MINOR and PATCH via version file (manual)
-nextVersion=$(processWithCoreVersionFile ${nextVersion} ${MAJOR_POSITION} ${MAJOR_SCOPE})
+nextVersion=$(processWithReleaseVersionFile ${nextVersion} ${MAJOR_POSITION} ${MAJOR_SCOPE})
 if [[ $? -ne 0 ]]; then
     echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed processing incrementation on MAJOR, MINOR and PATCH via version file on MAJOR VERSION."
     echo "[ERROR_MSG] $nextVersion"
     exit 1
 fi
-nextVersion=$(processWithCoreVersionFile ${nextVersion} ${MINOR_POSITION} ${MINOR_SCOPE})
+nextVersion=$(processWithReleaseVersionFile ${nextVersion} ${MINOR_POSITION} ${MINOR_SCOPE})
 if [[ $? -ne 0 ]]; then
     echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed processing incrementation on MAJOR, MINOR and PATCH via version file on MINOR VERSION."
     echo "[ERROR_MSG] $nextVersion"
     exit 1
 fi
-nextVersion=$(processWithCoreVersionFile ${nextVersion} ${PATCH_POSITION} ${PATCH_SCOPE})
+nextVersion=$(processWithReleaseVersionFile ${nextVersion} ${PATCH_POSITION} ${PATCH_SCOPE})
 if [[ $? -ne 0 ]]; then
     echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed processing incrementation on MAJOR, MINOR and PATCH via version file on PATCH VERSION."
     echo "[ERROR_MSG] $nextVersion"
@@ -610,11 +618,11 @@ if [[ $? -ne 0 ]]; then
 fi
 echo [INFO] After core version file incremented: $nextVersion
 
-
-
 ## Debug section
-debugPreReleaseVersionVariables $RC_SCOPE
-debugPreReleaseVersionVariables $DEV_SCOPE
+if [[ "$isDebug" == "true" ]]; then
+    debugPreReleaseVersionVariables $RC_SCOPE
+    debugPreReleaseVersionVariables $DEV_SCOPE
+fi
 
 ## Process incrementation on RC and DEV 
 echo [INFO] Before RC version incremented: $lastRCVersion
