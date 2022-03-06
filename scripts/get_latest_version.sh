@@ -105,7 +105,7 @@ function storeLatestVersionIntoFile() {
     local identifierType=$2
     local targetSaveFile=$3
 
-    if [[ ! -f "$inputFile" ]]; then
+    if [[ ! -f "$inputList" ]]; then
         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Artifact list file not found: [$inputList]"
         exit 1
     fi
