@@ -241,7 +241,9 @@ jobs:
       - name: View commit message
         run: |
           echo [INFO] Start viewing
-          cat ${{ env.ALL_DELTA_COMMIT_MSG }}
+          echo ${{ env.ALL_DELTA_COMMIT_MSG }}
+          echo [INFO] Another
+          echo ${{ needs.read-config.outputs.delta-commit-msg }}
 
       - name: Start versioning bot
         id: version-bot
