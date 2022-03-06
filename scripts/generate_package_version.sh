@@ -61,11 +61,11 @@ function getNeededIncrementReleaseVersion() {
 
     local devIncrease=$(needToIncrementRelVersion "$devVersion" "$relVersion")
     local newRelVersion=$relVersion
-    if [[ "$devIncrease" == "true" ]]; then
+    if [[ "$devIncrease" == "false" ]]; then
         newRelVersion=$(echo $devVersion | cut -d"-" -f1)
     fi
     local rcIncrease=$(needToIncrementRelVersion "$rcVersion" "$newRelVersion")
-    if [[ "$rcVersion" == "true" ]]; then
+    if [[ "$rcIncrease" == "false" ]]; then
         newRelVersion=$(echo $rcVersion | cut -d"-" -f1)
     fi
     echo $newRelVersion
