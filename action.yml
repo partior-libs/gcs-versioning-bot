@@ -36,10 +36,10 @@ inputs:
 outputs:
   artifact-version-name:
     description: "Final output"
-    value: ${{ steps.final-version.outputs.name }}
+    value: ${{ steps.final-version.outputs.new-version }}
   artifact-old-version:
     description: "Version before change"
-    value: ${{ steps.final-version.outputs.old-name }}
+    value: ${{ steps.final-version.outputs.old-version }}
 runs:
   using: "composite"
   steps:
@@ -89,8 +89,9 @@ runs:
       shell: bash
 
     - id: final-version
-      run: echo "::set-output name=name::$(echo $(${{ github.action_path }}/scripts/read_new_version.sh))"
-      run: echo "::set-output name=old-version::$(echo $(${{ github.action_path }}/scripts/read_old_version.sh))"
+      run: |
+        echo "::set-output name=new-version::$(echo $(${{ github.action_path }}/scripts/read_new_version.sh))"
+        echo "::set-output name=old-version::$(echo $(${{ github.action_path }}/scripts/read_old_version.sh))"
       shell: bash
 
     - run: echo Done versioning
