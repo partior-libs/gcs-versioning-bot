@@ -33,7 +33,7 @@ smc:
             target: MINOR-VERSION 
             enabled: false
           message-tag: 
-            target: MINOR-VERSION 
+            target: MINOR 
             enabled: true
           labels: 
             target: MINOR-VERSION  
