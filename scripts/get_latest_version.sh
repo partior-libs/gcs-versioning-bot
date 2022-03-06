@@ -160,7 +160,8 @@ function getArtifactLastVersion() {
     local responseStatus=$(echo $response | awk -F'status_code:' '{print $2}' | awk -F'[][]' '{print $2}')
     #echo "[INFO] responseBody: $responseBody"
     echo "[INFO] Query status code: $responseStatus"
-    # echo "[INFO] Latest [$versionLabel] version: $(cat $versionStoreFilename)"
+    echo "[DEBUG] Latest [$versionListFile] version:"
+    echo "$(cat $versionListFile)"
 
 
     if [[ $responseStatus -ne 200 ]]; then
