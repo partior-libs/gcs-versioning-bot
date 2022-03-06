@@ -309,7 +309,7 @@ function checkListIsSubstringInFileContent () {
         return 0
     fi
 
-    if [[ ! -f $fileContentPath ]];
+    if [[ ! -f $fileContentPath ]]; then
         echo $(checkIsSubstring "$listString" "$fileContentPath")
         return 0
     fi
