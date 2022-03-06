@@ -124,7 +124,7 @@ jobs:
           query-path-for-default: .smc.ci
           upload: true
 
-  read-std-config:
+  read-enable-msgtag:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -200,7 +200,7 @@ jobs:
           upload: true
 
   trigger-with-matrix:
-    needs: [ read-config, read-std-config, read-build-config, read-replace-file-version-config, read-replace-maven-pom-config, read-external-version-config ]
+    needs: [ read-config, read-std-config, read-build-config, read-replace-file-version-config, read-replace-maven-pom-config, read-external-version-config, read-enable-msgtag ]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
