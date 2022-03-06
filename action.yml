@@ -102,7 +102,14 @@ runs:
 
     - name: List all config variables
       if: inputs.debug == 'true'
-      run: ${{ github.action_path }}/scripts/list_config_variables.sh ${{ github.action_path }}/config/general.ini
+      run: |
+        ${{ github.action_path }}/scripts/list_config_variables.sh ${{ github.action_path }}/config/general.ini
+        echo BUILD_GH_BRANCH_NAME="${BUILD_GH_BRANCH_NAME}"
+        echo BUILD_GH_LABEL_FILE="${BUILD_GH_LABEL_FILE}"
+        echo BUILD_GH_TAG_FILE="${BUILD_GH_TAG_FILE}"
+        echo BUILD_GH_COMMIT_MESSAGE_FILE="${BUILD_GH_COMMIT_MESSAGE_FILE}"
+        echo cat $BUILD_GH_COMMIT_MESSAGE_FILE:
+        cat $BUILD_GH_COMMIT_MESSAGE_FILE
       shell: bash
 
     - run: |
