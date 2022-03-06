@@ -52,6 +52,23 @@ function needToIncrementRelVersion() {
     fi
 }
 
+function getNeededIncrementReleaseVersion() {
+    local devVersion=$1
+    local rcVersion=$2
+    local relVersion=$3
+
+    local devIncrease=$(needToIncrementRelVersion "$devVersion" "$relVersion")
+    local newRelVersion=$relVersion
+    if [[ "$devIncrease" == "true" ]]; then
+        newRelVersion=$(echo $devVersion | cut -d"-" -f1)
+    fi
+    local rcIncrease=$(needToIncrementRelVersion "$rcVersion" "$newRelVersion")
+    if [[ "$rcVersion" == "true" ]]; then
+        newRelVersion=$(echo $rcVersion | cut -d"-" -f1)
+    fi
+    echo $newRelVersion
+}
+
 function incrementReleaseVersion() {
     local inputVersion=$1
     local versionPos=$2
@@ -530,8 +547,8 @@ function debugPreReleaseVersionVariables() {
 }
 
 ## Read the versions generated from get_latest_version.sh
-currentDevSemanticVersion=$(echo $lastDevVersion | awk -F'-dev' '{print $1}')
-currentRCSemanticVersion=$(echo $lastRCVersion | awk -F'-rc' '{print $1}')
+# currentDevSemanticVersion=$(echo $lastDevVersion | awk -F'-dev' '{print $1}')
+# currentRCSemanticVersion=$(echo $lastRCVersion | awk -F'-rc' '{print $1}')
 
 ## Ensure the latest read version sequence is valid
 # versionCompareLessOrEqual $currentRCSemanticVersion $currentDevSemanticVersion && VERSION_VALID=$(echo "checked") || VERSION_VALID=$(echo "no")
@@ -555,7 +572,7 @@ debugCoreVersionVariables MAJOR
 debugCoreVersionVariables MINOR
 debugCoreVersionVariables PATCH
 
-nextVersion=$currentRCSemanticVersion
+nextVersion=$(getNeededIncrementReleaseVersion "$lastDevVersion" "$lastRCVersion" "$lastRelVersion")
 echo [INFO] Before incremented: $currentRCSemanticVersion
 ## Process incrementation on MAJOR, MINOR and PATCH
 if [[ "$(checkCoreVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "${MAJOR_V_RULE_VFILE_ENABLED}" == "true" ]]; then
