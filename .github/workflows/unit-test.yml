@@ -48,7 +48,7 @@ jobs:
             branchName=$(echo $GITHUB_HEAD_REF | cut -d"/" -f1)
             isPR=true
             prTargetBranch=remotes/origin/${GITHUB_BASE_REF}
-            commitMessages=$(git log $prTargetBranch..${$GITHUB_HEAD_REF} --pretty=format:"%s")
+            commitMessages=$(git log $prTargetBranch..${GITHUB_HEAD_REF} --pretty=format:"%s")
           fi
 
           
