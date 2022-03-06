@@ -100,8 +100,11 @@ runs:
         echo BUILD_GH_LABEL_FILE="${BUILD_GH_LABEL_FILE}"
         echo BUILD_GH_TAG_FILE="${BUILD_GH_TAG_FILE}"
         echo BUILD_GH_COMMIT_MESSAGE_FILE="${BUILD_GH_COMMIT_MESSAGE_FILE}"
-        echo cat $BUILD_GH_COMMIT_MESSAGE_FILE:
-        cat $BUILD_GH_COMMIT_MESSAGE_FILE
+        if [[ -f $BUILD_GH_COMMIT_MESSAGE_FILE ]]; then
+          echo cat $BUILD_GH_COMMIT_MESSAGE_FILE:
+          cat $BUILD_GH_COMMIT_MESSAGE_FILE
+        fi
+        
       shell: bash
 
     - run: |
