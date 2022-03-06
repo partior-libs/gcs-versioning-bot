@@ -43,8 +43,9 @@ jobs:
       BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
     steps:
       - uses: actions/checkout@v2
-        fetch-depth: 0
-        
+        with:
+          fetch-depth: 0
+
       - name: List defaultenv
         run: |
           set
