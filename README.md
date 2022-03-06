@@ -42,7 +42,18 @@ This action generate the next incremented semantic version of artifact with the 
     # Default: false
     debug: ''
 ```
+## Output
+The action has two outputs:
+```yaml
+    # This is the incremented version from the bot. Example: 1.0.1, 1.0.1-dev.1, 1.0.1-rc.1, 1.0.1-dev.1+bld.2.1
+    artifact-version-name: ''
+
+    # This is the version before being incremented. All three version types (DEV, RC, REL) are constructed in single string format
+    artifact-old-name: ''
+```
 <!-- end usage -->
+
+
 
 # Sample YAML input for CICD Controller
 ```yaml
