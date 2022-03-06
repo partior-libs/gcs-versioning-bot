@@ -51,7 +51,7 @@ jobs:
             git fetch --all
             git branch --all
             echo git log $prTargetBranch..${GITHUB_HEAD_REF}
-            commitMessages=$(git log $prTargetBranch..${GITHUB_HEAD_REF} --pretty=format:"%s")
+            # commitMessages=$(git log $prTargetBranch..${GITHUB_HEAD_REF} --pretty=format:"%s")
           fi
 
           
