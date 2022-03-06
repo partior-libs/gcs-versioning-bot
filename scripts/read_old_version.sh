@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash +e
 
 ## Reading action's global setting
 if [[ ! -z $BASH_SOURCE ]]; then
@@ -13,4 +13,4 @@ else
     exit 1
 fi
 
-echo "dev=$ARTIFACT_LAST_DEV_VERSION_FILE, rc=$ARTIFACT_LAST_RC_VERSION_FILE, re=$ARTIFACT_LAST_REL_VERSION_FILE"
+echo "dev=$(cat $ARTIFACT_LAST_DEV_VERSION_FILE), rc=$(cat $ARTIFACT_LAST_RC_VERSION_FILE), rel=$(cat $ARTIFACT_LAST_REL_VERSION_FILE)"
