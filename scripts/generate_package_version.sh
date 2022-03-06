@@ -324,7 +324,7 @@ function checkListIsSubstringInFileContent () {
     done
     echo "false"
 }
-}
+
 
 function checkCoreVersionFeatureFlag() {
     local versionScope=$1
