@@ -59,9 +59,8 @@ jobs:
           git branch
           echo next
           git branch --all
-          echo next again
-          git log HEAD
           echo next log 
+          git fetch
           git log main..HEAD --pretty=format:"%s"
 
 
