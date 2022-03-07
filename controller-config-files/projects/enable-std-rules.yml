@@ -46,7 +46,7 @@ smc:
         enabled: true
         rules:
           branches: 
-            target: release,main,master
+            target: main,master
             enabled: true
           tag: 
             target: PATCH-VERSION 
