@@ -661,7 +661,7 @@ if [[ $? -ne 0 ]]; then
     echo "[ERROR_MSG] $nextVersion"
     exit 1
 fi
-echo [INFO] After core version file incremented: $nextVersion
+echo [INFO] After core version file incremented: [$nextVersion]
 
 ## Debug section
 if [[ "$isDebug" == "true" ]]; then
@@ -671,7 +671,7 @@ fi
 
 ## Process incrementation on RC and DEV 
 echo [INFO] Before RC version incremented: $lastRCVersion
-echo [INFO] Before dev version incremented: $lastDevVersion
+echo [INFO] Before DEV version incremented: $lastDevVersion
 if [[ "$(checkPreReleaseVersionFeatureFlag ${RC_SCOPE})" == "true" ]] && [[ ! "${RC_V_RULE_VFILE_ENABLED}" == "true" ]]; then
     nextVersion=$(incrementPreReleaseVersion "$nextVersion" "$RC_V_IDENTIFIER")
     # if [[ "$MOCK_ENABLED" == "true" ]]; then
@@ -695,7 +695,7 @@ elif [[ "$(checkPreReleaseVersionFeatureFlag ${DEV_SCOPE})" == "true" ]] && [[ !
     #     echo ${MOCK_DEV_VERSION_KEYNAME}=$nextVersion >> $MOCK_FILE
     # fi
 fi
-echo [INFO] After prerelease version incremented: $nextVersion
+echo [INFO] After prerelease version incremented: [$nextVersion]
 
 ## Process incrementation on RC and DEV with version file
 if [[ "$(checkPreReleaseVersionFeatureFlag ${RC_SCOPE})" == "true" ]] && [[ "${RC_V_RULE_VFILE_ENABLED}" == "true" ]]; then
@@ -721,7 +721,7 @@ elif [[ "$(checkPreReleaseVersionFeatureFlag ${DEV_SCOPE})" == "true" ]] && [[ "
     #     echo ${MOCK_DEV_VERSION_KEYNAME}=$nextVersion >> $MOCK_FILE
     # fi
 fi
-echo [INFO] After prerelease version incremented with input from version file: $nextVersion
+echo [INFO] After prerelease version incremented with input from version file: [$nextVersion]
 
 
 degaussBuildVersionVariables "$BUILD_SCOPE"
