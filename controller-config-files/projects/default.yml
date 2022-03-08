@@ -31,7 +31,7 @@ smc:
             enabled: true
           tag: 
             target: false-VERSION 
-            enabled: true
+            enabled: false
           message-tag: 
             target: MINOR-VERSION 
             enabled: true
