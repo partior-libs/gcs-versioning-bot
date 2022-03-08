@@ -12,10 +12,10 @@ smc:
             enabled: true
           labels: 
             target: MAJOR-VERSION 
-            enabled: true
+            enabled: false
           tag: 
             target: MAJOR-VERSION 
-            enabled: true
+            enabled: false
           message-tag: 
             target: MAJOR-VERSION 
             enabled: true
@@ -30,14 +30,14 @@ smc:
             target: release
             enabled: true
           tag: 
-            target: MINOR-VERSION 
+            target: false-VERSION 
             enabled: true
           message-tag: 
             target: MINOR-VERSION 
             enabled: true
           labels: 
             target: MINOR-VERSION  
-            enabled: true
+            enabled: false
           file:
             enabled: false
             target: ./app-version.cfg
@@ -50,13 +50,13 @@ smc:
             enabled: true
           tag: 
             target: PATCH-VERSION 
-            enabled: true
+            enabled: false
           message-tag: 
             target: PATCH-VERSION 
             enabled: true
           labels: 
             target: PATCH-VERSION
-            enabled: true
+            enabled: false
           file:
             enabled: false
             target: ./app-version.cfg
