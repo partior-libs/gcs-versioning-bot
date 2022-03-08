@@ -97,12 +97,12 @@ function getArtifactLastVersion() {
 
 versionListFile=versionlist.tmp
 ## Get all the last 1000 versions and store into file
-getArtifactLastVersion "$artifactoryTargetDevRepo,$artifactoryTargetRelRepo" "$versionListFile"
-## Store respective version type into file
 #Create empty file first
 touch $ARTIFACT_LAST_DEV_VERSION_FILE
 touch $ARTIFACT_LAST_RC_VERSION_FILE
 touch $ARTIFACT_LAST_REL_VERSION_FILE
+getArtifactLastVersion "$artifactoryTargetDevRepo,$artifactoryTargetRelRepo" "$versionListFile"
+## Store respective version type into file
 storeLatestVersionIntoFile "$versionListFile" "$DEV_V_IDENTIFIER" "$ARTIFACT_LAST_DEV_VERSION_FILE"
 storeLatestVersionIntoFile "$versionListFile" "$RC_V_IDENTIFIER" "$ARTIFACT_LAST_RC_VERSION_FILE"
 storeLatestVersionIntoFile "$versionListFile" "$REL_SCOPE" "$ARTIFACT_LAST_REL_VERSION_FILE"
