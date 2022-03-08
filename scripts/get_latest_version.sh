@@ -34,70 +34,6 @@ echo "[INFO] Artifactory Release Repo: $artifactoryTargetRelRepo"
 echo "[INFO] Target artifact group: $artifactoryTargetGroup"
 echo "[INFO] Target artifact name: $artifactoryTargetArtifactName"
 
-function checkArtifactLastVersion() {
-    local targetRepo=$1
-    local versionStoreFilename=$2
-    local versionLabel=$3
-    local mockType=$4
-    echo "[INFO] Getting latest $versionLabel version..."
-
-    rm -f $versionStoreFilename
-    local response=""
-    if [[ "$MOCK_ENABLED" == "true" ]]; then  ## This is purely for providing mock data during local development
-        if [[ ! -f $MOCK_FILE ]]; then
-            echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate mock file: [$MOCK_FILE]"
-            exit 1
-        fi
-        if [[ "$mockType" == "$DEV_SCOPE" ]]; then
-            response=$(cat $MOCK_FILE | grep -E "^${MOCK_DEV_VERSION_KEYNAME}=" | cut -d"=" -f1 --complement)
-            if [[ "$response" == "" ]]; then
-                response="1.0.0-${DEV_V_IDENTIFIER}.0"
-            fi
-        elif [[ "$mockType" == "$RC_SCOPE" ]]; then
-
-            response=$(cat $MOCK_FILE | grep -E "^${MOCK_REL_VERSION_KEYNAME}=" | cut -d"=" -f1 --complement)
-            if [[ "$response" == "" ]]; then
-                response="1.0.0-${RC_V_IDENTIFIER}.0"
-            fi
-        else
-            echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unsupported mock type: [$mockType]"
-            exit 1
-        fi
-        echo $response > $versionStoreFilename
-    else
-        response=$(curl -k -s -u $artifactoryUsername:$artifactoryPassword \
-            -w "status_code:[%{http_code}]" \
-            -X GET \
-            "$artifactoryBaseUrl/api/search/latestVersion?a=${artifactoryTargetArtifactName}&g=${artifactoryTargetGroup}&repos=${targetRepo}" -o $versionStoreFilename)
-        if [[ $? -ne 0 ]]; then
-            echo "[ACTION_CURL_ERROR] $BASH_SOURCE (line:$LINENO): Error running curl to get latest version."
-            echo "[DEBUG] Curl: $artifactoryBaseUrl/api/search/latestVersion?a=${artifactoryTargetArtifactName}&g=${artifactoryTargetGroup}&repos=${targetRepo}"
-            exit 1
-        fi
-            #echo "[DEBUG] response...[$response]"
-        #responseBody=$(echo $response | awk -F'status_code:' '{print $1}')
-        local responseStatus=$(echo $response | awk -F'status_code:' '{print $2}' | awk -F'[][]' '{print $2}')
-        #echo "[INFO] responseBody: $responseBody"
-        echo "[INFO] Query status code: $responseStatus"
-        echo "[INFO] Latest [$versionLabel] version: $(cat $versionStoreFilename)"
-
-
-        if [[ $responseStatus -ne 200 ]]; then
-            if (cat $versionStoreFilename | grep -q "Unable to find artifact versions");then
-                local resetVersion="1.0.0-${DEV_V_IDENTIFIER}.0"
-
-                echo "[INFO] Unable to find last version. Resetting to: $resetVersion"
-                echo $resetVersion > $versionStoreFilename
-            else
-                echo "[ACTION_RESPONSE_ERROR] $BASH_SOURCE (line:$LINENO): Return code not 200 when querying latest version: [$responseStatus]" 
-                echo " $(cat $versionStoreFilename)" 
-                exit 1
-            fi
-        fi
-    fi
-
-
-}
 
 function storeLatestVersionIntoFile() {
     local inputList=$1
@@ -118,53 +54,31 @@ function storeLatestVersionIntoFile() {
 
 function getArtifactLastVersion() {
     local targetRepo=$1
+    local versionOutputFile=$2
     echo "[INFO] Getting latest versions for RC, DEV and Release..."
 
     rm -f $versionStoreFilename
     local response=""
-    # if [[ "$MOCK_ENABLED" == "true" ]]; then  ## This is purely for providing mock data during local development
-    #     if [[ ! -f $MOCK_FILE ]]; then
-    #         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate mock file: [$MOCK_FILE]"
-    #         exit 1
-    #     fi
-    #     if [[ "$mockType" == "$DEV_SCOPE" ]]; then
-    #         response=$(cat $MOCK_FILE | grep -E "^${MOCK_DEV_VERSION_KEYNAME}=" | cut -d"=" -f1 --complement)
-    #         if [[ "$response" == "" ]]; then
-    #             response="1.0.0-${DEV_V_IDENTIFIER}.0"
-    #         fi
-    #     elif [[ "$mockType" == "$RC_SCOPE" ]]; then
-
-    #         response=$(cat $MOCK_FILE | grep -E "^${MOCK_REL_VERSION_KEYNAME}=" | cut -d"=" -f1 --complement)
-    #         if [[ "$response" == "" ]]; then
-    #             response="1.0.0-${RC_V_IDENTIFIER}.0"
-    #         fi
-    #     else
-    #         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unsupported mock type: [$mockType]"
-    #         exit 1
-    #     fi
-    #     echo $response > $versionStoreFilename
-    # else
-    
     response=$(curl -k -s -u $artifactoryUsername:$artifactoryPassword \
         -w "status_code:[%{http_code}]" \
         -X GET \
-        "$artifactoryBaseUrl/api/search/versions?a=${artifactoryTargetArtifactName}&g=${artifactoryTargetGroup}&repos=${targetRepo}" -o $versionListFile)
+        "$artifactoryBaseUrl/api/search/versions?a=${artifactoryTargetArtifactName}&g=${artifactoryTargetGroup}&repos=${targetRepo}" -o $versionOutputFile)
     if [[ $? -ne 0 ]]; then
         echo "[ACTION_CURL_ERROR] $BASH_SOURCE (line:$LINENO): Error running curl to get latest version."
         echo "[DEBUG] Curl: $artifactoryBaseUrl/api/search/versions?a=${artifactoryTargetArtifactName}&g=${artifactoryTargetGroup}&repos=${targetRepo}"
         exit 1
     fi
-        #echo "[DEBUG] response...[$response]"
+    #echo "[DEBUG] response...[$response]"
     #responseBody=$(echo $response | awk -F'status_code:' '{print $1}')
     local responseStatus=$(echo $response | awk -F'status_code:' '{print $2}' | awk -F'[][]' '{print $2}')
     #echo "[INFO] responseBody: $responseBody"
     echo "[INFO] Query status code: $responseStatus"
-    echo "[DEBUG] Latest [$versionListFile] version:"
-    echo "$(cat $versionListFile)"
+    echo "[DEBUG] Latest [$versionOutputFile] version:"
+    echo "$(cat $versionOutputFile)"
 
 
     if [[ $responseStatus -ne 200 ]]; then
-        if (cat $versionListFile | grep -q "Unable to find artifact versions");then
+        if (cat $versionOutputFile | grep -q "Unable to find artifact versions");then
             local resetVersion="1.0.0-${DEV_V_IDENTIFIER}.0"
 
             echo "[INFO] Unable to find last version. Resetting to: $resetVersion"
@@ -174,7 +88,7 @@ function getArtifactLastVersion() {
             touch $ARTIFACT_LAST_REL_VERSION_FILE
         else
             echo "[ACTION_RESPONSE_ERROR] $BASH_SOURCE (line:$LINENO): Return code not 200 when querying latest version: [$responseStatus]" 
-            echo " $(cat $versionListFile)" 
+            echo " $(cat $versionOutputFile)" 
             exit 1
         fi
     fi
@@ -193,8 +107,3 @@ storeLatestVersionIntoFile "$versionListFile" "$RC_V_IDENTIFIER" "$ARTIFACT_LAST
 storeLatestVersionIntoFile "$versionListFile" "$REL_SCOPE" "$ARTIFACT_LAST_REL_VERSION_FILE"
 
 rm -f $versionListFile
-#checkArtifactLastVersion "$artifactoryTargetRelRepo" "$ARTIFACT_LAST_REL_VERSION_FILE" "Release" "$RC_SCOPE"
-
-# echo [DEBUG] yeah
-# ./scripts/generate_package_version.sh "$artifactoryTargetArtifactName" "$sourceBranchName" "MAJOR" "TAG" "MSGTAG" "test-files/app-version.cfg"
-
