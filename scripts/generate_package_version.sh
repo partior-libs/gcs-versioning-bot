@@ -680,7 +680,7 @@ if [[ $? -ne 0 ]]; then
 fi
 echo [INFO] After core version file incremented: [$nextVersion]
 # Store in a file to be used in pre-release increment consideration later
-echo $nextVersion > ARTIFACT_UPDATED_REL_VERSION_FILE
+echo $nextVersion > $ARTIFACT_UPDATED_REL_VERSION_FILE
 
 ## Debug section
 if [[ "$isDebug" == "true" ]]; then
