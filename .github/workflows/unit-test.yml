@@ -270,6 +270,6 @@ jobs:
 
       - uses: actions/upload-artifact@v2
         with:
-          name: rslt-${{ matrix.rule }}_${{ matrix.branch }}--${{ steps.version-bot.outputs.artifact-version-name}}
-          path: rslt-${{ matrix.rule }}_${{ matrix.branch }}--${{ steps.version-bot.outputs.artifact-version-name}}
+          name: rs-${{ matrix.rule }}_${{ matrix.branch }}--${{ steps.version-bot.outputs.artifact-version-name}}
+          path: rs-${{ matrix.rule }}_${{ matrix.branch }}--${{ steps.version-bot.outputs.artifact-version-name}}
           retention-days: 1
