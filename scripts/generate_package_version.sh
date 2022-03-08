@@ -272,7 +272,6 @@ function degaussBuildVersionVariables() {
     local vCurrentBranch=${versionScope}_GH_CURRENT_BRANCH
 
     echo "export ${vCurrentBranch}=$currentBranch" >> $tmpVariable
-    echo "export ${vCurrentTag}=$currentTag" >> $tmpVariable
 
     #echo "[DEBUG] branchEnabled==>${!branchEnabled}"
     if [[ ! "${!branchEnabled}" == "true" ]]; then
