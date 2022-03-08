@@ -34,8 +34,11 @@ inputs:
     required: false
     default: 'false'
 outputs:
+  artifact-full-version-name:
+    description: "Final output with artifact name and version"
+    value: ${{ steps.final-version.outputs.full-version }}
   artifact-version-name:
-    description: "Final output"
+    description: "Final output. Only version"
     value: ${{ steps.final-version.outputs.new-version }}
   artifact-old-version:
     description: "Version before change"
@@ -130,6 +133,7 @@ runs:
 
     - id: final-version
       run: |
+        echo "::set-output name=full-version::${{ steps.yaml-config.outputs.artifact-base-name }}-$(echo $(${{ github.action_path }}/scripts/read_new_version.sh))"
         echo "::set-output name=new-version::$(echo $(${{ github.action_path }}/scripts/read_new_version.sh))"
         echo "::set-output name=old-version::$(echo $(${{ github.action_path }}/scripts/read_old_version.sh))"
       shell: bash

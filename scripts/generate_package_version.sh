@@ -756,8 +756,8 @@ elif [[ "$(checkReplacementFeatureFlag ${REPLACEMENT_SCOPE})" == "true" ]] && [[
 fi
 
 
-# echo "[INFO] nextVersion = $nextVersion"
-echo $artifactName-$nextVersion > $ARTIFACT_NEXT_VERSION_FILE
+echo "[INFO] nextVersion = $nextVersion"
+echo $nextVersion > $ARTIFACT_NEXT_VERSION_FILE
 
 
 

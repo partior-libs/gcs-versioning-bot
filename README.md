@@ -50,6 +50,9 @@ The action has two outputs:
 
     # This is the version before being incremented. All three version types (DEV, RC, REL) are constructed in single string format
     artifact-old-name: ''
+
+    # This is the incremented version from the bot with artifact base name prepended. Example: artifact-name-1.0.1, artifact-name-1.0.1-dev.1, artifact-name-1.0.1-rc.1, artifact-name-1.0.1-dev.1+bld.2.1
+    artifact-full-version-name: ''
 ```
 <!-- end usage -->
 
