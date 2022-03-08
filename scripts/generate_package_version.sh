@@ -386,6 +386,11 @@ function checkListIsSubstringInFileContent () {
         echo "true"
         return 0
     fi
+    # ## Return true if has been degaussed
+    # if [[ "$listString" == "false" ]] && [[ "$fileContentPath" == "false" ]]; then
+    #     echo "true"
+    #     return 0
+    # fi
 
     if [[ ! -f $fileContentPath ]]; then
         echo $(checkIsSubstring "$listString" "$fileContentPath")
@@ -589,6 +594,8 @@ function debugPreReleaseVersionVariables() {
 
     echo checkPreReleaseVersionFeatureFlag=$(checkPreReleaseVersionFeatureFlag "${versionScope}")
     echo VERSIONING_BOT_ENABLED=$VERSIONING_BOT_ENABLED
+    echo checkIsSubstring($vConfigBranches,$vCurrentBranch)=$(checkIsSubstring "${!vConfigBranches}" "${!vCurrentBranch}")
+    echo checkListIsSubstringInFileContent($vConfigTags,$vCurrentTag)=$(checkListIsSubstringInFileContent "${!vConfigTags}" "${!vCurrentTag}")
     echo $vRulesEnabled=${!vRulesEnabled} 
     echo $ruleBranchEnabled=${!ruleBranchEnabled} 
     echo $ruleVersionFileEnabled=${!ruleVersionFileEnabled} 
@@ -597,6 +604,7 @@ function debugPreReleaseVersionVariables() {
     echo $vConfigTags=${!vConfigTags}  
     echo $vCurrentTag=${!vCurrentTag} 
     echo ==========================================
+
 }
 
 ## For debugging purpose
