@@ -700,6 +700,7 @@ fi
 ## Process incrementation on RC and DEV 
 echo [INFO] Before RC version incremented: $lastRCVersion
 echo [INFO] Before DEV version incremented: $lastDevVersion
+echo [INFO] Last incremented release version: $(cat $ARTIFACT_UPDATED_REL_VERSION_FILE)
 if [[ "$(checkPreReleaseVersionFeatureFlag ${RC_SCOPE})" == "true" ]] && [[ ! "${RC_V_RULE_VFILE_ENABLED}" == "true" ]]; then
     nextVersion=$(incrementPreReleaseVersion "$lastRCVersion" "$RC_V_IDENTIFIER")
     # if [[ "$MOCK_ENABLED" == "true" ]]; then
