@@ -110,9 +110,9 @@ jobs:
           yaml-file-for-default: controller-config-files/projects/default.yml
           query-path-for-default: .smc.ci.branches.default
 
-      - uses: actions/download-artifact@v2
-        with:
-          name: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
+      - name: Merge importer
+        run: |
+          cat tmp-branch-importer >> ${{ env.YAML_STD_CI_CONFIG_IMPORTER }}
 
       - uses: actions/upload-artifact@v2
         with:
@@ -266,7 +266,7 @@ jobs:
       - name: Final version - ${{ steps.version-bot.outputs.artifact-version-name}}
         run: |
           echo [INFO] Final version: ${{ steps.version-bot.outputs.artifact-version-name}}
-          echo "" > rslt-${{ matrix.rule }}_${{ matrix.branch }}--${{ steps.version-bot.outputs.artifact-version-name}}
+          echo "" > rs-${{ matrix.rule }}_${{ matrix.branch }}--${{ steps.version-bot.outputs.artifact-version-name}}
 
       - uses: actions/upload-artifact@v2
         with:
