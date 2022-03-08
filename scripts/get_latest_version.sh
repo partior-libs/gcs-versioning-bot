@@ -82,7 +82,7 @@ function getArtifactLastVersion() {
             local resetVersion="1.0.0-${DEV_V_IDENTIFIER}.0"
 
             echo "[INFO] Unable to find last version. Resetting to: $resetVersion"
-            echo $resetVersion > $versionOutputFile
+            echo "\"version\" : \"$resetVersion\"" > $versionOutputFile
         else
             echo "[ACTION_RESPONSE_ERROR] $BASH_SOURCE (line:$LINENO): Return code not 200 when querying latest version: [$responseStatus]" 
             echo " $(cat $versionOutputFile)" 
@@ -106,5 +106,5 @@ getArtifactLastVersion "$artifactoryTargetDevRepo,$artifactoryTargetRelRepo" "$v
 storeLatestVersionIntoFile "$versionListFile" "$DEV_V_IDENTIFIER" "$ARTIFACT_LAST_DEV_VERSION_FILE"
 storeLatestVersionIntoFile "$versionListFile" "$RC_V_IDENTIFIER" "$ARTIFACT_LAST_RC_VERSION_FILE"
 storeLatestVersionIntoFile "$versionListFile" "$REL_SCOPE" "$ARTIFACT_LAST_REL_VERSION_FILE"
-
+cat $versionListFile
 rm -f $versionListFile
