@@ -594,8 +594,8 @@ function debugPreReleaseVersionVariables() {
 
     echo checkPreReleaseVersionFeatureFlag=$(checkPreReleaseVersionFeatureFlag "${versionScope}")
     echo VERSIONING_BOT_ENABLED=$VERSIONING_BOT_ENABLED
-    echo checkIsSubstring($vConfigBranches,$vCurrentBranch)=$(checkIsSubstring "${!vConfigBranches}" "${!vCurrentBranch}")
-    echo checkListIsSubstringInFileContent($vConfigTags,$vCurrentTag)=$(checkListIsSubstringInFileContent "${!vConfigTags}" "${!vCurrentTag}")
+    echo "checkIsSubstring($vConfigBranches,$vCurrentBranch)=$(checkIsSubstring ${!vConfigBranches} ${!vCurrentBranch})"
+    echo "checkListIsSubstringInFileContent($vConfigTags,$vCurrentTag)=$(checkListIsSubstringInFileContent ${!vConfigTags} ${!vCurrentTag})"
     echo $vRulesEnabled=${!vRulesEnabled} 
     echo $ruleBranchEnabled=${!ruleBranchEnabled} 
     echo $ruleVersionFileEnabled=${!ruleVersionFileEnabled} 
