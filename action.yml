@@ -84,8 +84,8 @@ runs:
           echo [ERROR] Unable to locate branch packager rule importer file: [$branchPackagerRuleImporterFile]
           exit 1
         fi
-        source $versioningRuleImporterFile
         source $branchPackagerRuleImporterFile
+        source $versioningRuleImporterFile
       shell: bash
 
     - name: Convert to normal bash env export format

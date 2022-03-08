@@ -2,6 +2,8 @@
 smc:
   ci:
     artifact-base-name: settlement-utility
+    artifact-auto-versioning:
+      enabled: true
     branches:
       default:
         artifact:

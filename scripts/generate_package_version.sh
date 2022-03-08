@@ -548,6 +548,7 @@ function debugReleaseVersionVariables() {
     local ruleVersionFileEnabled=${versionScope}_V_RULE_VFILE_ENABLED
 
     echo checkReleaseVersionFeatureFlag=$(checkReleaseVersionFeatureFlag "${versionScope}")
+    echo VERSIONING_BOT_ENABLED=$VERSIONING_BOT_ENABLED
     echo $vRulesEnabled=${!vRulesEnabled} 
     echo $ruleBranchEnabled=${!ruleBranchEnabled} 
     echo $ruleVersionFileEnabled=${!ruleVersionFileEnabled} 
@@ -579,6 +580,7 @@ function debugPreReleaseVersionVariables() {
     local ruleVersionFileEnabled=${versionScope}_V_RULE_VFILE_ENABLED
 
     echo checkPreReleaseVersionFeatureFlag=$(checkPreReleaseVersionFeatureFlag "${versionScope}")
+    echo VERSIONING_BOT_ENABLED=$VERSIONING_BOT_ENABLED
     echo $vRulesEnabled=${!vRulesEnabled} 
     echo $ruleBranchEnabled=${!ruleBranchEnabled} 
     echo $ruleVersionFileEnabled=${!ruleVersionFileEnabled} 
@@ -601,6 +603,7 @@ function debugBuildVersionVariables() {
 
    
     echo checkBuildVersionFeatureFlag=$(checkBuildVersionFeatureFlag "${versionScope}") 
+    echo VERSIONING_BOT_ENABLED=$VERSIONING_BOT_ENABLED
     echo $vRulesEnabled=${!vRulesEnabled} 
     echo $vConfigBranches=${!vConfigBranches} 
     echo $ghCurrentBranch=${!ghCurrentBranch} 
