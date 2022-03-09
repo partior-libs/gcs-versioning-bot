@@ -40,7 +40,7 @@ function versionCompareLessOrEqual() {
     [  "$1" = "`echo -e "$1\n$2" | sort -V | head -n1`" ]
 }
 
-# When increment pre-release, make sure the release version is considered
+# When increment release, make sure the release version is considered
 function needToIncrementRelVersion() {
     local inputCurrentVersion=$1
     local inputRelVersion=$2
@@ -48,6 +48,19 @@ function needToIncrementRelVersion() {
         echo "true"
     elif [[ "$inputCurrentVersion" == "`echo -e "$inputCurrentVersion\n$inputRelVersion" | sort -V | head -n1`" ]]; then
         echo "false"
+    else    
+        echo "false"
+    fi
+}
+
+# When increment pre-release, make sure the release version is considered
+function needToIncrementPreRelVersion() {
+    local inputCurrentVersion=$1
+    local inputRelVersion=$2
+    if [[  "$inputRelVersion" == "$(echo $inputCurrentVersion | cut -d'-' -f1)" ]]; then
+        echo "true"
+    elif [[ "$inputCurrentVersion" == "`echo -e "$inputCurrentVersion\n$inputRelVersion" | sort -V | head -n1`" ]]; then
+        echo "true"
     else    
         echo "false"
     fi
@@ -91,10 +104,9 @@ function incrementPreReleaseVersion() {
     local inputVersion=$1
     local preIdentifider=$2
 
-    # if ($(echo $inputVersion | grep -E -q '[+-]\w*\.\w*')); then
 
-    # fi
-    local currentSemanticVersion=$(echo $inputVersion | awk -F"-$preIdentifider." '{print $1}')
+    local inputSemanticVersion=$(echo $inputVersion | awk -F"-$preIdentifider." '{print $1}')
+    local currentSemanticVersion=$inputSemanticVersion
     local nextPreReleaseNumber=$(( $(echo $inputVersion | awk -F"-$preIdentifider." '{print $2}') + 1 ))
     ## If not pre-release, then increment the core version too
     local lastRelVersion=$(cat $ARTIFACT_LAST_REL_VERSION_FILE)
@@ -104,6 +116,7 @@ function incrementPreReleaseVersion() {
         # lastRelVersion=$currentSemanticVersion
     fi
     if [[ ! "$inputVersion" == *"-"* ]]; then
+
         if [[ "$lastRelVersion" = "" ]]; then
             currentSemanticVersion=$(incrementReleaseVersion $currentSemanticVersion ${PATCH_POSITION})
         else  ## Increment with last release version if present
@@ -114,8 +127,7 @@ function incrementPreReleaseVersion() {
             
         fi
     else
-        local needIncreaseVersion=$(needToIncrementRelVersion "$inputVersion" "$lastRelVersion")
-
+        local needIncreaseVersion=$(needToIncrementPreRelVersion "$inputVersion" "$lastRelVersion")
         if [[ "$needIncreaseVersion" == "true" ]]; then
             ## Skip increment release version if already increased before
             if [[ ! -f $ARTIFACT_UPDATED_REL_VERSION_FILE ]]; then
@@ -124,7 +136,7 @@ function incrementPreReleaseVersion() {
             nextPreReleaseNumber=1
         elif [[ "$needIncreaseVersion" == "false" ]]; then
             nextPreReleaseNumber=$(( $(echo $inputVersion | awk -F"-$preIdentifider." '{print $2}') + 1 ))
-            if [[ -f $ARTIFACT_UPDATED_REL_VERSION_FILE ]]; then
+            if [[ -f $ARTIFACT_UPDATED_REL_VERSION_FILE ]] && [[ ! "$inputSemanticVersion" == "$currentSemanticVersion" ]]; then
                 nextPreReleaseNumber=1
             fi
             
