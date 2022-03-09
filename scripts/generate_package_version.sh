@@ -318,8 +318,10 @@ function incrementReleaseVersionByFile() {
     local versionArray=''
     IFS='. ' read -r -a versionArray <<< "$inputVersion"
     versionArray[$versionPos]=$tmpVersion
-    echo $(local IFS=. ; echo "${versionArray[*]}")
-
+    local newVersion=$(local IFS=. ; echo "${versionArray[*]}")
+    # Store in a file to be used in pre-release increment consideration later
+    echo $newVersion > $ARTIFACT_UPDATED_REL_VERSION_FILE
+    echo $newVersion
 }
 
 ## Instead of increment with logical 1, this function allow user to pick version from defined file and keyword, to increment pre-release version
@@ -500,8 +502,6 @@ function processWithReleaseVersionFile() {
             return 1
         fi
     fi
-    # Store in a file to be used in pre-release increment consideration later
-    echo $currentIncrementedVersion > $ARTIFACT_UPDATED_REL_VERSION_FILE
     echo $currentIncrementedVersion
 }
 
