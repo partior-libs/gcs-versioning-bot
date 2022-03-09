@@ -649,7 +649,8 @@ if [[ "$isDebug" == "true" ]]; then
     debugReleaseVersionVariables PATCH
 fi
 
-nextVersion=$(getNeededIncrementReleaseVersion "$lastDevVersion" "$lastRCVersion" "$lastRelVersion")
+# nextVersion=$(getNeededIncrementReleaseVersion "$lastDevVersion" "$lastRCVersion" "$lastRelVersion")
+nextVersion=$lastRelVersion
 echo [INFO] Before incremented: $nextVersion
 ## Process incrementation on MAJOR, MINOR and PATCH
 if [[ "$(checkReleaseVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "${MAJOR_V_RULE_VFILE_ENABLED}" == "true" ]]; then
