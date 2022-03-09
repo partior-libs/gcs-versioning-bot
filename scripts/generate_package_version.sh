@@ -47,7 +47,7 @@ function needToIncrementRelVersion() {
     if [[  "$inputRelVersion" == "$(echo $inputCurrentVersion | cut -d'-' -f1)" ]]; then
         echo "true"
     elif [[ "$inputCurrentVersion" == "`echo -e "$inputCurrentVersion\n$inputRelVersion" | sort -V | head -n1`" ]]; then
-        echo "true"
+        echo "false"
     else    
         echo "false"
     fi
