@@ -115,6 +115,7 @@ function incrementPreReleaseVersion() {
         fi
     else
         local needIncreaseVersion=$(needToIncrementRelVersion "$inputVersion" "$lastRelVersion")
+
         if [[ "$needIncreaseVersion" == "true" ]]; then
             ## Skip increment release version if already increased before
             if [[ ! -f $ARTIFACT_UPDATED_REL_VERSION_FILE ]]; then
@@ -123,6 +124,10 @@ function incrementPreReleaseVersion() {
             nextPreReleaseNumber=1
         elif [[ "$needIncreaseVersion" == "false" ]]; then
             nextPreReleaseNumber=$(( $(echo $inputVersion | awk -F"-$preIdentifider." '{print $2}') + 1 ))
+            if [[ -f $ARTIFACT_UPDATED_REL_VERSION_FILE ]]; then
+                nextPreReleaseNumber=1
+            fi
+            
         fi       
     fi
     echo $currentSemanticVersion-$preIdentifider.$nextPreReleaseNumber
