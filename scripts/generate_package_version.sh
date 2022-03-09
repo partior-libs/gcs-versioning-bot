@@ -115,7 +115,6 @@ function incrementPreReleaseVersion() {
         fi
     else
         local needIncreaseVersion=$(needToIncrementRelVersion "$inputVersion" "$lastRelVersion")
-    echo la $needIncreaseVersion
         if [[ "$needIncreaseVersion" == "true" ]]; then
             ## Skip increment release version if already increased before
             if [[ ! -f $ARTIFACT_UPDATED_REL_VERSION_FILE ]]; then
