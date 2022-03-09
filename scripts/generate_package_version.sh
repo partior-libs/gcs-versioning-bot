@@ -81,7 +81,9 @@ function incrementReleaseVersion() {
     versionArray[$versionPos]=$((versionArray[$versionPos]+1))
     if [ $versionPos -lt 2 ]; then versionArray[2]=0; fi
     if [ $versionPos -lt 1 ]; then versionArray[1]=0; fi
-    echo $(local IFS=. ; echo "${versionArray[*]}")
+    local newVersion=$(local IFS=. ; echo "${versionArray[*]}")
+    echo $newVersion > $ARTIFACT_UPDATED_REL_VERSION_FILE
+    echo $newVersion
 }
 
 ## Increment pre-release version based on identifier
@@ -498,6 +500,8 @@ function processWithReleaseVersionFile() {
             return 1
         fi
     fi
+    # Store in a file to be used in pre-release increment consideration later
+    echo $currentIncrementedVersion > $ARTIFACT_UPDATED_REL_VERSION_FILE
     echo $currentIncrementedVersion
 }
 
@@ -688,8 +692,6 @@ if [[ $? -ne 0 ]]; then
     exit 1
 fi
 echo [INFO] After core version file incremented: [$nextVersion]
-# Store in a file to be used in pre-release increment consideration later
-echo $nextVersion > $ARTIFACT_UPDATED_REL_VERSION_FILE
 
 ## Debug section
 if [[ "$isDebug" == "true" ]]; then
