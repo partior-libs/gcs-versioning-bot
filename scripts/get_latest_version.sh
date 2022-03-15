@@ -51,9 +51,9 @@ function storeLatestVersionIntoFile() {
     fi
 
     ## If still empty, reset value
-
-    if [[ $(cat $targetSaveFile | wc -l) -eq 0 ]]; then
-        echo "[INFO] Reseting $targetSaveFile..."
+    local updatedContent=$(cat $targetSaveFile | head -1 | xargs)
+    if [[ -z "$updatedContent" ]]; then
+        echo "[INFO] Resetting $targetSaveFile..."
         if [[ "$identifierType" == "$REL_SCOPE" ]]; then
             echo "0.0.1" > $targetSaveFile
         else
