@@ -55,7 +55,7 @@ function storeLatestVersionIntoFile() {
     if [[ -z "$updatedContent" ]]; then
         echo "[INFO] Resetting $targetSaveFile..."
         if [[ "$identifierType" == "$REL_SCOPE" ]]; then
-            echo "0.0.1" > $targetSaveFile
+            echo "0.0.0" > $targetSaveFile
         else
             echo "0.0.1-$identifierType.0" > $targetSaveFile
         fi
