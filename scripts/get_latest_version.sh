@@ -50,6 +50,18 @@ function storeLatestVersionIntoFile() {
         echo $(cat $inputList | grep -E "version" | grep -E "\-$identifierType\." | head -1 | cut -d"\"" -f4) > $targetSaveFile
     fi
 
+    ## If still empty, reset value
+
+    if [[ $(cat $targetSaveFile | wc -l) -eq 0 ]]; then
+        echo "[INFO] Reseting $targetSaveFile..."
+        if [[ "$identifierType" == "$REL_SCOPE" ]]; then
+            echo "0.0.1" > $targetSaveFile
+        else
+            echo "0.0.1-$identifierType.0" > $targetSaveFile
+        fi
+
+    fi
+
 }
 
 function getArtifactLastVersion() {
@@ -79,7 +91,7 @@ function getArtifactLastVersion() {
 
     if [[ $responseStatus -ne 200 ]]; then
         if (cat $versionOutputFile | grep -q "Unable to find artifact versions");then
-            local resetVersion="1.0.0-${DEV_V_IDENTIFIER}.0"
+            local resetVersion="0.0.1-${DEV_V_IDENTIFIER}.0"
 
             echo "[INFO] Unable to find last version. Resetting to: $resetVersion"
             echo "\"version\" : \"$resetVersion\"" > $versionOutputFile
