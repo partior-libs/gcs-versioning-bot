@@ -123,7 +123,7 @@ function checkInitialReleaseVersion() {
         exit 1
     fi
 
-    if [[ ! $versionNumber =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+    if [[ ! $initialVersion =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Incorrect initial version format. Not in the required semantic format (ie: 1.0.0): [$initialVersion]"
         exit 1
     fi
