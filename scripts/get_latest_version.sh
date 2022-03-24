@@ -22,8 +22,9 @@ artifactoryTargetRelRepo=$3
 artifactoryTargetGroup=$4
 artifactoryTargetArtifactName=$5
 sourceBranchName=$6
-artifactoryUsername=$7
-artifactoryPassword=$8
+initialVersion=$7
+artifactoryUsername=$8
+artifactoryPassword=$9
 
 
 echo "[INFO] Branch name: $sourceBranchName"
@@ -33,6 +34,7 @@ echo "[INFO] Artifactory Dev Repo: $artifactoryTargetDevRepo"
 echo "[INFO] Artifactory Release Repo: $artifactoryTargetRelRepo"
 echo "[INFO] Target artifact group: $artifactoryTargetGroup"
 echo "[INFO] Target artifact name: $artifactoryTargetArtifactName"
+echo "[INFO] Initial version if empty: $initialVersion"
 
 
 function storeLatestVersionIntoFile() {
@@ -55,9 +57,9 @@ function storeLatestVersionIntoFile() {
     if [[ -z "$updatedContent" ]]; then
         echo "[INFO] Resetting $targetSaveFile..."
         if [[ "$identifierType" == "$REL_SCOPE" ]]; then
-            echo "0.0.0" > $targetSaveFile
+            echo "$initialVersion" > $targetSaveFile
         else
-            echo "0.0.1-$identifierType.0" > $targetSaveFile
+            echo "$initialVersion-$identifierType.0" > $targetSaveFile
         fi
 
     fi
@@ -91,7 +93,7 @@ function getArtifactLastVersion() {
 
     if [[ $responseStatus -ne 200 ]]; then
         if (cat $versionOutputFile | grep -q "Unable to find artifact versions");then
-            local resetVersion="0.0.1-${DEV_V_IDENTIFIER}.0"
+            local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.0"
 
             echo "[INFO] Unable to find last version. Resetting to: $resetVersion"
             echo "\"version\" : \"$resetVersion\"" > $versionOutputFile

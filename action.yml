@@ -29,6 +29,10 @@ inputs:
     description: 'Consolidated commit message from git log'
     required: false
     default: '' 
+  initial-version:
+    description: 'Initial version to be used if no version found in artifactory'
+    required: false
+    default: '0.0.1' 
   debug:
     description: 'Debug mode for more logging'
     required: false
@@ -117,6 +121,7 @@ runs:
           "${{ steps.yaml-config.outputs.artifact_packager_group }}" \
           "${{ steps.yaml-config.outputs.artifact-base-name }}" \
           "${BUILD_GH_BRANCH_NAME}" \
+          "${{ steps.yaml-config.outputs.initial-version }}" \
           "${{ inputs.artifactory-username }}" \
           "${{ inputs.artifactory-password }}"
       shell: bash
