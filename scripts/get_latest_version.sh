@@ -112,9 +112,10 @@ function getArtifactLastVersion() {
 function checkInitialReleaseVersion() {
     local initialVersion=$1
 
+    ## In case not set in yaml
     if [[ -z "$initialVersion" ]]; then
-        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Initial version is empty: [$initialVersion]"
-        exit 1
+        echo "[WARNING] $BASH_SOURCE (line:$LINENO): Initial version is empty. Resetting to 0.0.1."
+        initialVersion=0.0.1
     fi
 
     if [[ "$initialVersion" == *"-"* ]]; then
