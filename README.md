@@ -66,6 +66,7 @@ smc:
     artifact-base-name: default-artifact-name
     artifact-auto-versioning:
       enabled: false
+      initial-release-version: 1.0.0
       major-version:
         enabled: true
         rules:
