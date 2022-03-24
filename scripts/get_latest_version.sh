@@ -109,6 +109,27 @@ function getArtifactLastVersion() {
 
 }
 
+function checkInitialReleaseVersion() {
+    local initialVersion=$1
+
+    if [[ -z "$initialVersion" ]]; then
+        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Initial version is empty: [$initialVersion]"
+        exit 1
+    fi
+
+    if [[ "$initialVersion" == *"-"* ]]; then
+        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Incorrect initial version format. Should not contain hyphen: [$initialVersion]"
+        exit 1
+    fi
+
+    if [[ ! $versionNumber =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Incorrect initial version format. Not in the required semantic format (ie: 1.0.0): [$initialVersion]"
+        exit 1
+    fi
+
+}
+
+checkInitialReleaseVersion "$initialVersion"
 versionListFile=versionlist.tmp
 ## Get all the last 1000 versions and store into file
 #Create empty file first
