@@ -117,7 +117,6 @@ runs:
           "${{ steps.yaml-config.outputs.artifact_packager_group }}" \
           "${{ steps.yaml-config.outputs.artifact-base-name }}" \
           "${BUILD_GH_BRANCH_NAME}" \
-          "${{ inputs.initial-version }}" \
           "${{ steps.yaml-config.outputs.artifact-auto-versioning_initial-release-version }}" \
           "${{ inputs.artifactory-username }}" \
           "${{ inputs.artifactory-password }}"
