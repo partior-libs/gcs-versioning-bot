@@ -1,0 +1,284 @@
+name: Test Auto Versioning with latest yaml importer
+on:
+  workflow_dispatch:
+  # push:
+  # pull_request:
+  # workflow_dispatch:
+  # pull_request_review:
+  # pull_request:
+
+env:
+  YAML_STD_CI_CONFIG_IMPORTER: std_rule
+  YAML_CI_BRANCH_CONFIG_IMPORTER: yaml_ci_branch_importer
+  YAML_BUILD_CI_CONFIG_IMPORTER: enable_build_info
+  YAML_REPLACE_FILE_CI_CONFIG_IMPORTER: enable_file_replacement
+  YAML_REPLACE_MVNPOM_CI_CONFIG_IMPORTER: enable_mavenpom_replacement
+  YAML_VERSION_FROM_FILE_CI_CONFIG_IMPORTER: enable_external_version
+  YAML_ENABLE_MSGTAG_CI_CONFIG_IMPORTER: enable_msgtag
+  YAML_NO_PREV_ARTIFACT_CI_CONFIG_IMPORTER: enable_no_prev_artifact
+
+jobs:
+
+
+  read-config:
+    runs-on: ubuntu-latest
+    outputs:
+      branch-name: ${{ steps.get-repo.outputs.branch-name }}
+      pr-exist: ${{ steps.get-repo.outputs.is-PR }}
+      pr-target-branch: ${{ steps.get-repo.outputs.pr-target-branch }}
+      repo-name: ${{ steps.get-repo.outputs.name }}
+      source-branch: ${{ steps.get-repo.outputs.source-branch }}
+      delta-commit-msg: ${{ steps.get-repo.outputs.delta-commit-msg }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Get repo details
+        id: get-repo
+        run: |
+          branchName="$(echo ${GITHUB_REF_NAME} | cut -d"/" -f1)"
+          sourceBranch=${GITHUB_REF_NAME}
+          prTargetBranch=''
+          isPR=false
+          commitMessages=''
+          if [[ ! -z "$GITHUB_HEAD_REF" ]]; then
+            branchName=$(echo $GITHUB_HEAD_REF | cut -d"/" -f1)
+            sourceBranch=${GITHUB_HEAD_REF}
+            isPR=true
+            prTargetBranch=remotes/origin/${GITHUB_BASE_REF}
+            git fetch --all
+            git branch --all
+            echo git log $prTargetBranch..HEAD
+            commitMessages=$(git log $prTargetBranch..HEAD --pretty=format:"%s")
+          fi
+          
+          echo ::set-output name=branch-name::${branchName}
+          echo ::set-output name=is-PR::${isPR}
+          echo ::set-output name=pr-target-branch::${prTargetBranch}
+          echo ::set-output name=name::$(echo ${GITHUB_REPOSITORY}  | cut -d"/" -f2)
+          echo ::set-output name=delta-commit-msg::${commitMessages}
+          echo ::set-output name=source-branch::${sourceBranch}
+
+      - name: Generate CI branch importer
+        uses: partior-libs/gcs-yaml-importer@main
+        with:
+          yaml-file: controller-config-files/projects/default.yml
+          query-path: .smc.ci.branches.${{ steps.get-repo.outputs.branch-name }}
+          output-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
+          yaml-file-for-default: controller-config-files/projects/default.yml
+          query-path-for-default: .smc.ci.branches.default
+          upload: true
+
+  read-std-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get repo details
+        id: get-repo
+        run: |
+          branchName="$(echo ${GITHUB_REF_NAME} | cut -d"/" -f1)"
+          if [[ ! -z "$GITHUB_HEAD_REF" ]]; then
+            branchName=$(echo $GITHUB_HEAD_REF | cut -d"/" -f1)
+          fi
+          
+          echo ::set-output name=branch-name::${branchName}
+
+      - name: Generate CI importer
+        uses: partior-libs/gcs-yaml-importer@main
+        with:
+          yaml-file: controller-config-files/projects/enable-std-rules.yml
+          query-path: .smc.ci
+          output-file: ${{ env.YAML_STD_CI_CONFIG_IMPORTER }}
+          yaml-file-for-default: controller-config-files/projects/default.yml
+          query-path-for-default: .smc.ci
+          upload: true
+
+      - name: Generate CI branch importer
+        uses: partior-libs/gcs-yaml-importer@main
+        with:
+          yaml-file: controller-config-files/projects/enable-std-rules.yml
+          query-path: .smc.ci.branches.${{ steps.get-repo.outputs.branch-name }}
+          output-file: tmp-branch-importer
+          yaml-file-for-default: controller-config-files/projects/default.yml
+          query-path-for-default: .smc.ci.branches.default
+
+      - name: Merge importer
+        run: |
+          cat tmp-branch-importer >> ${{ env.YAML_STD_CI_CONFIG_IMPORTER }}
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ env.YAML_STD_CI_CONFIG_IMPORTER }}
+          path: ${{ env.YAML_STD_CI_CONFIG_IMPORTER }}
+          retention-days: 1
+
+  read-enable-msgtag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Generate CI branch importer
+        uses: partior-libs/gcs-yaml-importer@main
+        with:
+          yaml-file: controller-config-files/projects/enable-msgtag.yml
+          query-path: .smc.ci
+          output-file: ${{ env.YAML_ENABLE_MSGTAG_CI_CONFIG_IMPORTER }}
+          yaml-file-for-default: controller-config-files/projects/default.yml
+          query-path-for-default: .smc.ci
+          upload: true
+
+  read-build-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Generate CI branch importer
+        uses: partior-libs/gcs-yaml-importer@main
+        with:
+          yaml-file: controller-config-files/projects/enable-build-rules.yml
+          query-path: .smc.ci
+          output-file: ${{ env.YAML_BUILD_CI_CONFIG_IMPORTER }}
+          yaml-file-for-default: controller-config-files/projects/default.yml
+          query-path-for-default: .smc.ci
+          upload: true
+
+  read-replace-file-version-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Generate CI branch importer
+        uses: partior-libs/gcs-yaml-importer@main
+        with:
+          yaml-file: controller-config-files/projects/enable-replace-file-version.yml
+          query-path: .smc.ci
+          output-file: ${{ env.YAML_REPLACE_FILE_CI_CONFIG_IMPORTER }}
+          yaml-file-for-default: controller-config-files/projects/default.yml
+          query-path-for-default: .smc.ci
+          upload: true
+
+  read-replace-maven-pom-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Generate CI branch importer
+        uses: partior-libs/gcs-yaml-importer@main
+        with:
+          yaml-file: controller-config-files/projects/enable-replace-maven-pom.yml
+          query-path: .smc.ci
+          output-file: ${{ env.YAML_REPLACE_MVNPOM_CI_CONFIG_IMPORTER }}
+          yaml-file-for-default: controller-config-files/projects/default.yml
+          query-path-for-default: .smc.ci
+          upload: true
+
+  read-external-version-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Generate CI branch importer
+        uses: partior-libs/gcs-yaml-importer@main
+        with:
+          yaml-file: controller-config-files/projects/enable-ver-from-file.yml
+          query-path: .smc.ci
+          output-file: ${{ env.YAML_VERSION_FROM_FILE_CI_CONFIG_IMPORTER }}
+          yaml-file-for-default: controller-config-files/projects/default.yml
+          query-path-for-default: .smc.ci
+          upload: true
+
+  read-no-prev-artifact-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Generate CI branch importer
+        uses: partior-libs/gcs-yaml-importer@main
+        with:
+          yaml-file: controller-config-files/projects/enable-no-prev-artifacts.yml
+          query-path: .smc.ci
+          output-file: ${{ env.YAML_NO_PREV_ARTIFACT_CI_CONFIG_IMPORTER }}
+          yaml-file-for-default: controller-config-files/projects/default.yml
+          query-path-for-default: .smc.ci
+          upload: true
+
+  trigger-with-matrix:
+    needs: [ read-config, read-std-config, read-build-config, read-replace-file-version-config, read-replace-maven-pom-config, read-external-version-config, read-enable-msgtag, read-no-prev-artifact-config ]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rule: [ std_rule, enable_build_info, enable_file_replacement, enable_mavenpom_replacement, enable_external_version, enable_msgtag, enable_no_prev_artifact ]
+        branch: [ main, release, develop, feature ]
+        # rule: [ std_rule ]
+        # rule: [ enable_msgtag ]
+        # branch: [ feature ]
+    env:
+      BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
+      REPO_NAME: ${{ needs.read-config.outputs.repo-name }}
+      ALL_DELTA_COMMIT_MSG: ${{ needs.read-config.outputs.delta-commit-msg }}
+      SOURCE_BRANCH: ${{ needs.read-config.outputs.source-branch }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: ${{ matrix.rule }}
+
+      - name: View Version File - Before
+        run: |
+          echo [INFO] Viewing versioning file - Pre Activity
+          cat ./test-files/sample-version-file.xml
+
+      - name: View Maven POM File - Before
+        run: |
+          echo [INFO] Viewing Maven POM file - Pre Activity
+          cat ./test-files/sample-pom-file.xml
+
+      - name: View commit message
+        run: |
+          echo [INFO] Start viewing
+          echo ${{ env.ALL_DELTA_COMMIT_MSG }}
+
+      - name: Start versioning bot
+        id: version-bot
+        uses: partior-libs/gcs-versioning-bot@main
+        with:
+          artifactory-username: svc-smc-read
+          artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
+          versioning-rules-importer-file: ${{ matrix.rule }}
+          branch-packager-rules-importer-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
+          consolidated-commit-msg: ${{ env.ALL_DELTA_COMMIT_MSG }}
+          branch-name: ${{ matrix.branch }}
+          debug: true
+          # branch-name: ${{ env.BRANCH_NAME }}
+
+      - name: View Version File - After
+        run: |
+          echo [INFO] Viewing versioning file - Post Activity
+          cat ./test-files/sample-version-file.xml
+
+      - name: View Maven POM File - After
+        run: |
+          echo [INFO] Viewing Maven POM file - Post Activity
+          cat ./test-files/sample-pom-file.xml
+
+      - name: Before version update - ${{ steps.version-bot.outputs.artifact-old-version}}
+        run: |
+          echo [INFO] Final version: ${{ steps.version-bot.outputs.artifact-old-version}}
+
+      - name: Final version - ${{ steps.version-bot.outputs.artifact-version-name}}
+        run: |
+          echo [INFO] Final version: ${{ steps.version-bot.outputs.artifact-version-name}}
+          echo "" > rs-${{ matrix.rule }}_${{ matrix.branch }}--${{ steps.version-bot.outputs.artifact-version-name}}
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: rs-${{ matrix.rule }}_${{ matrix.branch }}--${{ steps.version-bot.outputs.artifact-version-name}}
+          path: rs-${{ matrix.rule }}_${{ matrix.branch }}--${{ steps.version-bot.outputs.artifact-version-name}}
+          retention-days: 1
