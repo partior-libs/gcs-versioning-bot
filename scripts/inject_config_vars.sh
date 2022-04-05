@@ -7,7 +7,7 @@ if [[ ! -f "$importerFile" ]]; then
     exit 1
 fi
 
-cat $importerFile | sed -r "s/echo ::set-output name=//g" | sed -r "s/::/=/g" |  grep "=" > $importerFile.tmp
+cat $importerFile | sed -r "s/echo ::set-output name=//g" | sed -r "s/::/=/g" |  grep "=" | grep -v '$GITHUB_ENV' > $importerFile.tmp
 
 while read eachLine; do
     keyname=$(echo $eachLine | cut -d"=" -f1 | sed -r "s/-/_/g")
