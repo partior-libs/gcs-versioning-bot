@@ -90,11 +90,11 @@ jobs:
      - uses: actions/checkout@v3
      - uses: actions/download-artifact@v3
        with:
-       name: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
+         name: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
 
      - uses: actions/download-artifact@v3
        with:
-       name: ${{ env.YAML_JIRA_CI_CONFIG_IMPORTER }}
+         name: ${{ env.YAML_JIRA_CI_CONFIG_IMPORTER }}
 
      - name: View commit message
        run: |
