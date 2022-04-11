@@ -25,6 +25,12 @@ sourceBranchName=$6
 initialVersion=$7
 artifactoryUsername=$8
 artifactoryPassword=$9
+jiraUsername=${10}
+jiraPassword=${11}
+jiraBaseUrl=${12}
+jiraProjectKey=${13}
+jiraEnabler=${14}
+
 
 
 echo "[INFO] Branch name: $sourceBranchName"
@@ -35,7 +41,9 @@ echo "[INFO] Artifactory Release Repo: $artifactoryTargetRelRepo"
 echo "[INFO] Target artifact group: $artifactoryTargetGroup"
 echo "[INFO] Target artifact name: $artifactoryTargetArtifactName"
 echo "[INFO] Initial version if empty: $initialVersion"
+echo "[INFO] Jira Base URL: $jiraBaseUrl" 
 
+versionListFile=versionlist.tmp
 
 function storeLatestVersionIntoFile() {
     local inputList=$1
@@ -67,6 +75,16 @@ function storeLatestVersionIntoFile() {
 }
 
 function getArtifactLastVersion() {
+    if [[ $jiraEnabler == true ]]; then
+        getLatestVersionFromJira "$versionListFile"
+        
+    else
+    
+        getLastestVersionFromArtifactory "$artifactoryTargetDevRepo,$artifactoryTargetRelRepo" "$versionListFile"
+    fi
+}
+
+function getLastestVersionFromArtifactory() {
     local targetRepo=$1
     local versionOutputFile=$2
     echo "[INFO] Getting latest versions for RC, DEV and Release..."
@@ -109,6 +127,39 @@ function getArtifactLastVersion() {
 
 }
 
+function getLatestVersionFromJira() {
+local versionOutputFile = $1
+local response = ""
+local version = ""
+
+response=$(curl -k -s - u $jiraUsername:$jiraPassword \
+				-w "status_code:[%{http_code}]" \
+				-X GET \
+				"$jiraBaseUrl/rest/api/latest/project/$jiraProjectKey" -o $versionOutputFile)
+
+if [[ $? -ne 0 ]]; then
+        echo "[ACTION_CURL_ERROR] $BASH_SOURCE (line:$LINENO): Error running curl to get latest version."
+        echo "[DEBUG] Curl: $jiraBaseUrl/rest/api/latest/project/$jiraProjectKey"
+        exit 1
+fi
+
+local responseStatus=$(echo $response | awk -F'status_code:' '{print $2}' | awk -F'[][]' '{print $2}')
+    #echo "[INFO] responseBody: $responseBody"
+    echo "[INFO] Query status code: $responseStatus"
+	
+if [[ $responseStatus -eq 200 ]]; then
+
+	local  versions=$( jq '.versions | .[] | select(.archived==false) | select(.name|test("^su.")) | .name' < versionoutput.json)
+	for version in ${versions[@]}; do 
+			echo $version;	
+	done
+	
+else
+	echo "Error fetching version details"
+	exit 1
+fi
+}
+
 function checkInitialReleaseVersion() {
     local initialVersion=$1
 
@@ -131,13 +182,14 @@ function checkInitialReleaseVersion() {
 }
 
 checkInitialReleaseVersion "$initialVersion"
-versionListFile=versionlist.tmp
+#versionListFile=versionlist.tmp
 ## Get all the last 1000 versions and store into file
 #Create empty file first
 touch $ARTIFACT_LAST_DEV_VERSION_FILE
 touch $ARTIFACT_LAST_RC_VERSION_FILE
 touch $ARTIFACT_LAST_REL_VERSION_FILE
-getArtifactLastVersion "$artifactoryTargetDevRepo,$artifactoryTargetRelRepo" "$versionListFile"
+## getArtifactLastVersion "$artifactoryTargetDevRepo,$artifactoryTargetRelRepo" "$versionListFile"
+getArtifactLastVersion
 ## Store respective version type into file
 storeLatestVersionIntoFile "$versionListFile" "$DEV_V_IDENTIFIER" "$ARTIFACT_LAST_DEV_VERSION_FILE"
 storeLatestVersionIntoFile "$versionListFile" "$RC_V_IDENTIFIER" "$ARTIFACT_LAST_RC_VERSION_FILE"
