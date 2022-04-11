@@ -128,9 +128,9 @@ function getLastestVersionFromArtifactory() {
 }
 
 function getLatestVersionFromJira() {
-local versionOutputFile = $1
-local response = ""
-local version = ""
+local versionOutputFile=$1
+local response=""
+local version=""
 
 response=$(curl -k -s - u $jiraUsername:$jiraPassword \
 				-w "status_code:[%{http_code}]" \
