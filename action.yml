@@ -13,6 +13,18 @@ inputs:
     description: 'Artifactory base URL'
     required: false
     default: 'https://partior.jfrog.io/artifactory'
+  jira-username:
+    description: 'Jira Username'
+    required: true
+    default: 'NIL'
+  jira-password: 
+    description: 'Jira Password'
+    required: true
+    default: 'NIL'
+  jira-base-url:
+    description: 'Jira Base Url'
+    required: false
+    default: 'https://partior.atlassian.net'
   branch-name:  
     description: 'Override branch type name. Use only for testing purpose'
     required: false
@@ -33,18 +45,7 @@ inputs:
     description: 'Debug mode for more logging'
     required: false
     default: 'false'
-  jira-username:
-    description: 'Jira Username'
-    required: true
-    default: 'NIL'
-  jira-password: 
-    description: 'Jira Password'
-    required: true
-    default: 'NIL'
-  jira-base-url:
-    description: 'Jira Base Url'
-    required: false
-    default: 'https://partior.atlassian.net'
+  
 
 outputs:
   artifact-full-version-name:
