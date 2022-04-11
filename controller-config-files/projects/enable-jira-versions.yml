@@ -4,6 +4,7 @@ smc:
     artifact-base-name: new-artifact
     artifact-auto-versioning:
       enabled: true
+      initial-release-version: 0.0.1
       version-sources:
           artifactory:
             enabled: false
