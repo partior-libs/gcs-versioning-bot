@@ -63,9 +63,9 @@ jobs:
           query-path-for-default: .smc.ci.branches.default
           upload: true
     
-read-jira-versions-config:
-  runs-on: ubuntu-latest
-  steps:
+  read-jira-versions-config:
+    runs-on: ubuntu-latest
+    steps:
       - uses: actions/checkout@v2
 
       - name: Generate CI branch importer
@@ -78,52 +78,52 @@ read-jira-versions-config:
           query-path-for-default: .smc.ci
           upload: true
     
-versioning-bot:       
-  needs: [ read-config ]
-  runs-on: ubuntu-latest
-  env:
-    BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
-    REPO_NAME: ${{ needs.read-config.outputs.repo-name }}
-    ALL_DELTA_COMMIT_MSG: ${{ needs.read-config.outputs.delta-commit-msg }}
-    SOURCE_BRANCH: ${{ needs.read-config.outputs.source-branch }}
-  steps:
-   - uses: actions/checkout@v3
-   - uses: actions/download-artifact@v3
-     with:
-     name: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
+  versioning-bot:       
+    needs: [ read-config ]
+    runs-on: ubuntu-latest
+    env:
+      BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
+      REPO_NAME: ${{ needs.read-config.outputs.repo-name }}
+      ALL_DELTA_COMMIT_MSG: ${{ needs.read-config.outputs.delta-commit-msg }}
+      SOURCE_BRANCH: ${{ needs.read-config.outputs.source-branch }}
+    steps:
+     - uses: actions/checkout@v3
+     - uses: actions/download-artifact@v3
+       with:
+       name: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
 
-   - uses: actions/download-artifact@v3
-     with:
-     name: ${{ env.YAML_JIRA_CI_CONFIG_IMPORTER }}
+     - uses: actions/download-artifact@v3
+       with:
+       name: ${{ env.YAML_JIRA_CI_CONFIG_IMPORTER }}
 
-   - name: View commit message
-     run: |
+     - name: View commit message
+       run: |
           echo [INFO] Start viewing
           echo ${{ env.ALL_DELTA_COMMIT_MSG }}
    
-   - name: Start versioning bot
-     id: version-bot
-     uses: partior-libs/gcs-versioning-bot@main
-     with:
-       artifactory-username: svc-smc-read
-       artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
-       jira-username: ${{ secrets.JIRA_USERNAME }}
-       jira-password: ${{ secrets.JIRA_PAT_TOKEN }}
-       versioning-rules-importer-file: ${{ env.YAML_JIRA_CI_CONFIG_IMPORTER }}
-       branch-packager-rules-importer-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
-       consolidated-commit-msg: ${{ env.ALL_DELTA_COMMIT_MSG }}
-       branch-name: ${{ env.BRANCH_NAME }}
-       debug: true
-       # branch-name: ${{ env.BRANCH_NAME }}
+     - name: Start versioning bot
+       id: version-bot
+       uses: partior-libs/gcs-versioning-bot@main
+       with:
+         artifactory-username: svc-smc-read
+         artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
+         jira-username: ${{ secrets.JIRA_USERNAME }}
+         jira-password: ${{ secrets.JIRA_PAT_TOKEN }}
+         versioning-rules-importer-file: ${{ env.YAML_JIRA_CI_CONFIG_IMPORTER }}
+         branch-packager-rules-importer-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
+         consolidated-commit-msg: ${{ env.ALL_DELTA_COMMIT_MSG }}
+         branch-name: ${{ env.BRANCH_NAME }}
+         debug: true
+         # branch-name: ${{ env.BRANCH_NAME }}
 
-   - name: Before version update - ${{ steps.version-bot.outputs.artifact-old-version}}
-     run: |
+     - name: Before version update - ${{ steps.version-bot.outputs.artifact-old-version}}
+       run: |
           echo [INFO] Final version: ${{ steps.version-bot.outputs.artifact-old-version}}
       
-   - name: Final version - ${{ steps.version-bot.outputs.artifact-version-name}}
-     run: |
+     - name: Final version - ${{ steps.version-bot.outputs.artifact-version-name}}
+       run: |
           echo [INFO] Final version: ${{ steps.version-bot.outputs.artifact-version-name}}
      
-   - name: Display Jira versions
-     run: |
+     - name: Display Jira versions
+       run: |
           echo [INFO] Jira versions: ${{ steps.version-bot.outputs.jira-versions }}
