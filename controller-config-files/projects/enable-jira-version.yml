@@ -4,6 +4,13 @@ smc:
     artifact-base-name: new-artifact
     artifact-auto-versioning:
       enabled: true
+      version-sources:
+          artifactory:
+            enabled: false
+          jira:
+            enabled: true
+            project-key: DEVPILOT
+            version-identifier: ""
     branches:
       default:
         artifact:
@@ -12,8 +19,6 @@ smc:
             artifactory-username: svc-smc-read
             artifactory-dev-repo: smc-generic-dev
             artifactory-release-repo: smc-generic-release
-        jira:
-          jira-project-key: DEVPILOT
       main:
         artifact:
           packager:
