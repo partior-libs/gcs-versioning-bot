@@ -33,6 +33,19 @@ inputs:
     description: 'Debug mode for more logging'
     required: false
     default: 'false'
+  jira-username:
+    description: 'Jira Username'
+    required: true
+    default: 'NIL'
+  jira-password: 
+    description: 'Jira Password'
+    required: true
+    default: 'NIL'
+  jira-base-url:
+    description: 'Jira Base Url'
+    required: false
+    default: 'https://partior.atlassian.net'
+
 outputs:
   artifact-full-version-name:
     description: "Final output with artifact name and version"
@@ -119,7 +132,13 @@ runs:
           "${BUILD_GH_BRANCH_NAME}" \
           "${{ steps.yaml-config.outputs.artifact-auto-versioning_initial-release-version }}" \
           "${{ inputs.artifactory-username }}" \
-          "${{ inputs.artifactory-password }}"
+          "${{ inputs.artifactory-password }}" \
+          "${{ inputs.jira-username }}" \
+          "${{ inputs.jira-password }}" \
+          "${{ inputs.jira-base-url }}" \
+          "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_project-key }}" \
+          "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_enabled }}"
+          
       shell: bash
 
     - run: |
