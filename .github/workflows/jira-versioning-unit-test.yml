@@ -4,7 +4,7 @@ on:
     push:
         paths:
           - 'scripts/get_latest_version.sh'
-          - '.github/workflows/unit-test-get-latest-version.yml'
+          - '.github/workflows/jira-versioning-unit-test.yml'
     workflow_dispatch:
 
 env:
