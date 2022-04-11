@@ -42,6 +42,7 @@ echo "[INFO] Target artifact group: $artifactoryTargetGroup"
 echo "[INFO] Target artifact name: $artifactoryTargetArtifactName"
 echo "[INFO] Initial version if empty: $initialVersion"
 echo "[INFO] Jira Base URL: $jiraBaseUrl" 
+echo "[INFO] Jira Project Key: $jiraProjectKey"
 
 versionListFile=versionlist.tmp
 
