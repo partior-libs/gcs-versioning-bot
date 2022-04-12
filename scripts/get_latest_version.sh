@@ -77,7 +77,7 @@ function storeLatestVersionIntoFile() {
 
 function getArtifactLastVersion() {
     if [[ $jiraEnabler == true ]]; then
-        getLatestVersionFromJira "$versionListFile"
+        getLatestVersionFromJira "$versionListFile" "$finalVersionsListFile"
         
     else
     
@@ -130,8 +130,10 @@ function getLastestVersionFromArtifactory() {
 
 function getLatestVersionFromJira() {
 local versionOutputFile=$1
+local finalVersionsFile=$2
 local response=""
 local version=""
+
 
 response=$(curl -k -s -u $jiraUsername:$jiraPassword \
 				-w "status_code:[%{http_code}]" \
@@ -163,21 +165,27 @@ fi
 
 getlatestversion "$versions" "$DEV_V_IDENTIFIER"
 getlatestversion "$versions" "$RC_V_IDENTIFIER"
+for eachValue in ${finalVersionsList[@]}; do
+    echo $eachValue > $finalVersionsFile
+    done
 }
 
 finalVersionsList=()
+finalVersionsListFile=finalversionlist.tmp
 function getlatestversion() {
     local versionList=$1
     local identifier=$2
     local value=""
     local eachValue=""
     IFS=$'\n' sorted=($(sort -V -r <<<"${versions[*]}"))
-    value=$(for elements in ${sorted[@]}; do  echo "$elements"; done | grep $identifier | head -1 | cut -c 1-3 --complement)
+    value=$(for elements in ${sorted[@]}; do  echo "$elements"; done | grep $identifier | head -1 | tr -d '"'| cut -c 1-4 --complement)
     finalVersionsList+=("$value")
     for eachValue in ${finalVersionsList[@]}; do
     echo $eachValue
     done
 }
+
+
 
 
 function checkInitialReleaseVersion() {
