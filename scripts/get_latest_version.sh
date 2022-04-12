@@ -45,7 +45,6 @@ echo "[INFO] Jira Base URL: $jiraBaseUrl"
 echo "[INFO] Jira Project Key: $jiraProjectKey"
 echo "[INFO] Jira Enabler: $jiraEnabler"
 
-versionListFile=versionlist.tmp
 
 function storeLatestVersionIntoFile() {
     local inputList=$1
@@ -185,7 +184,7 @@ function checkInitialReleaseVersion() {
 }
 
 checkInitialReleaseVersion "$initialVersion"
-#versionListFile=versionlist.tmp
+versionListFile=versionlist.tmp
 ## Get all the last 1000 versions and store into file
 #Create empty file first
 touch $ARTIFACT_LAST_DEV_VERSION_FILE
