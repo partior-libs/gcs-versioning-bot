@@ -149,6 +149,7 @@ local responseStatus=$(echo $response | awk -F'status_code:' '{print $2}' | awk 
     echo "[INFO] Query status code: $responseStatus"
 	
 if [[ $responseStatus -eq 200 ]]; then
+	echo "response status $responseStatus"
 
 	local  versions=$( jq '.versions | .[] | select(.archived==false) | select(.name|test("^su.")) | .name' < versionoutput.json)
 	for version in ${versions[@]}; do 
