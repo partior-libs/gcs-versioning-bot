@@ -133,7 +133,7 @@ local versionOutputFile=$1
 local response=""
 local version=""
 
-response=$(curl -k -s - u $jiraUsername:$jiraPassword \
+response=$(curl -k -s -u $jiraUsername:$jiraPassword \
 				-w "status_code:[%{http_code}]" \
 				-X GET \
 				"$jiraBaseUrl/rest/api/latest/project/$jiraProjectKey" -o $versionOutputFile)
