@@ -181,9 +181,9 @@ function getlatestversion() {
     IFS=$'\n' sorted=($(sort -V -r <<<"${versions[*]}"))
     value=$(for elements in ${sorted[@]}; do  echo "$elements"; done | grep $identifier | head -1 | tr -d '"'| cut -c 1-3 --complement)
     finalVersionsList+=("$value")
-    for eachValue in ${finalVersionsList[@]}; do
-    echo $eachValue
-    done
+    #for eachValue in ${finalVersionsList[@]}; do
+    #echo $eachValue
+    #done
 }
 
 
