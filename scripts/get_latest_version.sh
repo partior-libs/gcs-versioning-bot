@@ -173,7 +173,7 @@ function getlatestversion() {
     local eachValue=""
     IFS=$'\n' sorted=($(sort -V -r <<<"${versions[*]}"))
     value=$(for elements in ${sorted[@]}; do  echo "$elements"; done | grep $identifier | head -1 | cut -c 1-3 --complement)
-    finalVersionsList+=$(value)
+    finalVersionsList+=("$value")
     for eachValue in ${finalVersionsList[@]}; do
     echo $eachValue
     done
