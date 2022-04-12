@@ -165,9 +165,7 @@ fi
 
 getlatestversion "$versions" "$DEV_V_IDENTIFIER"
 getlatestversion "$versions" "$RC_V_IDENTIFIER"
-for eachValue in ${finalVersionsList[@]}; do
-    echo $eachValue > $finalVersionsFile
-    done
+echo "${finalVersionsList[*]}" >$finalVersionsFile
 echo "$(cat $finalVersionsFile)"
 }
 
