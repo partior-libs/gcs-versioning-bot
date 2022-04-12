@@ -151,7 +151,7 @@ local responseStatus=$(echo $response | awk -F'status_code:' '{print $2}' | awk 
 if [[ $responseStatus -eq 200 ]]; then
 	echo "response status $responseStatus"
 
-	local  versions=$( jq '.versions | .[] | select(.archived==false) | select(.name|test("^su.")) | .name' < $versionOutputFile)
+	   versions=$( jq '.versions | .[] | select(.archived==false) | select(.name|test("^su.")) | .name' < $versionOutputFile)
 	for version in ${versions[@]}; do 
 			echo $version;	
 	done
@@ -160,7 +160,25 @@ else
 	echo "Error fetching version details"
 	exit 1
 fi
+
+getlatestversion "$versions" "$DEV_V_IDENTIFIER"
+getlatestversion "$versions" "$RC_V_IDENTIFIER"
 }
+
+finalVersionsList=()
+function getlatestversion() {
+    local versionList=$1
+    local identifier=$2
+    local value=""
+    local eachValue=""
+    IFS=$'\n' sorted=($(sort -V -r <<<"${versions[*]}"))
+    value=$(for elements in ${sorted[@]}; do  echo "$elements"; done | grep $identifier | head -1 | cut -c 1-3 --complement)
+    finalVersionsList+=$(value)
+    for eachValue in ${finalVersionsList[@]}; do
+    echo $eachValue
+    done
+}
+
 
 function checkInitialReleaseVersion() {
     local initialVersion=$1
