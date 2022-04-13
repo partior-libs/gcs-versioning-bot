@@ -138,8 +138,7 @@ runs:
           "${{ inputs.jira-password }}" \
           "${{ inputs.jira-base-url }}" \
           "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_project-key }}" \
-          "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_enabled }}" \
-          "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_project-id }}"
+          "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_enabled }}"           
           
       shell: bash
 
@@ -159,6 +158,10 @@ runs:
         echo "::set-output name=new-version::$(echo $(${{ github.action_path }}/scripts/read_new_version.sh))"
         echo "::set-output name=old-version::$(echo $(${{ github.action_path }}/scripts/read_old_version.sh))"
       shell: bash
-
+      
+    - run: |
+        ${{ github.action_path }}/scripts/create_next_version_in_jira.sh "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_project-id }}"
+      shell: bash
+      
     - run: echo Done versioning
       shell: bash
