@@ -172,7 +172,7 @@ fi
 
 getlatestversion "$versions" "$DEV_V_IDENTIFIER"
 getlatestversion "$versions" "$RC_V_IDENTIFIER"
-echo "${finalVersionsList[*]}" >$versionOutputFile
+echo "${finalVersionsList[*]}" > $versionOutputFile
 echo "$(cat $versionOutputFile)"
 }
 
