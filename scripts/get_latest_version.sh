@@ -173,8 +173,8 @@ response=$(curl -k -s -u $jiraUsername:$jiraPassword \
 				-w "status_code:[%{http_code}]" \
 				-X GET \
 				"$jiraBaseUrl/rest/api/latest/project/$jiraProjectKey" )
+echo "Response::: $response"
 echo "$response" >> $versionOutputFile
-echo "$cat $versionOutputFile | $cat $versionlist.tmp"
 
 if [[ $? -ne 0 ]]; then
         echo "[ACTION_CURL_ERROR] $BASH_SOURCE (line:$LINENO): Error running curl to get latest version."
