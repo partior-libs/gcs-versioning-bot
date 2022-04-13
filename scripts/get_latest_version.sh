@@ -159,7 +159,7 @@ if [[ $responseStatus -eq 200 ]]; then
         	echo "\"version\" : \"$resetVersion\"" > $versionOutputFile
 	else
 
-		versions=$( jq --arg identifierTyper "$identifierType" '.versions | .[] | select(.archived==false) | select(.name|test("^$identifierType.")) | .name' < $versionOutputFile)
+		versions=$( jq --arg identifierType "$identifierType" '.versions | .[] | select(.archived==false) | select(.name|startswith($identifierType)) | .name' < $versionOutputFile)
 		for version in ${versions[@]}; do 
 			echo $version;	
 		done
