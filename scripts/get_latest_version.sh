@@ -168,14 +168,6 @@ else
 	echo "Error fetching version details"
 	exit 1
 fi
-
-if ((${#versions[@]})); then
-	local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.0"
-
-        echo "[INFO] Unable to find last version. Resetting to: $resetVersion"
-        echo "\"version\" : \"$resetVersion\"" > $versionOutputFile
-else
-	
 	
 
 getlatestversion "$versions" "$DEV_V_IDENTIFIER"
