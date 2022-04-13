@@ -77,7 +77,7 @@ function storeLatestVersionIntoFile() {
 
 function getArtifactLastVersion() {
     if [[ $jiraEnabler == true ]]; then
-        getLatestVersionFromJira "$versionListFile" "$finalVersionsListFile"
+        getLatestVersionFromJira "$versionListFile" 
         
     else
     
@@ -130,7 +130,6 @@ function getLastestVersionFromArtifactory() {
 
 function getLatestVersionFromJira() {
 local versionOutputFile=$1
-local finalVersionsFile=$2
 local response=""
 local version=""
 
@@ -152,16 +151,32 @@ local responseStatus=$(echo $response | awk -F'status_code:' '{print $2}' | awk 
 	
 if [[ $responseStatus -eq 200 ]]; then
 	echo "response status $responseStatus"
+	if ((${#versions[@]})); then
+		local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.0"
 
-	   versions=$( jq '.versions | .[] | select(.archived==false) | select(.name|test("^su.")) | .name' < $versionOutputFile)
-	for version in ${versions[@]}; do 
+        	echo "[INFO] Unable to find last version. Resetting to: $resetVersion"
+        	echo "\"version\" : \"$resetVersion\"" > $versionOutputFile
+	else
+
+		versions=$( jq '.versions | .[] | select(.archived==false) | select(.name|test("^su.")) | .name' < $versionOutputFile)
+		for version in ${versions[@]}; do 
 			echo $version;	
-	done
+		done
+	fi
 	
 else
 	echo "Error fetching version details"
 	exit 1
 fi
+
+if ((${#versions[@]})); then
+	local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.0"
+
+        echo "[INFO] Unable to find last version. Resetting to: $resetVersion"
+        echo "\"version\" : \"$resetVersion\"" > $versionOutputFile
+else
+	
+	
 
 getlatestversion "$versions" "$DEV_V_IDENTIFIER"
 getlatestversion "$versions" "$RC_V_IDENTIFIER"
