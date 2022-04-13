@@ -188,18 +188,11 @@ local responseStatus=$(echo $response | awk -F'status_code:' '{print $2}' | awk 
 	
 if [[ $responseStatus -eq 200 ]]; then
 	echo "response status $responseStatus"
-	if ((${#versions[@]})); then
-		local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.0"
-
-        	echo "[INFO] Unable to find last version. Resetting to: $resetVersion"
-        	echo "\"version\" : \"$resetVersion\"" > $versionOutputFile
-	else
-
 		versions=$( jq --arg identifierType "$identifierType" '.versions | .[] | select(.archived==false) | select(.name|startswith($identifierType)) | .name' < $versionOutputFile)
 		for version in ${versions[@]}; do 
 			echo $version;	
 		done
-	fi
+	
 	
 else
 	echo "Error fetching version details"
