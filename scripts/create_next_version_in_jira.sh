@@ -42,6 +42,7 @@ if [[ ! -f "$newVersionsFile" ]]; then
 	if [[ $? -ne 0 ]]; then
         echo "[ACTION_CURL_ERROR] $BASH_SOURCE (line:$LINENO): Error running curl to post the next version."
         echo "[DEBUG] Curl: $jiraBaseUrl/rest/api/latest/project/$jiraProjectKey"
+	echo "$response"
         exit 1
 fi
 
