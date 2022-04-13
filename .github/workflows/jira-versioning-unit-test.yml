@@ -124,6 +124,3 @@ jobs:
        run: |
           echo [INFO] Final version: ${{ steps.version-bot.outputs.artifact-version-name}}
      
-     - name: Display Jira versions
-       run: |
-          echo [INFO] Jira versions: ${{ steps.version-bot.outputs.jira-versions }}
