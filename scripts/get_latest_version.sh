@@ -30,6 +30,7 @@ jiraPassword=${11}
 jiraBaseUrl=${12}
 jiraProjectKey=${13}
 jiraEnabler=${14}
+jiraProjectId=${15}
 
 
 
