@@ -165,12 +165,12 @@ fi
 
 getlatestversion "$versions" "$DEV_V_IDENTIFIER"
 getlatestversion "$versions" "$RC_V_IDENTIFIER"
-echo "${finalVersionsList[*]}" >$finalVersionsFile
-echo "$(cat $finalVersionsFile)"
+echo "${finalVersionsList[*]}" >$versionOutputFile
+echo "$(cat $versionOutputFile)"
 }
 
 finalVersionsList=()
-finalVersionsListFile=finalversionlist.tmp
+#finalVersionsListFile=finalversionlist.tmp
 function getlatestversion() {
     local versionList=$1
     local identifier=$2
