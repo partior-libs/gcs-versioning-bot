@@ -132,6 +132,7 @@ function getLatestVersionFromJira() {
 local versionOutputFile=$1
 local response=""
 local version=""
+local identifierType="su-"
 
 
 response=$(curl -k -s -u $jiraUsername:$jiraPassword \
@@ -158,7 +159,7 @@ if [[ $responseStatus -eq 200 ]]; then
         	echo "\"version\" : \"$resetVersion\"" > $versionOutputFile
 	else
 
-		versions=$( jq '.versions | .[] | select(.archived==false) | select(.name|test("^su.")) | .name' < $versionOutputFile)
+		versions=$( jq '.versions | .[] | select(.archived==false) | select(.name|test("^$identifierType")) | .name' < $versionOutputFile)
 		for version in ${versions[@]}; do 
 			echo $version;	
 		done
