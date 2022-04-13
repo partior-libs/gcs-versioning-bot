@@ -46,7 +46,7 @@ echo "[INFO] Jira Project Key: $jiraProjectKey"
 echo "[INFO] Jira Enabler: $jiraEnabler"
 
 
-function storeLatestVersionIntoFile() {
+function storeLatestArtifactoryVersionIntoFile() {
     local inputList=$1
     local identifierType=$2
     local targetSaveFile=$3
@@ -60,6 +60,36 @@ function storeLatestVersionIntoFile() {
         echo $(cat $inputList | grep -E "version" | grep -v -E "\-" | head -1 | cut -d"\"" -f4) > $targetSaveFile
     else
         echo $(cat $inputList | grep -E "version" | grep -E "\-$identifierType\." | head -1 | cut -d"\"" -f4) > $targetSaveFile
+    fi
+    echo "Target Save File::: $(cat $targetSaveFile)"
+    ## If still empty, reset value
+    local updatedContent=$(cat $targetSaveFile | head -1 | xargs)
+    if [[ -z "$updatedContent" ]]; then
+        echo "[INFO] Resetting $targetSaveFile..."
+        if [[ "$identifierType" == "$REL_SCOPE" ]]; then
+            echo "$initialVersion" > $targetSaveFile
+        else
+            echo "$initialVersion-$identifierType.0" > $targetSaveFile
+        fi
+
+    fi
+
+}
+
+function storeLatestJiraVersionIntoFile() {
+    local inputList=$1
+    local identifierType=$2
+    local targetSaveFile=$3
+    echo "Input List::: $(cat $inputList)"
+
+    if [[ ! -f "$inputList" ]]; then
+        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Artifact list file not found: [$inputList]"
+        exit 1
+    fi
+    if [[ "$identifierType" == "$REL_SCOPE" ]]; then
+        echo $(cat $inputList | ! grep '$DEV_V_IDENTIFIER/|$RC_V_IDENTIFIER') > $targetSaveFile
+    else
+        echo $(cat $inputList | grep $identifierType) > $targetSaveFile
     fi
     echo "Target Save File::: $(cat $targetSaveFile)"
     ## If still empty, reset value
@@ -125,7 +155,11 @@ function getLastestVersionFromArtifactory() {
     fi
 
     # fi
-
+    
+## Store respective version type into file
+storeLatestArtifactoryVersionIntoFile "$versionOutputFile" "$DEV_V_IDENTIFIER" "$ARTIFACT_LAST_DEV_VERSION_FILE"
+storeLatestArtifactoryVersionIntoFile "$versionOutputFile" "$RC_V_IDENTIFIER" "$ARTIFACT_LAST_RC_VERSION_FILE"
+storeLatestArtifactoryVersionIntoFile "$versionOutputFile" "$REL_SCOPE" "$ARTIFACT_LAST_REL_VERSION_FILE"
 
 }
 
@@ -176,6 +210,11 @@ getlatestversion "$versions" "$DEV_V_IDENTIFIER"
 getlatestversion "$versions" "$RC_V_IDENTIFIER"
 echo "${finalVersionsList[*]}" > $versionOutputFile
 echo "$(cat $versionOutputFile)"
+
+## Store respective version type into file
+storeLatestJiraVersionIntoFile "$versionOutputFile" "$DEV_V_IDENTIFIER" "$ARTIFACT_LAST_DEV_VERSION_FILE"
+storeLatestJiraVersionIntoFile "$versionOutputFile" "$RC_V_IDENTIFIER" "$ARTIFACT_LAST_RC_VERSION_FILE"
+storeLatestJiraVersionIntoFile "$versionOutputFile" "$REL_SCOPE" "$ARTIFACT_LAST_REL_VERSION_FILE"
 }
 
 finalVersionsList=()
@@ -226,9 +265,6 @@ touch $ARTIFACT_LAST_RC_VERSION_FILE
 touch $ARTIFACT_LAST_REL_VERSION_FILE
 ## getArtifactLastVersion "$artifactoryTargetDevRepo,$artifactoryTargetRelRepo" "$versionListFile"
 getArtifactLastVersion
-## Store respective version type into file
-storeLatestVersionIntoFile "$versionListFile" "$DEV_V_IDENTIFIER" "$ARTIFACT_LAST_DEV_VERSION_FILE"
-storeLatestVersionIntoFile "$versionListFile" "$RC_V_IDENTIFIER" "$ARTIFACT_LAST_RC_VERSION_FILE"
-storeLatestVersionIntoFile "$versionListFile" "$REL_SCOPE" "$ARTIFACT_LAST_REL_VERSION_FILE"
+
 cat $versionListFile
 rm -f $versionListFile
