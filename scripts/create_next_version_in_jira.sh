@@ -13,14 +13,25 @@ else
     exit 1
 fi
 
-jiraProjectId=$1
+artifactoryBaseUrl=$1
+artifactoryTargetDevRepo=$2
+artifactoryTargetRelRepo=$3
+artifactoryTargetGroup=$4
+artifactoryTargetArtifactName=$5
+artifactoryUsername=$6
+artifactoryPassword=$7
+jiraUsername=$8
+jiraPassword=$9
+jiraBaseUrl=${10}
+jiraProjectId=${11}
 
 cat $ARTIFACT_NEXT_VERSION_FILE
 echo $ARTIFACT_NEXT_VERSION_FILE > newversions.tmp
-createArtifactNextVersionInJira "newversions.tmp" "$DEV_V_IDENTIFIER"
-createArtifactNextVersionInJira "newversions.tmp" "$RC_V_IDENTIFIER"
-createArtifactNextVersionInJira "newversions.tmp" "$$REL_SCOPE"
-
+newVersionsList=newversions.tmp
+versionListFile=versionlist.tmp
+getLastestVersionFromArtifactory  "$versionListFile" "$newVersionsList" "$DEV_V_IDENTIFIER"
+getLastestVersionFromArtifactory  "$versionListFile" "$newVersionsList" "$RC_V_IDENTIFIER"
+getLastestVersionFromArtifactory  "$versionListFile" "$newVersionsList" "$REL_SCOPE"
 
 function createArtifactNextVersionInJira() {
 local newVersionsFile=$1
@@ -46,3 +57,34 @@ if [[ ! -f "$newVersionsFile" ]]; then
         exit 1
 fi
 
+function getLastestVersionFromArtifactory() {
+    local versionOutputFile=$1
+    local newVersionsFile=$2
+    local identifier=$3
+    echo "[INFO] Getting latest versions for RC, DEV and Release"
+    response=$(curl -k -s -u $artifactoryUsername:$artifactoryPassword \
+        -w "status_code:[%{http_code}]" \
+        -X GET \
+        "$artifactoryBaseUrl/api/search/versions?a=${artifactoryTargetArtifactName}&g=${artifactoryTargetGroup}&repos=${targetRepo}" -o $versionOutputFile)
+    if [[ $? -ne 0 ]]; then
+        echo "[ACTION_CURL_ERROR] $BASH_SOURCE (line:$LINENO): Error running curl to get latest version."
+        echo "[DEBUG] Curl: $artifactoryBaseUrl/api/search/versions?a=${artifactoryTargetArtifactName}&g=${artifactoryTargetGroup}&repos=${targetRepo}"
+        exit 1
+    fi
+    #echo "[DEBUG] response...[$response]"
+    #responseBody=$(echo $response | awk -F'status_code:' '{print $1}')
+    local responseStatus=$(echo $response | awk -F'status_code:' '{print $2}' | awk -F'[][]' '{print $2}')
+    #echo "[INFO] responseBody: $responseBody"
+    echo "[INFO] Query status code: $responseStatus"
+    echo "[DEBUG] Latest [$versionOutputFile] version:"
+    echo "$(cat $versionOutputFile)"
+
+    if [[ $responseStatus -ne 200 ]]; then
+        if (cat $versionOutputFile | grep -q "Unable to find artifact versions");then
+	createArtifactNextVersionInJira "$newVersionsList" "$DEV_V_IDENTIFIER"
+        createArtifactNextVersionInJira "$newVersionsList" "$RC_V_IDENTIFIER"
+        createArtifactNextVersionInJira "$newVersionsList" "$$REL_SCOPE"
+	
+	else
+	versions=$( jq  '.results | .[] | .versions' < $versionOutputFile)
+            
