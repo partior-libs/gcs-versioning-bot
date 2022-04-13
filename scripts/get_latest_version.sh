@@ -172,7 +172,7 @@ local identifierType="su-"
 response=$(curl -k -s -u $jiraUsername:$jiraPassword \
 				-w "status_code:[%{http_code}]" \
 				-X GET \
-				"$jiraBaseUrl/rest/api/latest/project/$jiraProjectKey -o versionOutputFile" )
+				"$jiraBaseUrl/rest/api/latest/project/$jiraProjectKey" -o versionOutputFile)
 #echo "Response::: $response"
 #echo $response >> $versionOutputFile
 
