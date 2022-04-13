@@ -13,7 +13,7 @@ else
     exit 1
 fi
 
-jiraProjectId=${15}
+jiraProjectId=$1
 
 cat $ARTIFACT_NEXT_VERSION_FILE
 echo $ARTIFACT_NEXT_VERSION_FILE > newversions.tmp
