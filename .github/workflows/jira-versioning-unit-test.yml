@@ -79,7 +79,7 @@ jobs:
           upload: true
     
   versioning-bot:       
-    needs: [ read-config ]
+    needs: [ read-config,read-jira-versions-config]
     runs-on: ubuntu-latest
     env:
       BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
