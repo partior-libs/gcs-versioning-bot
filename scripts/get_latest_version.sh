@@ -50,7 +50,7 @@ function storeLatestVersionIntoFile() {
     local inputList=$1
     local identifierType=$2
     local targetSaveFile=$3
-    echo "Input List::: &inputList"
+    echo "Input List::: $inputList"
 
     if [[ ! -f "$inputList" ]]; then
         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Artifact list file not found: [$inputList]"
@@ -61,7 +61,7 @@ function storeLatestVersionIntoFile() {
     else
         echo $(cat $inputList | grep -E "version" | grep -E "\-$identifierType\." | head -1 | cut -d"\"" -f4) > $targetSaveFile
     fi
-    echo "Target Save File::: $targetSaveFile"
+    echo "Target Save File::: $(cat($targetSaveFile))"
     ## If still empty, reset value
     local updatedContent=$(cat $targetSaveFile | head -1 | xargs)
     if [[ -z "$updatedContent" ]]; then
