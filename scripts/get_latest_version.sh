@@ -88,7 +88,7 @@ function storeLatestJiraVersionIntoFile() {
         exit 1
     fi
     if [[ "$identifierType" == "$REL_SCOPE" ]]; then
-        echo $(cat $inputList | ! grep '$DEV_V_IDENTIFIER/|$RC_V_IDENTIFIER') > $targetSaveFile
+        echo $(cat $inputList | grep -v '$DEV_V_IDENTIFIER/|$RC_V_IDENTIFIER') > $targetSaveFile
     else
         echo $(cat $inputList | grep $identifierType) > $targetSaveFile
     fi
