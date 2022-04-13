@@ -168,8 +168,6 @@ local versionOutputFile=$1
 local response=""
 local version=""
 local identifierType="su-"
-local startAt=0
-
 
 response=$(curl -k -s -u $jiraUsername:$jiraPassword \
 				-w "status_code:[%{http_code}]" \
