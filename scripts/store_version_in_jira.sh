@@ -49,11 +49,11 @@ echo "[INFO] Getting all versions for RC, DEV and Release from Artifactory"
     echo "$(cat $versionListFile)"
     
     if [[ $responseStatus -ne 200 ]]; then
-        if (cat $versionListFile | grep -q "Unable to find artifact versions");then
+        if (cat $versionListFile | grep -q "Unable to find artifact versions"); then
 	createArtifactNextVersionInJira "$newVersion" "$versionIdentifier"
 	fi
     else
-	compareVersionsFromArtifactory  "$versionListFile" "$newVersion" 
+	compareVersionsFromArtifactory "$versionListFile" "$newVersion" 
     fi
     
 function compareVersionsFromArtifactory() {
