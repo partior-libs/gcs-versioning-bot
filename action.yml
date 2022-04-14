@@ -160,7 +160,7 @@ runs:
       shell: bash
       
     - run: |
-        ${{ github.action_path }}/scripts/create_next_version_in_jira.sh  "${{ inputs.artifactory-base-url }}" \
+        ${{ github.action_path }}/scripts/store_version_in_jira.sh  "${{ inputs.artifactory-base-url }}" \
         "${{ steps.yaml-config.outputs.artifact_packager_artifactory-dev-repo }}" \
         "${{ steps.yaml-config.outputs.artifact_packager_artifactory-release-repo }}" \
         "${{ steps.yaml-config.outputs.artifact_packager_group }}" \
@@ -170,7 +170,8 @@ runs:
         "${{ inputs.jira-username }}" \
         "${{ inputs.jira-password }}" \
         "${{ inputs.jira-base-url }}" \
-        "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_project-id }}" 
+        "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_project-id }}" \
+        "${{ ${{ steps.final-version.outputs.new-version }}"
         
       shell: bash
       
