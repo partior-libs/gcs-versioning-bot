@@ -42,7 +42,7 @@ echo "[INFO] Getting all versions for RC, DEV and Release from Artifactory"
     fi
     #echo "[DEBUG] response...[$response]"
     #responseBody=$(echo $response | awk -F'status_code:' '{print $1}')
-    local responseStatus=$(echo $response | awk -F'status_code:' '{print $2}' | awk -F'[][]' '{print $2}')
+    responseStatus=$(echo $response | awk -F'status_code:' '{print $2}' | awk -F'[][]' '{print $2}')
     #echo "[INFO] responseBody: $responseBody"
     echo "[INFO] Query status code: $responseStatus"
     echo "[DEBUG] Latest [$versionOutputFile] version:"
@@ -82,7 +82,7 @@ local identifierType=$2
 				-w "status_code:[%{http_code}]" \
 				-X POST \
 				-H "Content-Type: application/json" \
-				--data '{"projectId" : $jiraProjectId,"name" : "$identifierType$newVersion","startDate" : null,"releaseDate" : null,"description" : ""}'
+				--data '{"projectId" : $jiraProjectId,"name" : "$identifierType$newVersion","startDate" : null,"releaseDate" : null,"description" : ""}' \
 				"$jiraBaseUrl/rest/api/2/version")
 				
 	if [[ $? -ne 0 ]]; then
