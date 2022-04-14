@@ -12,7 +12,7 @@ smc:
             enabled: true
             project-key: DEVPILOT
             project-id: 10015
-            version-identifier: ""
+            version-identifier: "su-"
     branches:
       default:
         artifact:
