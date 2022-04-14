@@ -6,6 +6,7 @@ on:
           - 'scripts/get_latest_version.sh'
           - '.github/workflows/jira-versioning-unit-test.yml'
           - 'scripts/create_next_version_in_jira.sh'
+          - 'action.yml'
     workflow_dispatch:
 
 env:
