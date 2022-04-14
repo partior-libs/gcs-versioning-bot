@@ -141,7 +141,7 @@ runs:
           "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_enabled }}" \
           "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_version-identifier }}"
           
-      shell: bash
+    shell: bash
 
     - run: |
         ${{ github.action_path }}/scripts/generate_package_version.sh "${{ steps.yaml-config.outputs.artifact-base-name }}" \
@@ -150,7 +150,7 @@ runs:
           "${BUILD_GH_TAG_FILE}" \
           "${BUILD_GH_COMMIT_MESSAGE_FILE}" \
           "${{ inputs.debug }}"
-      shell: bash
+    shell: bash
 
 
     - id: final-version
