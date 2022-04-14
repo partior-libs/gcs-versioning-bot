@@ -189,7 +189,7 @@ local responseStatus=$(echo $response | awk -F'status_code:' '{print $2}' | awk 
 	
 if [[ $responseStatus -eq 200 ]]; then
 	echo "response status $responseStatus"
-	local versionsLength=$(jq '.versions | .[] | length' < $versionOutputFile)
+	local versionsLength=$(jq '.versions | length' < $versionOutputFile)
 	if (($versionsLength == 0 )); then
 		local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.0"
 
