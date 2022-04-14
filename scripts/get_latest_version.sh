@@ -185,9 +185,9 @@ getlatestversion "$versions" "$RC_V_IDENTIFIER"
 getlatestversion "$versions" "$REL_SCOPE"
 tempVariable=""
 for everyVersion in ${finalVersionsList[@]}; do
-tempVariable+=$(echo -e "\"version\" : \"$everyVersion\"\n")
+tempVariable+=$(echo -e "\"version\" : \"$everyVersion\""\n)
 done
-echo "$tempVariable" > $versionOutputFile
+echo  "$tempVariable" > $versionOutputFile
 echo "$(cat $versionOutputFile)"
 
 ## Store respective version type into file
