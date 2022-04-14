@@ -27,6 +27,21 @@ jiraProjectId=${11}
 newVersion=${12}
 versionIdentifier=${13}
 
+
+echo "[INFO] Artifatory Base Url: $artifactoryBaseUrl"
+echo "[INFO] Artifactory Target Dev Repo: $artifactoryTargetDevRepo"
+echo "[INFO] Artifactory Target Rel Repo: $artifactoryTargetRelRepo"
+echo "[INFO] Artifactory Target Group: $artifactoryTargetGroup"
+echo "[INFO] Artifactory Target Artifact Name: $artifactoryTargetArtifactName"
+echo "[INFO] Artifactory Username: $artifactoryUsername"
+echo "[INFO] Artifactory Password: $artifactoryPassword"
+echo "[INFO] Jira Username: $jiraUsername"
+echo "[INFO] Jira Password: $jiraPassword"
+echo "[INFO] Jira Base Url: $jiraBaseUrl"
+echo "[INFO] Jira Project ID: $jiraProjectId"
+echo "[INFO] New Version: $newVersion"
+echo "[INFO] Version Identifier: $versionIdentifier"
+
 versionListFile=versionlist.tmp
 
 function compareVersionsFromArtifactory() {
