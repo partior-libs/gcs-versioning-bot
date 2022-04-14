@@ -31,6 +31,7 @@ jiraBaseUrl=${12}
 jiraProjectKey=${13}
 jiraEnabler=${14}
 jiraProjectId=${15}
+versionIdentifier=${16}
 
 
 
@@ -109,7 +110,7 @@ function storeLatestJiraVersionIntoFile() {
 
 function getArtifactLastVersion() {
     if [[ $jiraEnabler == true ]]; then
-        getLatestVersionFromJira "$versionListFile" 
+        getLatestVersionFromJira "$versionListFile" "$versionIdentifier"
         
     else
     
@@ -166,9 +167,9 @@ storeLatestArtifactoryVersionIntoFile "$versionOutputFile" "$REL_SCOPE" "$ARTIFA
 
 function getLatestVersionFromJira() {
 local versionOutputFile=$1
+local identifierType=$2
 local response=""
 local version=""
-local identifierType="su-"
 
 response=$(curl -k -s -u $jiraUsername:$jiraPassword \
 				-w "status_code:[%{http_code}]" \
