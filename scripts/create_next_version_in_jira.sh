@@ -51,11 +51,12 @@ echo "[INFO] Getting all versions for RC, DEV and Release from Artifactory"
 	createArtifactNextVersionInJira "$newVersionsList" "$DEV_V_IDENTIFIER"
         createArtifactNextVersionInJira "$newVersionsList" "$RC_V_IDENTIFIER"
         createArtifactNextVersionInJira "$newVersionsList" "$$REL_SCOPE"
-	
-	else
+	fi
+    else
 	compareVersionsFromArtifactory  "$versionListFile" "$newVersionsList" "$DEV_V_IDENTIFIER"
 	compareVersionsFromArtifactory  "$versionListFile" "$newVersionsList" "$RC_V_IDENTIFIER"
 	compareVersionsFromArtifactory  "$versionListFile" "$newVersionsList" "$REL_SCOPE"
+    fi
 	
 
 function compareVersionsFromArtifactory() {
