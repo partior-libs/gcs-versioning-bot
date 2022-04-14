@@ -138,7 +138,8 @@ runs:
           "${{ inputs.jira-password }}" \
           "${{ inputs.jira-base-url }}" \
           "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_project-key }}" \
-          "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_enabled }}"           
+          "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_enabled }}" \
+          "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_version-identifier }}"
           
       shell: bash
 
