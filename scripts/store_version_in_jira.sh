@@ -24,9 +24,11 @@ jiraUsername=$8
 jiraPassword=$9
 jiraBaseUrl=${10}
 jiraProjectId=${11}
+newVersion=${12}
+versionIdentifier=${13}
 
-cat $ARTIFACT_NEXT_VERSION_FILE
-echo $ARTIFACT_NEXT_VERSION_FILE > newversions.tmp
+versionListFile=versionlist.tmp
+
 
 echo "[INFO] Getting all versions for RC, DEV and Release from Artifactory"
     response=$(curl -k -s -u $artifactoryUsername:$artifactoryPassword \
@@ -47,52 +49,40 @@ echo "[INFO] Getting all versions for RC, DEV and Release from Artifactory"
     echo "$(cat $versionListFile)"
     
     if [[ $responseStatus -ne 200 ]]; then
-        if (cat $versionOutputFile | grep -q "Unable to find artifact versions");then
-	createArtifactNextVersionInJira "$newVersionsList" "$DEV_V_IDENTIFIER"
-        createArtifactNextVersionInJira "$newVersionsList" "$RC_V_IDENTIFIER"
-        createArtifactNextVersionInJira "$newVersionsList" "$$REL_SCOPE"
+        if (cat $versionListFile | grep -q "Unable to find artifact versions");then
+	createArtifactNextVersionInJira "$newVersion" "$versionIdentifier"
 	fi
     else
-	compareVersionsFromArtifactory  "$versionListFile" "$newVersionsList" "$DEV_V_IDENTIFIER"
-	compareVersionsFromArtifactory  "$versionListFile" "$newVersionsList" "$RC_V_IDENTIFIER"
-	compareVersionsFromArtifactory  "$versionListFile" "$newVersionsList" "$REL_SCOPE"
+	compareVersionsFromArtifactory  "$versionListFile" "$newVersion" 
     fi
-	
-
+    
 function compareVersionsFromArtifactory() {
     local versionOutputFile=$1
-    local newVersionsFile=$2
-    local identifier=$3
-    
+    local newVersion=$2    
     versions=$( jq  '.results | .[] | .versions' < $versionOutputFile)
-    local newVersion=$(cat $newVersionsFile | grep $identifier)
-    for version in "${array[@]}"; do
-        if [[ $version == "$newVersion" ]]; then
+    for version in "${versions[@]}"; do
+        if [[ $version == $newVersion ]]; then
             echo "[ERROR] New Version already present in Artifactory "
-            break
+            exit 1
     
 	else
-	createArtifactNextVersionInJira "$newVersionsFile" "$identifier"
+	createArtifactNextVersionInJira "$newVersion" "$versionIdentifier"
 	fi
     done
 
 }
 
-function createArtifactNextVersionInJira() {
-local newVersionsFile=$1
-local identifierType=$2
-local versionName=$(cat $newVersionsFile | grep $identifierType)
-if [[ ! -f "$newVersionsFile" ]]; then
-        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Artifact list file not found: [$newVersionsFile]"
+    
 
-        exit 1
-    fi
+function createArtifactNextVersionInJira() {
+local newVersion=$1
+local identifierType=$2
 	
 	response=$(curl -k -s -u $jiraUsername:$jiraPassword \
 				-w "status_code:[%{http_code}]" \
 				-X POST \
 				-H "Content-Type: application/json" \
-				--data '{"projectId" : $jiraProjectId,"name" : "$versionName","startDate" : null,"releaseDate" : null,"description" : ""}'
+				--data '{"projectId" : $jiraProjectId,"name" : "$identifierType$newVersion","startDate" : null,"releaseDate" : null,"description" : ""}'
 				"$jiraBaseUrl/rest/api/2/version")
 				
 	if [[ $? -ne 0 ]]; then
@@ -100,11 +90,19 @@ if [[ ! -f "$newVersionsFile" ]]; then
         echo "[DEBUG] Curl: $jiraBaseUrl/rest/api/latest/project/$jiraProjectKey"
 	echo "$response"
         exit 1
-fi
+	fi
+	
+    local responseStatus=$(echo $response | awk -F'status_code:' '{print $2}' | awk -F'[][]' '{print $2}')
+    #echo "[INFO] responseBody: $responseBody"
+    echo "[INFO] Query status code: $responseStatus"
+	
+    if [[ $responseStatus -eq 201 ]]; then
+    echo "response status $responseStatus"
+    echo "Version created: $response | jq '.' "
+       
+    else
+    echo "[ERROR] $response | jq '.errors | .name' "
+    
+    fi
 }
-
-
-
-newVersionsList=newversions.tmp
-versionListFile=versionlist.tmp
 
