@@ -73,10 +73,9 @@ function compareVersionsFromArtifactory() {
     
 	else
 	createArtifactNextVersionInJira "$newVersionsFile" "$identifier"
+	fi
     done
 
-}
-            
 }
 
 function createArtifactNextVersionInJira() {
