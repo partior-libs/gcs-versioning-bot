@@ -29,33 +29,6 @@ versionIdentifier=${13}
 
 versionListFile=versionlist.tmp
 
-
-echo "[INFO] Getting all versions for RC, DEV and Release from Artifactory"
-    response=$(curl -k -s -u $artifactoryUsername:$artifactoryPassword \
-        -w "status_code:[%{http_code}]" \
-        -X GET \
-        "$artifactoryBaseUrl/api/search/versions?a=${artifactoryTargetArtifactName}&g=${artifactoryTargetGroup}&repos=${targetRepo}" -o $versionListFile)
-    if [[ $? -ne 0 ]]; then
-        echo "[ACTION_CURL_ERROR] $BASH_SOURCE (line:$LINENO): Error running curl to get latest version."
-        echo "[DEBUG] Curl: $artifactoryBaseUrl/api/search/versions?a=${artifactoryTargetArtifactName}&g=${artifactoryTargetGroup}&repos=${targetRepo}"
-        exit 1
-    fi
-    #echo "[DEBUG] response...[$response]"
-    #responseBody=$(echo $response | awk -F'status_code:' '{print $1}')
-    responseStatus=$(echo $response | awk -F'status_code:' '{print $2}' | awk -F'[][]' '{print $2}')
-    #echo "[INFO] responseBody: $responseBody"
-    echo "[INFO] Query status code: $responseStatus"
-    echo "[DEBUG] Latest [$versionOutputFile] version:"
-    echo "$(cat $versionListFile)"
-    
-    if [[ $responseStatus -ne 200 ]]; then
-        if (cat $versionListFile | grep -q "Unable to find artifact versions"); then
-	createArtifactNextVersionInJira "$newVersion" "$versionIdentifier"
-	fi
-    else
-	compareVersionsFromArtifactory "$versionListFile" "$newVersion" 
-    fi
-    
 function compareVersionsFromArtifactory() {
     local versionOutputFile=$1
     local newVersion=$2    
@@ -105,4 +78,32 @@ local identifierType=$2
     
     fi
 }
+
+echo "[INFO] Getting all versions for RC, DEV and Release from Artifactory"
+    response=$(curl -k -s -u $artifactoryUsername:$artifactoryPassword \
+        -w "status_code:[%{http_code}]" \
+        -X GET \
+        "$artifactoryBaseUrl/api/search/versions?a=${artifactoryTargetArtifactName}&g=${artifactoryTargetGroup}&repos=${targetRepo}" -o $versionListFile)
+    if [[ $? -ne 0 ]]; then
+        echo "[ACTION_CURL_ERROR] $BASH_SOURCE (line:$LINENO): Error running curl to get latest version."
+        echo "[DEBUG] Curl: $artifactoryBaseUrl/api/search/versions?a=${artifactoryTargetArtifactName}&g=${artifactoryTargetGroup}&repos=${targetRepo}"
+        exit 1
+    fi
+    #echo "[DEBUG] response...[$response]"
+    #responseBody=$(echo $response | awk -F'status_code:' '{print $1}')
+    responseStatus=$(echo $response | awk -F'status_code:' '{print $2}' | awk -F'[][]' '{print $2}')
+    #echo "[INFO] responseBody: $responseBody"
+    echo "[INFO] Query status code: $responseStatus"
+    echo "[DEBUG] Latest [$versionOutputFile] version:"
+    echo "$(cat $versionListFile)"
+    
+    if [[ $responseStatus -ne 200 ]]; then
+        if (cat $versionListFile | grep -q "Unable to find artifact versions"); then
+	createArtifactNextVersionInJira "$newVersion" "$versionIdentifier"
+	fi
+    else
+	compareVersionsFromArtifactory "$versionListFile" "$newVersion" 
+    fi
+    
+
 
