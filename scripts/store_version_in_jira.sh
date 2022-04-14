@@ -55,7 +55,7 @@ local identifierType=$2
 				-w "status_code:[%{http_code}]" \
 				-X POST \
 				-H "Content-Type: application/json" \
-				--data '{"projectId" : "$jiraProjectId","name" : "$identifierType$newVersion","startDate" : null,"releaseDate" : null,"description" : ""}' \
+				--data '{"projectId" : $jiraProjectId,"name" : "$identifierType$newVersion","startDate" : null,"releaseDate" : null,"description" : ""}' \
 				"$jiraBaseUrl/rest/api/2/version")
 				
 	if [[ $? -ne 0 ]]; then
