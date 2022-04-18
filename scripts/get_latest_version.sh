@@ -144,13 +144,13 @@ local version=""
 response=$(curl -k -s -u $jiraUsername:$jiraPassword \
 				-w "status_code:[%{http_code}]" \
 				-X GET \
-				"$jiraBaseUrl/rest/api/latest/project/$jiraProjectKey" -o $versionOutputFile)
+				"$jiraBaseUrl/rest/api/3/project/$jiraProjectKey/versions" -o $versionOutputFile)
 #echo "Response::: $response"
 #echo $response >> $versionOutputFile
 
 if [[ $? -ne 0 ]]; then
         echo "[ACTION_CURL_ERROR] $BASH_SOURCE (line:$LINENO): Error running curl to get latest version."
-        echo "[DEBUG] Curl: $jiraBaseUrl/rest/api/latest/project/$jiraProjectKey"
+        echo "[DEBUG] Curl: $jiraBaseUrl/rest/api/3/project/$jiraProjectKey/versions"
         exit 1
 fi
 
@@ -160,7 +160,7 @@ local responseStatus=$(echo $response | awk -F'status_code:' '{print $2}' | awk 
 	
 if [[ $responseStatus -eq 200 ]]; then
 	echo "response status $responseStatus"
-	local versionsLength=$(jq '.versions | length' < $versionOutputFile)
+	local versionsLength=$(jq '.' | length' < $versionOutputFile)
 	if (($versionsLength == 0 )); then
 		local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.0"
 
@@ -168,7 +168,7 @@ if [[ $responseStatus -eq 200 ]]; then
         	echo "\"version\" : \"$resetVersion\"" > $versionOutputFile
 	else
 
-		versions=$( jq --arg identifierType "$identifierType" '.versions | .[] | select(.archived==false) | select(.name|startswith($identifierType)) | .name' < $versionOutputFile)
+		versions=$( jq --arg identifierType "$identifierType" '.[] | select(.archived==false) | select(.name|startswith($identifierType)) | .name' < $versionOutputFile)
 		for version in ${versions[@]}; do 
 			echo $version;	
 		done
