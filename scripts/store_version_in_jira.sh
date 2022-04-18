@@ -48,7 +48,6 @@ function compareVersionsFromArtifactory() {
     local versionOutputFile=$1
     local newVersion=$2    
     versions=$( jq  '.results | .[] | .version' < $versionOutputFile | tr -d '"')
-    echo "Versions are $versions"
     for version in "${versions[@]}"; do
     	echo "Version:::$version"
 	echo "New Version:::$newVersion"
@@ -67,12 +66,14 @@ function compareVersionsFromArtifactory() {
 function createArtifactNextVersionInJira() {
 local newVersion=$1
 local identifierType=$2
+local startDate=$(date '+%Y-%m-%d')
+local releaseDate=$(date '+%Y-%m-%d' -d "$startDate+10 days")
 	
 	response=$(curl -k -s -u $jiraUsername:$jiraPassword \
 				-w "status_code:[%{http_code}]" \
 				-X POST \
 				-H "Content-Type: application/json" \
-				--data '{"projectId" : "'$jiraProjectId'","name" : "'$identifierType$newVersion'","startDate" : null,"releaseDate" : null,"description" : ""}' \
+				--data '{"projectId" : "'$jiraProjectId'","name" : "'$identifierType$newVersion'","startDate" : "'$startDate'","releaseDate" : "'$releaseDate'","description" : ""}' \
 				"$jiraBaseUrl/rest/api/2/version")
 				
 	if [[ $? -ne 0 ]]; then
