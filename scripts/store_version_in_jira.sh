@@ -50,10 +50,11 @@ function compareVersionsFromArtifactory() {
     versions=$( jq  '.results | .[] | .version' < $versionOutputFile)
     echo "Versions are $versions"
     for version in "${versions[@]}"; do
+    	echo "Version:::$version"
+	echo "New Version:::$newVersion"
         if [[ $version == $newVersion ]]; then
             echo "[ERROR] New Version already present in Artifactory "
             exit 1
-    
 	else
 	createArtifactNextVersionInJira "$newVersion" "$versionIdentifier"
 	fi
