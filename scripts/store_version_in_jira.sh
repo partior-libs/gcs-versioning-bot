@@ -80,7 +80,7 @@ function createArtifactNextVersionInJira() {
         fi
 }
 
-if curl --head --silent --fail $artifactoryBaseUrl/api/search/pattern?pattern=$artifactoryTargetDevRepo:$artifactoryTargetGroup/$artifactoryTargetArtifactName/$artifactoryTargetArtifactName-$newVersion.* > /dev/null;
+if curl --head --silent --fail "$artifactoryBaseUrl/api/search/pattern?pattern=$artifactoryTargetDevRepo:$artifactoryTargetGroup/$artifactoryTargetArtifactName/$artifactoryTargetArtifactName-$newVersion.*" > /dev/null;
  then
   echo "This page exists."
  else
