@@ -43,85 +43,49 @@ echo "[INFO] New Version: $newVersion"
 echo "[INFO] Version Identifier: $versionIdentifier"
 
 versionListFile=versionlist.tmp
-
-function compareVersionsFromArtifactory() {
-    local versionOutputFile=$1
-    local newVersion=$2    
-    versions=$( jq  '.results | .[] | .version' < $versionOutputFile | tr -d '"')
-    for version in "${versions[@]}"; do
-    	echo "Version:::$version"
-	echo "New Version:::$newVersion"
-        if [[ $version == $newVersion ]]; then
-            echo "[ERROR] New Version already present in Artifactory "
-            exit 1
-	else
-	createArtifactNextVersionInJira "$newVersion" "$versionIdentifier"
-	fi
-    done
-
-}
-
     
 
 function createArtifactNextVersionInJira() {
-local newVersion=$1
-local identifierType=$2
-local startDate=$(date '+%Y-%m-%d')
-local releaseDate=$(date '+%Y-%m-%d' -d "$startDate+10 days")
-	
+	local newVersion=$1
+	local identifierType=$2
+	local startDate=$(date '+%Y-%m-%d')
+	local releaseDate=$(date '+%Y-%m-%d' -d "$startDate+15 days")
+	local buildUrl=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+	local response=""	
 	response=$(curl -k -s -u $jiraUsername:$jiraPassword \
 				-w "status_code:[%{http_code}]" \
 				-X POST \
 				-H "Content-Type: application/json" \
-				--data '{"projectId" : "'$jiraProjectId'","name" : "'$identifierType$newVersion'","startDate" : "'$startDate'","releaseDate" : "'$releaseDate'","description" : ""}' \
+				--data '{"projectId" : "'$jiraProjectId'","name" : "'$identifierType$newVersion'","startDate" : "'$startDate'","releaseDate" : "'$releaseDate'","description" : "'$buildUrl'"}' \
 				"$jiraBaseUrl/rest/api/2/version")
 				
 	if [[ $? -ne 0 ]]; then
-        echo "[ACTION_CURL_ERROR] $BASH_SOURCE (line:$LINENO): Error running curl to post the next version."
-        echo "[DEBUG] Curl: $jiraBaseUrl/rest/api/latest/project/$jiraProjectKey"
-	echo "$response"
-        exit 1
+		echo "[ACTION_CURL_ERROR] $BASH_SOURCE (line:$LINENO): Error running curl to post the next version."
+		echo "[DEBUG] Curl: $jiraBaseUrl/rest/api/latest/project/$jiraProjectKey"
+		echo "$response"
+		exit 1
 	fi
 	
-    local responseStatus=$(echo $response | awk -F'status_code:' '{print $2}' | awk -F'[][]' '{print $2}')
-    #echo "[INFO] responseBody: $responseBody"
-    echo "[INFO] Query status code: $responseStatus"
-	
-    if [[ $responseStatus -eq 201 ]]; then
-    echo "response status $responseStatus"
-    echo "Version created: $response | jq '.' "
-       
-    else
-    echo "[ERROR] $response | jq '.errors | .name' "
-    
-    fi
+        local responseStatus=$(echo $response | awk -F'status_code:' '{print $2}' | awk -F'[][]' '{print $2}')
+        #echo "[INFO] responseBody: $responseBody"
+        echo "[INFO] Query status code: $responseStatus"
+
+        if [[ $responseStatus -eq 201 ]]; then
+        	echo "response status $responseStatus"
+        	echo "Version created: $response | jq '.' "
+
+        else
+        	echo "[ERROR] $response | jq '.errors | .name' "
+
+        fi
 }
 
-echo "[INFO] Getting all versions for RC, DEV and Release from Artifactory"
-    response=$(curl -k -s -u $artifactoryUsername:$artifactoryPassword \
-        -w "status_code:[%{http_code}]" \
-        -X GET \
-        "$artifactoryBaseUrl/api/search/versions?a=${artifactoryTargetArtifactName}&g=${artifactoryTargetGroup}&repos=${targetRepo}" -o $versionListFile)
-    if [[ $? -ne 0 ]]; then
-        echo "[ACTION_CURL_ERROR] $BASH_SOURCE (line:$LINENO): Error running curl to get latest version."
-        echo "[DEBUG] Curl: $artifactoryBaseUrl/api/search/versions?a=${artifactoryTargetArtifactName}&g=${artifactoryTargetGroup}&repos=${targetRepo}"
-        exit 1
-    fi
-    #echo "[DEBUG] response...[$response]"
-    #responseBody=$(echo $response | awk -F'status_code:' '{print $1}')
-    responseStatus=$(echo $response | awk -F'status_code:' '{print $2}' | awk -F'[][]' '{print $2}')
-    #echo "[INFO] responseBody: $responseBody"
-    echo "[INFO] Query status code: $responseStatus"
-    echo "[DEBUG] Latest [$versionOutputFile] version:"
-    echo "$(cat $versionListFile)"
-    
-    if [[ $responseStatus -ne 200 ]]; then
-        if (cat $versionListFile | grep -q "Unable to find artifact versions"); then
-	createArtifactNextVersionInJira "$newVersion" "$versionIdentifier"
-	fi
-    else
-	compareVersionsFromArtifactory "$versionListFile" "$newVersion" 
-    fi
+if curl --head --silent --fail $artifactoryBaseUrl/api/search/pattern?pattern=$artifactoryTargetDevRepo:$artifactoryTargetGroup/$artifactoryTargetArtifactName/$artifactoryTargetArtifactName-$newVersion.* 2> /dev/null;
+ then
+  echo "This page exists."
+ else
+  echo "This page does not exist."
+fi
     
 
 
