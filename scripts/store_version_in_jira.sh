@@ -47,7 +47,8 @@ versionListFile=versionlist.tmp
 function compareVersionsFromArtifactory() {
     local versionOutputFile=$1
     local newVersion=$2    
-    versions=$( jq  '.results | .[] | .versions' < $versionOutputFile)
+    versions=$( jq  '.results | .[] | .version' < $versionOutputFile)
+    echo "Versions are $versions"
     for version in "${versions[@]}"; do
         if [[ $version == $newVersion ]]; then
             echo "[ERROR] New Version already present in Artifactory "
