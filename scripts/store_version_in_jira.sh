@@ -79,15 +79,34 @@ function createArtifactNextVersionInJira() {
 
         fi
 }
-url="$artifactoryBaseUrl/api/search/pattern?pattern=$artifactoryTargetDevRepo:$artifactoryTargetGroup/$artifactoryTargetArtifactName/$artifactoryTargetArtifactName-$newVersion.*"
-echo "URL::: $url"
-if curl -u $artifactoryUsername:$artifactoryPassword -X GET --head --silent --fail $url > /dev/null;
-  then
-	  echo "[ERROR] New Version already present in Artifactory "
-	  exit 1
-  else
-  	  createArtifactNextVersionInJira "$newVersion" "$versionIdentifier"
-fi
+echo "[INFO] Getting all versions for RC, DEV and Release from Artifactory"
+    response=$(curl -k -s -u $artifactoryUsername:$artifactoryPassword \
+        -w "status_code:[%{http_code}]" \
+        -X GET \
+        "$artifactoryBaseUrl/api/search/pattern?pattern=$artifactoryTargetDevRepo:$artifactoryTargetGroup/$artifactoryTargetArtifactName/$artifactoryTargetArtifactName-$newVersion.*" -o $versionListFile)
+    if [[ $? -ne 0 ]]; then
+        echo "[ACTION_CURL_ERROR] $BASH_SOURCE (line:$LINENO): Error running curl to get latest version."
+        echo "[DEBUG] Curl: $artifactoryBaseUrl/api/search/pattern?pattern=$artifactoryTargetDevRepo:$artifactoryTargetGroup/$artifactoryTargetArtifactName/$artifactoryTargetArtifactName-$newVersion.*"
+        exit 1
+    fi
+    #echo "[DEBUG] response...[$response]"
+    #responseBody=$(echo $response | awk -F'status_code:' '{print $1}')
+    responseStatus=$(echo $response | awk -F'status_code:' '{print $2}' | awk -F'[][]' '{print $2}')
+    #echo "[INFO] responseBody: $responseBody"
+    echo "[INFO] Query status code: $responseStatus"
+    echo "[DEBUG] Latest [$versionOutputFile] version:"
+    echo "$(cat $versionListFile)"
+    
+    if [[ $responseStatus -eq 200 ]]; then
+        if ($(jq '.files | length') == 0 < $versionListFile); then
+		createArtifactNextVersionInJira "$newVersion" "$versionIdentifier"
+	else
+		echo "[ERROR] New Version already present in Artifactory "
+            	exit 1
+	fi
+    else
+		echo "[ERROR] $response"
+    fi
     
 
 
