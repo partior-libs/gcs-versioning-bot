@@ -47,7 +47,7 @@ versionListFile=versionlist.tmp
 function compareVersionsFromArtifactory() {
     local versionOutputFile=$1
     local newVersion=$2    
-    versions=$( jq  '.results | .[] | .version' < $versionOutputFile)
+    versions=$( jq  '.results | .[] | .version' < $versionOutputFile | tr -d '"')
     echo "Versions are $versions"
     for version in "${versions[@]}"; do
     	echo "Version:::$version"
