@@ -81,7 +81,7 @@ function createArtifactNextVersionInJira() {
 }
 url="$artifactoryBaseUrl/api/search/pattern?pattern=$artifactoryTargetDevRepo:$artifactoryTargetGroup/$artifactoryTargetArtifactName/$artifactoryTargetArtifactName-$newVersion.*"
 echo "URL::: $url"
-if curl --head --silent --fail $url > /dev/null;
+if curl -u $artifactoryUsername:$artifactoryPassword -X GET --head --silent --fail $url > /dev/null;
  then
   echo "This page exists."
  else
