@@ -98,7 +98,7 @@ echo "[INFO] Getting all versions for RC, DEV and Release from Artifactory"
     echo "$(cat $versionListFile)"
     
     if [[ $responseStatus -eq 200 ]]; then
-        if ($(jq '.files | length') == 0 < $versionListFile); then
+        if (($(jq '.files | length' < $versionListFile) == 0)); then
 		createArtifactNextVersionInJira "$newVersion" "$versionIdentifier"
 	else
 		echo "[ERROR] New Version already present in Artifactory "
