@@ -82,10 +82,11 @@ function createArtifactNextVersionInJira() {
 url="$artifactoryBaseUrl/api/search/pattern?pattern=$artifactoryTargetDevRepo:$artifactoryTargetGroup/$artifactoryTargetArtifactName/$artifactoryTargetArtifactName-$newVersion.*"
 echo "URL::: $url"
 if curl -u $artifactoryUsername:$artifactoryPassword -X GET --head --silent --fail $url > /dev/null;
- then
-  echo "This page exists."
- else
-  echo "This page does not exist."
+  then
+	  echo "[ERROR] New Version already present in Artifactory "
+	  exit 1
+  else
+  	  createArtifactNextVersionInJira "$newVersion" "$versionIdentifier"
 fi
     
 
