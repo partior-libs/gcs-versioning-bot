@@ -79,7 +79,7 @@ function createArtifactNextVersionInJira() {
 
         fi
 }
-local url=$($artifactoryBaseUrl/api/search/pattern?pattern=$artifactoryTargetDevRepo:$artifactoryTargetGroup/$artifactoryTargetArtifactName/$artifactoryTargetArtifactName-$newVersion.*)
+url=$artifactoryBaseUrl/api/search/pattern?pattern=$artifactoryTargetDevRepo:$artifactoryTargetGroup/$artifactoryTargetArtifactName/$artifactoryTargetArtifactName-$newVersion.*)
 echo "URL::: $url"
 if curl --head --silent --fail $url > /dev/null;
  then
