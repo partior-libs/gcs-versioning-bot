@@ -45,7 +45,6 @@ projectDetails=tempfile.tmp
 function getJiraProjectId() {
 	local projectDetailsFile=$1
 	local response=""
-	local 
 	response=$(curl -k -s -u $jiraUsername:$jiraPassword \
 				-w "status_code:[%{http_code}]" \
 				-X POST \
