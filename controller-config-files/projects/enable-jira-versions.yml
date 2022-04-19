@@ -11,7 +11,6 @@ smc:
           jira:
             enabled: true
             project-key: DEVPILOT
-            project-id: 10015
             version-identifier: "su_"
     branches:
       default:
