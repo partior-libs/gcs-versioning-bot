@@ -83,6 +83,11 @@ jobs:
   versioning-bot:       
     needs: [ read-config,read-jira-versions-config]
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rule: [ enable-jira-versions ]
+        branch: [ main, release, develop, feature ]
     env:
       BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
       REPO_NAME: ${{ needs.read-config.outputs.repo-name }}
@@ -96,7 +101,7 @@ jobs:
 
      - uses: actions/download-artifact@v3
        with:
-         name: ${{ env.YAML_JIRA_CI_CONFIG_IMPORTER }}
+         name: ${{ matrix.rule }}
 
      - name: View commit message
        run: |
@@ -111,10 +116,10 @@ jobs:
          artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
          jira-username: ${{ secrets.JIRA_USERNAME }}
          jira-password: ${{ secrets.JIRA_API_TOKEN }}
-         versioning-rules-importer-file: ${{ env.YAML_JIRA_CI_CONFIG_IMPORTER }}
+         versioning-rules-importer-file: ${{ matrix.rule }}
          branch-packager-rules-importer-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
          consolidated-commit-msg: ${{ env.ALL_DELTA_COMMIT_MSG }}
-         branch-name: ${{ env.BRANCH_NAME }}
+         branch-name: ${{ matrix.rule }}
          debug: true
          # branch-name: ${{ env.BRANCH_NAME }}
 
