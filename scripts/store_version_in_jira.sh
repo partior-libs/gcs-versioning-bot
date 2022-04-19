@@ -63,7 +63,7 @@ function getJiraProjectId() {
 
         if [[ $responseStatus -eq 200 ]]; then
         	echo "[INFO] Response status $responseStatus"
-        	local jiraProjectId=$(jq '.|.id' < $projectDetailsFile )
+        	local jiraProjectId=$(jq '.|.id' < $projectDetailsFile | tr -d '"' )
 		echo "Project Id::: $jiraProjectId"
 		createArtifactNextVersionInJira "newVersion" "versionIdentifier" "jiraProjectId"
 
