@@ -13,12 +13,24 @@ This action generate the next incremented semantic version of artifact with the 
     # Jfrog password to query last artifact version
     # Mandatory: Yes
     artifactory-username: ''
-
+    
     # Artifactory base URL for query endpoint
     # Mandatory: No
     # Default: ${{ github.token }}
     artifactory-base-url: 'https://partior.jfrog.io/artifactory'
-
+    
+    # Jira username to query versions
+    # Mandatory: Yes
+    jira-username: ''
+    
+    # Jira password to query versions
+    # Mandatory: Yes
+    jira-password: ''
+    
+    # Jira base URL for query endpoint
+    # Mandatory: No
+    # Default: ${{ github.token }}
+    jira-base-url: 'https://partior.atlassian.net'
 
     # Branch name of the triggered repository. Use this only for testing purpose. Leave empty for action to retrieve branch name correctly
     # Example: feature, release, main, bugfix
