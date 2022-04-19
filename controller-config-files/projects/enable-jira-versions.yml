@@ -28,8 +28,6 @@ smc:
         artifact:
           packager:
             group: partior
-        jira:
-          jira-project-key: DEVPILOT
       release:
         artifact:
           packager:
