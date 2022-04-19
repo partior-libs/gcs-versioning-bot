@@ -65,7 +65,7 @@ function getJiraProjectId() {
         	echo "[INFO] Response status $responseStatus"
         	local jiraProjectId=$(jq '.|.id' < $projectDetailsFile | tr -d '"' )
 		echo "Project Id::: $jiraProjectId"
-		createArtifactNextVersionInJira "newVersion" "versionIdentifier" "jiraProjectId"
+		createArtifactNextVersionInJira "$newVersion" "$versionIdentifier" "$jiraProjectId"
 
         else
 		echo "[ACTION_RESPONSE_ERROR] $BASH_SOURCE (line:$LINENO): Return code not 200 when querying project details: [$responseStatus]" 
@@ -83,8 +83,6 @@ function createArtifactNextVersionInJira() {
 	local releaseDate=$(date '+%Y-%m-%d' -d "$startDate+14 days")
 	local buildUrl=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
 	local response=""
-	echo "[INFO] Inside function"
-	echo "Jira Project ID:::$jiraProjectId"
 	response=$(curl -k -s -u $jiraUsername:$jiraPassword \
 				-w "status_code:[%{http_code}]" \
 				-X POST \
