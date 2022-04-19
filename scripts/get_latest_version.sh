@@ -137,14 +137,11 @@ function getLatestVersionFromJira() {
 	local response=""
 	local version=""
 	local tempVariable=""
-
+	echo "[INFO] Getting all versions from Jira... "
 	response=$(curl -k -s -u $jiraUsername:$jiraPassword \
 					-w "status_code:[%{http_code}]" \
 					-X GET \
 					"$jiraBaseUrl/rest/api/3/project/$jiraProjectKey/versions" -o $versionOutputFile)
-	#echo "Response::: $response"
-	#echo $response >> $versionOutputFile
-
 	if [[ $? -ne 0 ]]; then
 		echo "[ACTION_CURL_ERROR] $BASH_SOURCE (line:$LINENO): Error running curl to get latest version."
 		echo "[DEBUG] Curl: $jiraBaseUrl/rest/api/3/project/$jiraProjectKey/versions"
@@ -156,7 +153,7 @@ function getLatestVersionFromJira() {
 	    echo "[INFO] Query status code: $responseStatus"
 
 	if [[ $responseStatus -eq 200 ]]; then
-		echo "response status $responseStatus"
+		echo "[INFO] Response status $responseStatus"
 		local versionsLength=$(jq '. | length' < $versionOutputFile)
 		if (($versionsLength == 0 )); then
 			local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.0"
@@ -172,7 +169,8 @@ function getLatestVersionFromJira() {
 		fi
 
 	else
-		echo "Error fetching version details"
+		echo "[ACTION_RESPONSE_ERROR] $BASH_SOURCE (line:$LINENO): Return code not 200 when querying version details: [$responseStatus]" 
+		echo "[Error] Error fetching version details"
 		exit 1
 	fi
 
@@ -181,7 +179,7 @@ function getLatestVersionFromJira() {
 	getlatestversion "$versions" "$RC_V_IDENTIFIER"
 	getlatestversion "$versions" "$REL_SCOPE"
 	for everyVersion in ${finalVersionsList[@]}; do
-	tempVariable+=$(echo -e "\n\"version\" : \"$everyVersion\"")
+		tempVariable+=$(echo -e "\n\"version\" : \"$everyVersion\"")
 	done
 	echo  "$tempVariable" > $versionOutputFile
 	echo "$(cat $versionOutputFile)"
@@ -197,12 +195,7 @@ function getlatestversion() {
     IFS=$'\n' sorted=($(sort -V -r <<<"${versions[*]}"))
     value=$(for elements in ${sorted[@]}; do  echo "$elements"; done | grep $identifier | head -1 | tr -d '"'| cut -d'_' -f 1 --complement)
     finalVersionsList+=("$value")
-    #for eachValue in ${finalVersionsList[@]}; do
-    #echo $eachValue
-    #done
 }
-
-
 
 
 function checkInitialReleaseVersion() {
