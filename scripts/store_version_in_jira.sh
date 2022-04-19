@@ -47,7 +47,7 @@ function getJiraProjectId() {
 	local response=""
 	response=$(curl -k -s -u $jiraUsername:$jiraPassword \
 				-w "status_code:[%{http_code}]" \
-				-X POST \
+				-X GET \
 				-H "Content-Type: application/json" \
 				"$jiraBaseUrl/rest/api/latest/project/$jiraProjectKey" -o $projectDetailsFile)
 	if [[ $? -ne 0 ]]; then
