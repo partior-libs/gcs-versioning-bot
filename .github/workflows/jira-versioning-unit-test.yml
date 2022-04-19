@@ -119,7 +119,7 @@ jobs:
          versioning-rules-importer-file: ${{ matrix.rule }}
          branch-packager-rules-importer-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
          consolidated-commit-msg: ${{ env.ALL_DELTA_COMMIT_MSG }}
-         branch-name: ${{ matrix.rule }}
+         branch-name: ${{ matrix.branch }}
          debug: true
          # branch-name: ${{ env.BRANCH_NAME }}
 
