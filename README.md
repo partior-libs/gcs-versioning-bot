@@ -79,6 +79,13 @@ smc:
     artifact-auto-versioning:
       enabled: false
       initial-release-version: 1.0.0
+      version-sources:
+          artifactory:
+            enabled: false
+          jira:
+            enabled: true
+            project-key: ""
+            version-identifier: ""
       major-version:
         enabled: true
         rules:
@@ -349,6 +356,8 @@ jobs:
         with:
           artifactory-username: svc-smc-read
           artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
+          jira-username: ${{ secrets.JIRA_USERNAME }}
+          jira-password: ${{ secrets.JIRA_API_TOKEN }}
           versioning-rules-importer-file: ${{ env.YAML_STD_CI_CONFIG_IMPORTER }}
           branch-packager-rules-importer-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
           consolidated-commit-msg: ${{ env.ALL_DELTA_COMMIT_MSG }}
