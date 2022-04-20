@@ -51,18 +51,16 @@ function storeLatestVersionIntoFile() {
     local inputList=$1
     local identifierType=$2
     local targetSaveFile=$3
-    echo "Input List::: $(cat $inputList)"
 
     if [[ ! -f "$inputList" ]]; then
         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Artifact list file not found: [$inputList]"
         exit 1
     fi
     if [[ "$identifierType" == "$REL_SCOPE" ]]; then
-        echo $(cat $inputList | grep -E "version" | grep -v -E "\-" | head -1 | cut -d"\"" -f4) > $targetSaveFile
+        echo $(cat $inputList | grep -E "version" | grep -v -E "\-" | cut -d"\"" -f4 | sort -rV | head -1) > $targetSaveFile
     else
-        echo $(cat $inputList | grep -E "version" | grep -E "\-$identifierType\." | head -1 | cut -d"\"" -f4) > $targetSaveFile
+        echo $(cat $inputList | grep -E "version" | grep -E "\-$identifierType\." | cut -d"\"" -f4 | sort -rV | head -1) > $targetSaveFile
     fi
-    echo "Target Save File::: $(cat $targetSaveFile)"
     ## If still empty, reset value
     local updatedContent=$(cat $targetSaveFile | head -1 | xargs)
     if [[ -z "$updatedContent" ]]; then
@@ -79,13 +77,16 @@ function storeLatestVersionIntoFile() {
 
 function getArtifactLastVersion() {
     local versionListFile=$1
-    getLastestVersionFromArtifactory "$artifactoryTargetDevRepo,$artifactoryTargetRelRepo" "$versionListFile"
+    getLatestVersionFromArtifactory "$artifactoryTargetDevRepo,$artifactoryTargetRelRepo" "$versionListFile"
     ## Combine result from Jira if enabled
     if [[ "$jiraEnabler" == "true" ]]; then
         local tmpVersionFile=versionfile_$(date +%s).tmp
         getLatestVersionFromJira "$tmpVersionFile" "$jiraVersionIdentifier"  
+        echo "[DEBUG] List from Jira:"
+        cat $cat $tmpVersionFile
         ## combine both
         # Ensure newline
+        echo "[DEBUG] Combining list with Artifactory"
         echo >> $versionListFile
         cat $tmpVersionFile >> $versionListFile
         cat $versionListFile | sort -u | grep -v "^\n" > $versionListFile.2
@@ -94,7 +95,7 @@ function getArtifactLastVersion() {
     
 }
 
-function getLastestVersionFromArtifactory() {
+function getLatestVersionFromArtifactory() {
     local targetRepo=$1
     local versionOutputFile=$2
     echo "[INFO] Getting latest versions for RC, DEV and Release from Artifactory..."
@@ -118,7 +119,6 @@ function getLastestVersionFromArtifactory() {
     echo "[DEBUG] Latest [$versionOutputFile] version:"
     echo "$(cat $versionOutputFile)"
 
-
     if [[ $responseStatus -ne 200 ]]; then
         if (cat $versionOutputFile | grep -q "Unable to find artifact versions");then
             local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.0"
@@ -126,10 +126,12 @@ function getLastestVersionFromArtifactory() {
             echo "\"version\" : \"$resetVersion\"" > $versionOutputFile
         else
             echo "[ACTION_RESPONSE_ERROR] $BASH_SOURCE (line:$LINENO): Return code not 200 when querying latest version: [$responseStatus]" 
-            echo " $(cat $versionOutputFile)" 
             exit 1
         fi
     fi
+    echo "[INFO] Trimming redundant lines..."
+    cat $versionOutputFile | grep "\"version\"" > $versionOutputFile.2
+    mv $versionOutputFile.2 $versionOutputFile
     
 }
 
