@@ -1,13 +1,13 @@
 name: Test Jira Versioning
 
 on:
-    push:
-        paths:
-          - 'scripts/get_latest_version.sh'
-          - '.github/workflows/jira-versioning-unit-test.yml'
-          - 'scripts/store_version_in_jira.sh'
-          - 'action.yml'
-    workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/get_latest_version.sh'
+      - '.github/workflows/jira-versioning-unit-test.yml'
+      - 'scripts/store_version_in_jira.sh'
+      - 'action.yml'
+  workflow_dispatch:
 
 env:
   YAML_CI_BRANCH_CONFIG_IMPORTER: yaml_ci_branch_importer
