@@ -13,6 +13,18 @@ inputs:
     description: 'Artifactory base URL'
     required: false
     default: 'https://partior.jfrog.io/artifactory'
+  jira-username:
+    description: 'Jira Username'
+    required: true
+    default: 'NIL'
+  jira-password: 
+    description: 'Jira Password'
+    required: true
+    default: 'NIL'
+  jira-base-url:
+    description: 'Jira Base Url'
+    required: false
+    default: 'https://partior.atlassian.net'
   branch-name:  
     description: 'Override branch type name. Use only for testing purpose'
     required: false
@@ -33,6 +45,8 @@ inputs:
     description: 'Debug mode for more logging'
     required: false
     default: 'false'
+  
+
 outputs:
   artifact-full-version-name:
     description: "Final output with artifact name and version"
@@ -107,7 +121,6 @@ runs:
           echo cat $BUILD_GH_COMMIT_MESSAGE_FILE:
           cat $BUILD_GH_COMMIT_MESSAGE_FILE
         fi
-        
       shell: bash
 
     - run: |
@@ -119,7 +132,13 @@ runs:
           "${BUILD_GH_BRANCH_NAME}" \
           "${{ steps.yaml-config.outputs.artifact-auto-versioning_initial-release-version }}" \
           "${{ inputs.artifactory-username }}" \
-          "${{ inputs.artifactory-password }}"
+          "${{ inputs.artifactory-password }}" \
+          "${{ inputs.jira-username }}" \
+          "${{ inputs.jira-password }}" \
+          "${{ inputs.jira-base-url }}" \
+          "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_project-key }}" \
+          "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_enabled }}" \
+          "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_version-identifier }}"   
       shell: bash
 
     - run: |
@@ -138,6 +157,22 @@ runs:
         echo "::set-output name=new-version::$(echo $(${{ github.action_path }}/scripts/read_new_version.sh))"
         echo "::set-output name=old-version::$(echo $(${{ github.action_path }}/scripts/read_old_version.sh))"
       shell: bash
-
+      
+    - run: |
+        ${{ github.action_path }}/scripts/store_version_in_jira.sh "${{ inputs.artifactory-base-url }}" \
+          "${{ steps.yaml-config.outputs.artifact_packager_artifactory-dev-repo }}" \
+          "${{ steps.yaml-config.outputs.artifact_packager_artifactory-release-repo }}" \
+          "${{ steps.yaml-config.outputs.artifact_packager_group }}" \
+          "${{ steps.yaml-config.outputs.artifact-base-name }}" \
+          "${{ inputs.artifactory-username }}" \
+          "${{ inputs.artifactory-password }}" \
+          "${{ inputs.jira-username }}" \
+          "${{ inputs.jira-password }}" \
+          "${{ inputs.jira-base-url }}" \
+          "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_project-key }}" \
+          "${{ steps.final-version.outputs.new-version }}" \
+          "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_version-identifier }}"
+      shell: bash
+      
     - run: echo Done versioning
       shell: bash

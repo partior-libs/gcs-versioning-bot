@@ -1,0 +1,46 @@
+---
+smc:
+  ci:
+    artifact-base-name: new-artifact
+    artifact-auto-versioning:
+      enabled: true
+      initial-release-version: 0.0.1
+      version-sources:
+          artifactory:
+            enabled: false
+          jira:
+            enabled: true
+            project-key: DEVPILOT
+            version-identifier: "su_"
+    branches:
+      default:
+        artifact:
+          packager:
+            group: partior
+            artifactory-username: svc-smc-read
+            artifactory-dev-repo: smc-generic-dev
+            artifactory-release-repo: smc-generic-release
+      main:
+        artifact:
+          packager:
+            group: partior
+      feature:
+        artifact:
+          packager:
+            group: partior
+      release:
+        artifact:
+          packager:
+            group: partior
+      hotfix:
+        artifact:
+          packager:
+            group: partior
+      bugfix:
+        artifact:
+          packager:
+            group: partior
+      develop:
+        artifact:
+          packager:
+            group: partior
