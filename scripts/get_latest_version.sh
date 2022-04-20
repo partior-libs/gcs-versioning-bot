@@ -46,6 +46,7 @@ echo "[INFO] Initial version if empty: $initialVersion"
 echo "[INFO] Jira Base URL: $jiraBaseUrl" 
 echo "[INFO] Jira Project Key: $jiraProjectKey"
 echo "[INFO] Jira Enabler: $jiraEnabler"
+echo "[INFO] Jira Version Identifier: $versionIdentifier"
 
 
 function storeLatestVersionIntoFile() {

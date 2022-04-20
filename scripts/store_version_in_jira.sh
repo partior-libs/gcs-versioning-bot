@@ -74,7 +74,7 @@ function getJiraProjectId() {
 
 function createArtifactNextVersionInJira() {
     local newVersion=$1
-    local identifierType=$2
+    local versionIdentifier=$2
     local jiraProjectId=$3
     local startDate=$(date '+%Y-%m-%d')
     local releaseDate=$(date '+%Y-%m-%d' -d "$startDate+14 days")
@@ -84,7 +84,7 @@ function createArtifactNextVersionInJira() {
                 -w "status_code:[%{http_code}]" \
                 -X POST \
                 -H "Content-Type: application/json" \
-                --data '{"projectId" : "'$jiraProjectId'","name" : "'$identifierType$newVersion'","startDate" : "'$startDate'","releaseDate" : "'$releaseDate'","description" : "'$buildUrl'"}' \
+                --data '{"projectId" : "'$jiraProjectId'","name" : "'${versionIdentifier}_${newVersion}'","startDate" : "'$startDate'","releaseDate" : "'$releaseDate'","description" : "'$buildUrl'"}' \
                 "$jiraBaseUrl/rest/api/2/version")
                 
     if [[ $? -ne 0 ]]; then
