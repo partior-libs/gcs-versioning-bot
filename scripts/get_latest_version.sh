@@ -30,9 +30,7 @@ jiraPassword=${11}
 jiraBaseUrl=${12}
 jiraProjectKey=${13}
 jiraEnabler=${14}
-jiraProjectId=${15}
-versionIdentifier=${16}
-
+jiraVersionIdentifier=${15}
 
 
 echo "[INFO] Branch name: $sourceBranchName"
@@ -46,7 +44,7 @@ echo "[INFO] Initial version if empty: $initialVersion"
 echo "[INFO] Jira Base URL: $jiraBaseUrl" 
 echo "[INFO] Jira Project Key: $jiraProjectKey"
 echo "[INFO] Jira Enabler: $jiraEnabler"
-echo "[INFO] Jira Version Identifier: $versionIdentifier"
+echo "[INFO] Jira Version Identifier: $jiraVersionIdentifier"
 
 
 function storeLatestVersionIntoFile() {
@@ -85,7 +83,7 @@ function getArtifactLastVersion() {
     ## Combine result from Jira if enabled
     if [[ "$jiraEnabler" == "true" ]]; then
         local tmpVersionFile=versionfile_$(date +%s).tmp
-        getLatestVersionFromJira "$tmpVersionFile" "$versionIdentifier"  
+        getLatestVersionFromJira "$tmpVersionFile" "$jiraVersionIdentifier"  
         ## combine both
         # Ensure newline
         echo >> $versionListFile

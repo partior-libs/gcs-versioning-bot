@@ -25,7 +25,7 @@ jiraPassword=$9
 jiraBaseUrl=${10}
 jiraProjectKey=${11}
 newVersion=${12}
-versionIdentifier=${13}
+jiraVersionIdentifier=${13}
 
 
 echo "[INFO] Artifatory Base Url: $artifactoryBaseUrl"
@@ -36,7 +36,7 @@ echo "[INFO] Artifactory Target Artifact Name: $artifactoryTargetArtifactName"
 echo "[INFO] Jira Base Url: $jiraBaseUrl"
 echo "[INFO] Jira Project Key: $jiraProjectKey"
 echo "[INFO] New Version: $newVersion"
-echo "[INFO] Version Identifier: $versionIdentifier"
+echo "[INFO] Version Identifier: $jiraVersionIdentifier"
 
 versionListFile=versionlist.tmp
 projectDetails=tempfile.tmp
@@ -74,7 +74,7 @@ function getJiraProjectId() {
 
 function createArtifactNextVersionInJira() {
     local newVersion=$1
-    local versionIdentifier=$2
+    local jiraVersionIdentifier=$2
     local jiraProjectId=$3
     local startDate=$(date '+%Y-%m-%d')
     local releaseDate=$(date '+%Y-%m-%d' -d "$startDate+14 days")
@@ -84,7 +84,7 @@ function createArtifactNextVersionInJira() {
                 -w "status_code:[%{http_code}]" \
                 -X POST \
                 -H "Content-Type: application/json" \
-                --data '{"projectId" : "'$jiraProjectId'","name" : "'${versionIdentifier}_${newVersion}'","startDate" : "'$startDate'","releaseDate" : "'$releaseDate'","description" : "'$buildUrl'"}' \
+                --data '{"projectId" : "'$jiraProjectId'","name" : "'${jiraVersionIdentifier}_${newVersion}'","startDate" : "'$startDate'","releaseDate" : "'$releaseDate'","description" : "'$buildUrl'"}' \
                 "$jiraBaseUrl/rest/api/2/version")
                 
     if [[ $? -ne 0 ]]; then
@@ -115,7 +115,7 @@ if [[ $? -ne 0 ]]; then
 	echo "[DEBUG] echo $jiraProjectId"
 	exit 1
 fi
-createArtifactNextVersionInJira "$newVersion" "$versionIdentifier" "$jiraProjectId"
+createArtifactNextVersionInJira "$newVersion" "$jiraVersionIdentifier" "$jiraProjectId"
 
 
 
