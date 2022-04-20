@@ -105,6 +105,7 @@ function createArtifactNextVersionInJira() {
     else
         echo "[ACTION_RESPONSE_ERROR] $BASH_SOURCE (line:$LINENO): Return code not 201 when creating new version in jira: [$responseStatus]" 
         echo "[ERROR] $(echo $response | jq '.errors | .name') "
+		exit 1
     fi
 }
 
