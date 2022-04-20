@@ -4,7 +4,7 @@ on:
   push:
     paths:
       - 'scripts/get_latest_version.sh'
-      - '.github/workflows/jira-versioning-unit-test.yml'
+      - '.github/workflows/unit-test-enabled-jira.yml'
       - 'scripts/store_version_in_jira.sh'
       - 'action.yml'
   workflow_dispatch:
