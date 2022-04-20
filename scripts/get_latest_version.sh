@@ -80,19 +80,25 @@ function storeLatestVersionIntoFile() {
 
 function getArtifactLastVersion() {
     local versionListFile=$1
-    if [ "$jiraEnabler" == "true" ]; then
-        getLatestVersionFromJira "$versionListFile" "$versionIdentifier"
-        
-    else
-    
-        getLastestVersionFromArtifactory "$artifactoryTargetDevRepo,$artifactoryTargetRelRepo" "$versionListFile"
+    getLastestVersionFromArtifactory "$artifactoryTargetDevRepo,$artifactoryTargetRelRepo" "$versionListFile"
+    ## Combine result from Jira if enabled
+    if [[ "$jiraEnabler" == "true" ]]; then
+        local tmpVersionFile=versionfile_$(date +%s).tmp
+        getLatestVersionFromJira "$tmpVersionFile" "$versionIdentifier"  
+        ## combine both
+        # Ensure newline
+        echo >> $versionListFile
+        cat $tmpVersionFile >> $versionListFile
+        cat $versionListFile | sort -u | grep -v "^\n" > $versionListFile.2
+        mv $versionListFile.2 $versionListFile
     fi
+    
 }
 
 function getLastestVersionFromArtifactory() {
     local targetRepo=$1
     local versionOutputFile=$2
-    echo "[INFO] Getting latest versions for RC, DEV and Release..."
+    echo "[INFO] Getting latest versions for RC, DEV and Release from Artifactory..."
 
     rm -f $versionStoreFilename
     local response=""
@@ -117,7 +123,6 @@ function getLastestVersionFromArtifactory() {
     if [[ $responseStatus -ne 200 ]]; then
         if (cat $versionOutputFile | grep -q "Unable to find artifact versions");then
             local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.0"
-
             echo "[INFO] Unable to find last version. Resetting to: $resetVersion"
             echo "\"version\" : \"$resetVersion\"" > $versionOutputFile
         else
@@ -126,75 +131,57 @@ function getLastestVersionFromArtifactory() {
             exit 1
         fi
     fi
-
-    # fi
     
 }
 
 function getLatestVersionFromJira() {
-	local versionOutputFile=$1
-	local identifierType=$2
-	local response=""
-	local version=""
-	local tempVariable=""
-	echo "[INFO] Getting all versions from Jira... "
-	response=$(curl -k -s -u $jiraUsername:$jiraPassword \
-					-w "status_code:[%{http_code}]" \
-					-X GET \
-					"$jiraBaseUrl/rest/api/3/project/$jiraProjectKey/versions" -o $versionOutputFile)
-	if [[ $? -ne 0 ]]; then
-		echo "[ACTION_CURL_ERROR] $BASH_SOURCE (line:$LINENO): Error running curl to get latest version."
-		echo "[DEBUG] Curl: $jiraBaseUrl/rest/api/3/project/$jiraProjectKey/versions"
-		exit 1
-	fi
+    local versionOutputFile=$1
+    local identifierType=$2
+    local response=""
+    local version=""
+    local tempVariable=""
+    echo "[INFO] Getting all versions from Jira... "
+    response=$(curl -k -s -u $jiraUsername:$jiraPassword \
+                    -w "status_code:[%{http_code}]" \
+                    -X GET \
+                    "$jiraBaseUrl/rest/api/3/project/$jiraProjectKey/versions" -o $versionOutputFile)
+    if [[ $? -ne 0 ]]; then
+        echo "[ACTION_CURL_ERROR] $BASH_SOURCE (line:$LINENO): Error running curl to get latest version."
+        echo "[DEBUG] Curl: $jiraBaseUrl/rest/api/3/project/$jiraProjectKey/versions"
+        exit 1
+    fi
 
-	local responseStatus=$(echo $response | awk -F'status_code:' '{print $2}' | awk -F'[][]' '{print $2}')
-	    #echo "[INFO] responseBody: $responseBody"
-	    echo "[INFO] Query status code: $responseStatus"
+    local responseStatus=$(echo $response | awk -F'status_code:' '{print $2}' | awk -F'[][]' '{print $2}')
+    #echo "[INFO] responseBody: $responseBody"
+    echo "[INFO] Query status code: $responseStatus"
 
-	if [[ $responseStatus -eq 200 ]]; then
-		echo "[INFO] Response status $responseStatus"
-		local versionsLength=$(jq '. | length' < $versionOutputFile)
-		if (($versionsLength == 0 )); then
-			local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.0"
+    if [[ $responseStatus -eq 200 ]]; then
+        echo "[INFO] Response status $responseStatus"
+        local versionsLength=$(jq '. | length' < $versionOutputFile)
+        if (($versionsLength == 0 )); then
+            local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.0"
 
-			echo "[INFO] Unable to find last version. Resetting to: $resetVersion"
-			echo "\"version\" : \"$resetVersion\"" > $versionOutputFile
-		else
+            echo "[INFO] Unable to find last version. Resetting to: $resetVersion"
+            echo "\"version\" : \"$resetVersion\"" > $versionOutputFile
+        else
+            ## Store all versions in the same format as artifactory list
+            versions=$( jq -r --arg identifierType "$identifierType_" '.[] | select(.archived==false) | select(.name|startswith($identifierType)) | .name' < $versionOutputFile)
+            rm -f $versionOutputFile
+            for eachVersion in ${versions[@]}; do 
+                local trimVersion=$(echo $eachVersion | awk -F "${identifierType}_" '{print $2}')
+                echo "\"version\" : \"$trimVersion\"" >> $versionOutputFile
+            done
+        fi
 
-			versions=$( jq --arg identifierType "$identifierType" '.[] | select(.archived==false) | select(.name|startswith($identifierType)) | .name' < $versionOutputFile)
-			for version in ${versions[@]}; do 
-				echo $version;	
-			done
-		fi
+    else
+        echo "[ACTION_RESPONSE_ERROR] $BASH_SOURCE (line:$LINENO): Return code not 200 when querying version list: [$responseStatus]" 
+        echo "[Error] Error fetching version list from Jira"
+        exit 1
+    fi
 
-	else
-		echo "[ACTION_RESPONSE_ERROR] $BASH_SOURCE (line:$LINENO): Return code not 200 when querying version details: [$responseStatus]" 
-		echo "[Error] Error fetching version details"
-		exit 1
-	fi
-
-
-	getlatestversion "$versions" "$DEV_V_IDENTIFIER"
-	getlatestversion "$versions" "$RC_V_IDENTIFIER"
-	getlatestversion "$versions" "$REL_SCOPE"
-	for everyVersion in ${finalVersionsList[@]}; do
-		tempVariable+=$(echo -e "\n\"version\" : \"$everyVersion\"")
-	done
-	echo  "$tempVariable" > $versionOutputFile
-	echo "$(cat $versionOutputFile)"
-	
-}
-
-
-function getlatestversion() {
-    local versionList=$1
-    local identifier=$2
-    local value=""
-    local eachValue=""
-    IFS=$'\n' sorted=($(sort -V -r <<<"${versions[*]}"))
-    value=$(for elements in ${sorted[@]}; do  echo "$elements"; done | grep $identifier | head -1 | tr -d '"'| cut -d'_' -f 1 --complement)
-    finalVersionsList+=("$value")
+    echo "[DEBUG] Latest [$versionOutputFile] version:"
+    echo "$(cat $versionOutputFile)"
+    
 }
 
 
@@ -221,8 +208,7 @@ function checkInitialReleaseVersion() {
 
 checkInitialReleaseVersion "$initialVersion"
 versionListFile=versionlist.tmp
-finalVersionsList=()
-## Get all the last 1000 versions and store into file
+
 #Create empty file first
 touch $ARTIFACT_LAST_DEV_VERSION_FILE
 touch $ARTIFACT_LAST_RC_VERSION_FILE

@@ -187,6 +187,34 @@ function degaussCoreVersionVariables() {
 }
 
 ## Reset variables that's not used, to simplify requirement evaluation later
+function degaussReleaseVersionVariables() {
+    local versionScope=$1
+    local tmpVariable=source-$(date +%s).tmp
+    rm -f $tmpVariable
+
+    local branchEnabled=${versionScope}_V_RULE_BRANCH_ENABLED
+    local versionMergeRuleEnabled=${versionScope}_V_RULE_MERGE_ENABLED
+
+    local ghCurrentBranch=${versionScope}_GH_CURRENT_BRANCH
+    local ghCurrentMerge=${versionScope}_GH_CURRENT_MERGE
+
+    echo "export ${vCurrentBranch}=$currentBranch" >> $tmpVariable
+    echo "export ${vCurrentTag}=$currentTag" >> $tmpVariable
+
+    #echo "[DEBUG] branchEnabled==>${!branchEnabled}"
+    if [[ ! "${!branchEnabled}" == "true" ]]; then
+        echo "export ${versionScope}_V_CONFIG_BRANCHES=false" >> $tmpVariable
+        echo "export ${vCurrentBranch}=false" >> $tmpVariable
+    fi
+    if [[ ! "${!versionMergeRuleEnabled}" == "true" ]]; then
+        echo "export ${versionScope}_V_CONFIG_VFILE_NAME=false" >> $tmpVariable
+        echo "export ${vCurrentVersionFile}=false" >> $tmpVariable
+    fi
+    source ./$tmpVariable
+    rm -f $tmpVariable
+}
+
+## Reset variables that's not used, to simplify requirement evaluation later
 function degaussPreReleaseVersionVariables() {
     local versionScope=$1
     local tmpVariable=source-$(date +%s).tmp
@@ -693,52 +721,16 @@ echo [INFO] Before RC version incremented: $lastRCVersion
 echo [INFO] Before DEV version incremented: $lastDevVersion
 if [[ "$(checkPreReleaseVersionFeatureFlag ${RC_SCOPE})" == "true" ]] && [[ ! "${RC_V_RULE_VFILE_ENABLED}" == "true" ]]; then
     nextVersion=$(incrementPreReleaseVersion "$lastRCVersion" "$RC_V_IDENTIFIER")
-    # if [[ "$MOCK_ENABLED" == "true" ]]; then
-    #     if [[ ! -f $MOCK_FILE ]]; then
-    #         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate mock file: [$MOCK_FILE]"
-    #         exit 1
-    #     fi
-    #     cat $MOCK_FILE | grep -v "${MOCK_REL_VERSION_KEYNAME}" > $MOCK_FILE.tmp
-    #     mv $MOCK_FILE.tmp $MOCK_FILE
-    #     echo ${MOCK_REL_VERSION_KEYNAME}=$nextVersion >> $MOCK_FILE
-    # fi
 elif [[ "$(checkPreReleaseVersionFeatureFlag ${DEV_SCOPE})" == "true" ]] && [[ ! "${DEV_V_RULE_VFILE_ENABLED}" == "true" ]]; then
     nextVersion=$(incrementPreReleaseVersion "$lastDevVersion" "$DEV_V_IDENTIFIER")
-    # if [[ "$MOCK_ENABLED" == "true" ]]; then
-    #     if [[ ! -f $MOCK_FILE ]]; then
-    #         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate mock file: [$MOCK_FILE]"
-    #         exit 1
-    #     fi
-    #     cat $MOCK_FILE | grep -v "${MOCK_DEV_VERSION_KEYNAME}" > $MOCK_FILE.tmp
-    #     mv $MOCK_FILE.tmp $MOCK_FILE
-    #     echo ${MOCK_DEV_VERSION_KEYNAME}=$nextVersion >> $MOCK_FILE
-    # fi
 fi
 echo [INFO] After prerelease version incremented: [$nextVersion]
 
 ## Process incrementation on RC and DEV with version file
 if [[ "$(checkPreReleaseVersionFeatureFlag ${RC_SCOPE})" == "true" ]] && [[ "${RC_V_RULE_VFILE_ENABLED}" == "true" ]]; then
     nextVersion=$(incrementPreReleaseVersionByFile "$lastRCVersion" "$RC_V_IDENTIFIER" "${RC_SCOPE}")
-    # if [[ "$MOCK_ENABLED" == "true" ]]; then
-    #     if [[ ! -f $MOCK_FILE ]]; then
-    #         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate mock file: [$MOCK_FILE]"
-    #         exit 1
-    #     fi
-    #     cat $MOCK_FILE | grep -v "${MOCK_REL_VERSION_KEYNAME}" > $MOCK_FILE.tmp
-    #     mv $MOCK_FILE.tmp $MOCK_FILE
-    #     echo ${MOCK_REL_VERSION_KEYNAME}=$nextVersion >> $MOCK_FILE
-    # fi
 elif [[ "$(checkPreReleaseVersionFeatureFlag ${DEV_SCOPE})" == "true" ]] && [[ "${DEV_V_RULE_VFILE_ENABLED}" == "true" ]]; then
     nextVersion=$(incrementPreReleaseVersionByFile "$lastDevVersion" "$DEV_V_IDENTIFIER" "${DEV_SCOPE}")
-    # if [[ "$MOCK_ENABLED" == "true" ]]; then
-    #     if [[ ! -f $MOCK_FILE ]]; then
-    #         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate mock file: [$MOCK_FILE]"
-    #         exit 1
-    #     fi
-    #     cat $MOCK_FILE | grep -v "${MOCK_DEV_VERSION_KEYNAME}" > $MOCK_FILE.tmp
-    #     mv $MOCK_FILE.tmp $MOCK_FILE
-    #     echo ${MOCK_DEV_VERSION_KEYNAME}=$nextVersion >> $MOCK_FILE
-    # fi
 fi
 echo [INFO] After prerelease version incremented with input from version file: [$nextVersion]
 
