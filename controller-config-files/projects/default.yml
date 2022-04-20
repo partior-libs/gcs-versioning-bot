@@ -91,11 +91,11 @@ smc:
             target: ./app-version.cfg
             key: DEV-VERSION
       build-version:
-        enabled: false
+        enabled: true
         identifier: bld
         rules:
           branches: 
-            target: develop,feature
+            target: feature
             enabled: true
       replacement:
         enabled: false
