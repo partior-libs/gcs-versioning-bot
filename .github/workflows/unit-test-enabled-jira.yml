@@ -87,7 +87,7 @@ jobs:
       fail-fast: false
       matrix:
         rule: [ enable_jira_version ]
-        branch: [ main, release, develop, feature ]
+        branch: [ release, develop, feature ]
     env:
       BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
       REPO_NAME: ${{ needs.read-config.outputs.repo-name }}
