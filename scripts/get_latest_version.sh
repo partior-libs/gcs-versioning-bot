@@ -177,7 +177,7 @@ function getLatestVersionFromJira() {
     else
         echo "[ACTION_RESPONSE_ERROR] $BASH_SOURCE (line:$LINENO): Return code not 200 when querying version list: [$responseStatus]" 
         echo "[Error] Error fetching version list from Jira"
-        echo "echo $response | jq '.name'"
+        echo "$(cat $versionOutputFile)"
         exit 1
     fi
 
