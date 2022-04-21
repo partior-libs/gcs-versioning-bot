@@ -181,7 +181,8 @@ runs:
           "${{ inputs.jira-base-url }}" \
           "${{ inputs.consolidated-commit-msg }}" \
           "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_project-key }}" \
-          "${{ steps.final-version.outputs.new-version }}" 
+          "${{ steps.final-version.outputs.new-version }}" \
+          "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_version-identifier }}"
       shell: bash
       
     - run: echo Done versioning
