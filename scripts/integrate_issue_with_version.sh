@@ -70,7 +70,7 @@ function updateIssueWithVersion() {
     fi
 }
 
-}
+
 local issueKeys=()
 extractIssueKey "$deltaMessage" "$projectKey"
 updateIssueWithVersion "$newVersion" "$jiraBaseUrl"
