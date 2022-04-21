@@ -110,7 +110,7 @@ function getLatestVersionFromArtifactory() {
     if [[ ! -z "$jfrogToken" ]]; then
         execQuery="jfrog rt curl -k -s"
         queryPath="-w \"status_code:[%{http_code}]\" "\
-            "-X GET "\
+            "-XGET "\
             "\"/api/search/versions?a=${artifactoryTargetArtifactName}&g=${artifactoryTargetGroup}&repos=${targetRepo}\" -o $versionOutputFile"
     fi
 
