@@ -26,15 +26,15 @@ echo "[INFO] Jira project key: $projectKey"
 echo "[INFO] New version: $newVersion"
 
 function extractIssueKey() {
+    echo "[INFO] Inside the function"
     deltaMessage=$1
     projectKey=$2
     local issueKeys=()
-    for eachWord in $deltaMessage; do
-        issueKeys+=("$(grep $projectKey)")
+    for word in $deltaMessage; do
+        issueKeys+=("$(echo $word | grep -i "devpilot" | cut -d "-" --complement -f 3 | tr 'a-z' 'A-Z')") 
     done
-    for key in ${issueKeys[@]}; do
-        echo "Issue keys:::$key"
-    done
+    issueKeys=($(echo "${issueKeys[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
+    echo ${issueKeys[@]} 
 }
 
 extractIssueKey "$deltaMessage" "$projectKey"
