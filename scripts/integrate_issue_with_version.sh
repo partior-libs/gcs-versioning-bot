@@ -39,8 +39,8 @@ function extractIssueKey() {
 
 function updateIssueWithVersion() {
     local newVersion=$1
-    local jiraBaseUrl=$2
-    local versionIdentifier=$3
+    local versionIdentifier=$2
+    local jiraBaseUrl=$3
     local response=""
     for issueKey in ${issueKeys[@]}; do
         response=$(curl -k -s -u $jiraUsername:$jiraPassword \
