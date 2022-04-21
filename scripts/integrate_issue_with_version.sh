@@ -36,3 +36,5 @@ function extractIssueKey() {
         echo "Issue keys:::$key"
     done
 }
+
+extractIssueKey "$deltaMessage" "$projectKey"
