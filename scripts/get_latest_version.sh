@@ -109,15 +109,15 @@ function getLatestVersionFromArtifactory() {
     local execQuery="curl -k -s -u $artifactoryUsername:$artifactoryPassword"
     if [[ ! -z "$jfrogToken" ]]; then
         execQuery="jfrog rt curl -k -s"
+        queryPath="-w \"status_code:[%{http_code}]\" "\
+            "-X GET "\
+            "\"/api/search/versions?a=${artifactoryTargetArtifactName}&g=${artifactoryTargetGroup}&repos=${targetRepo}\" -o $versionOutputFile"
     fi
 
     ## Start querying
     rm -f $versionStoreFilename
     local response=""
-    response=$($execQuery \
-        -w "status_code:[%{http_code}]" \
-        -X GET \
-        "$artifactoryBaseUrl/api/search/versions?a=${artifactoryTargetArtifactName}&g=${artifactoryTargetGroup}&repos=${targetRepo}" -o $versionOutputFile)
+    response=$($execQuery $queryPath)
     if [[ $? -ne 0 ]]; then
         echo "[ACTION_CURL_ERROR] $BASH_SOURCE (line:$LINENO): Error running curl to get latest version."
         echo "[DEBUG] Curl: $artifactoryBaseUrl/api/search/versions?a=${artifactoryTargetArtifactName}&g=${artifactoryTargetGroup}&repos=${targetRepo}"
