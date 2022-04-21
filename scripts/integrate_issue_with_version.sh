@@ -35,3 +35,4 @@ function extractIssueKey() {
     for key in {issueKeys[@]}; do
         echo "Issue keys:::$key"
     done
+}
