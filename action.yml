@@ -122,15 +122,6 @@ runs:
           cat $BUILD_GH_COMMIT_MESSAGE_FILE
         fi
       shell: bash
-      
-    - run: |
-        ${{ github.action_path }}/scripts/integrate_issue_with_version.sh  "${{ inputs.jira-username }}" \
-          "${{ inputs.jira-password }}" \
-          "${{ inputs.jira-base-url }}" \
-          "${{ inputs.consolidated-commit-msg }}" \
-          "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_project-key }}" \
-          "${{ steps.final-version.outputs.new-version }}" 
-      shell: bash
 
     - run: |
        ${{ github.action_path }}/scripts/get_latest_version.sh "${{ inputs.artifactory-base-url }}" \
@@ -184,6 +175,14 @@ runs:
           "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_version-identifier }}"
       shell: bash
       
+    - run: |
+        ${{ github.action_path }}/scripts/integrate_issue_with_version.sh  "${{ inputs.jira-username }}" \
+          "${{ inputs.jira-password }}" \
+          "${{ inputs.jira-base-url }}" \
+          "${{ inputs.consolidated-commit-msg }}" \
+          "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_project-key }}" \
+          "${{ steps.final-version.outputs.new-version }}" 
+      shell: bash
       
     - run: echo Done versioning
       shell: bash
