@@ -13,30 +13,18 @@ else
     exit 1
 fi
 
-artifactoryBaseUrl=$1
-artifactoryTargetDevRepo=$2
-artifactoryTargetRelRepo=$3
-artifactoryTargetGroup=$4
-artifactoryTargetArtifactName=$5
-artifactoryUsername=$6
-artifactoryPassword=$7
-jiraUsername=$8
-jiraPassword=$9
-jiraBaseUrl=${10}
-jiraProjectKey=${11}
-newVersion=${12}
-jiraVersionIdentifier=${13}
+jiraUsername=${1}
+jiraPassword=${2}
+jiraBaseUrl=${3}
+jiraProjectKey=${4}
+newVersion=${5}
+jiraVersionIdentifier=${6}
 
 
-echo "[INFO] Artifatory Base Url: $artifactoryBaseUrl"
-echo "[INFO] Artifactory Target Dev Repo: $artifactoryTargetDevRepo"
-echo "[INFO] Artifactory Target Rel Repo: $artifactoryTargetRelRepo"
-echo "[INFO] Artifactory Target Group: $artifactoryTargetGroup"
-echo "[INFO] Artifactory Target Artifact Name: $artifactoryTargetArtifactName"
 echo "[INFO] Jira Base Url: $jiraBaseUrl"
 echo "[INFO] Jira Project Key: $jiraProjectKey"
 echo "[INFO] New Version: $newVersion"
-echo "[INFO] Version Identifier: $jiraVersionIdentifier"
+echo "[INFO] Jira Version Identifier: $jiraVersionIdentifier"
 
 versionListFile=versionlist.tmp
 projectDetails=tempfile.tmp

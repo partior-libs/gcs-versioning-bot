@@ -3,11 +3,15 @@ description: 'Package artifact with auto versioning for Smart Contract'
 inputs:
   artifactory-username:  
     description: 'Username for artifactory'
-    required: true
+    required: false
     default: ''
   artifactory-password:  
-    description: 'Password for artifactory'
-    required: true
+    description: 'Access Token/Password for artifactory'
+    required: false
+    default: ''
+  jfrog-token:  
+    description: 'Jfrog Token'
+    required: false
     default: ''
   artifactory-base-url:  
     description: 'Artifactory base URL'
@@ -60,6 +64,22 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - name: Validate jfrog credential
+      id: jfrog
+      run: |
+        if [[ -z "${{ inputs.jfrog-token }}" ]]; then
+          if [[ -z "${{ inputs.artifactory-username }}" ]] || [[ -z "${{ inputs.artifactory-password }}" ]]; then
+            echo [ERROR] Credential to artifactory or jfrog token must be specified.
+            exit 1
+          fi
+        fi
+
+    - name: Setup jfrog
+      if: inputs.jfrog-token != ''
+      uses: jfrog/setup-jfrog-cli@v2
+      env:
+        JF_ENV_1: ${{ inputs.jfrog-token }}
+
     - name: Get PR info
       id: pr-info
       run: |
@@ -133,6 +153,7 @@ runs:
           "${{ steps.yaml-config.outputs.artifact-auto-versioning_initial-release-version }}" \
           "${{ inputs.artifactory-username }}" \
           "${{ inputs.artifactory-password }}" \
+          "${{ inputs.jfrog-token }}" \
           "${{ inputs.jira-username }}" \
           "${{ inputs.jira-password }}" \
           "${{ inputs.jira-base-url }}" \
@@ -160,13 +181,7 @@ runs:
       
     - if: steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_enabled == 'true'
       run: |
-        ${{ github.action_path }}/scripts/store_version_in_jira.sh "${{ inputs.artifactory-base-url }}" \
-          "${{ steps.yaml-config.outputs.artifact_packager_artifactory-dev-repo }}" \
-          "${{ steps.yaml-config.outputs.artifact_packager_artifactory-release-repo }}" \
-          "${{ steps.yaml-config.outputs.artifact_packager_group }}" \
-          "${{ steps.yaml-config.outputs.artifact-base-name }}" \
-          "${{ inputs.artifactory-username }}" \
-          "${{ inputs.artifactory-password }}" \
+        ${{ github.action_path }}/scripts/store_version_in_jira.sh \
           "${{ inputs.jira-username }}" \
           "${{ inputs.jira-password }}" \
           "${{ inputs.jira-base-url }}" \

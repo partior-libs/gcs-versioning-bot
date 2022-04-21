@@ -257,7 +257,8 @@ jobs:
         uses: partior-libs/gcs-versioning-bot@main
         with:
           artifactory-username: svc-smc-read
-          artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
+          # artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
+          jfrog-token: ${{ secrets.JFROG_TOKEN }}
           versioning-rules-importer-file: ${{ matrix.rule }}
           branch-packager-rules-importer-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
           consolidated-commit-msg: ${{ env.ALL_DELTA_COMMIT_MSG }}

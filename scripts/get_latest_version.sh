@@ -25,12 +25,13 @@ sourceBranchName=$6
 initialVersion=$7
 artifactoryUsername=$8
 artifactoryPassword=$9
-jiraUsername=${10}
-jiraPassword=${11}
-jiraBaseUrl=${12}
-jiraProjectKey=${13}
-jiraEnabler=${14}
-jiraVersionIdentifier=${15}
+jfrogToken=${10}
+jiraUsername=${11}
+jiraPassword=${12}
+jiraBaseUrl=${13}
+jiraProjectKey=${14}
+jiraEnabler=${15}
+jiraVersionIdentifier=${16}
 
 
 echo "[INFO] Branch name: $sourceBranchName"
@@ -100,9 +101,20 @@ function getLatestVersionFromArtifactory() {
     local versionOutputFile=$2
     echo "[INFO] Getting latest versions for RC, DEV and Release from Artifactory..."
 
+    local queryPath="-w \"status_code:[%{http_code}]\" "\
+        "-X GET "\
+        "\"$artifactoryBaseUrl/api/search/versions?a=${artifactoryTargetArtifactName}&g=${artifactoryTargetGroup}&repos=${targetRepo}\" -o $versionOutputFile"
+
+    ## Check which credential to use
+    local execQuery="curl -k -s -u $artifactoryUsername:$artifactoryPassword"
+    if [[ ! -z "$jfrogToken" ]]; then
+        execQuery="jfrog rt curl -k -s"
+    fi
+
+    ## Start querying
     rm -f $versionStoreFilename
     local response=""
-    response=$(curl -k -s -u $artifactoryUsername:$artifactoryPassword \
+    response=$($execQuery \
         -w "status_code:[%{http_code}]" \
         -X GET \
         "$artifactoryBaseUrl/api/search/versions?a=${artifactoryTargetArtifactName}&g=${artifactoryTargetGroup}&repos=${targetRepo}" -o $versionOutputFile)

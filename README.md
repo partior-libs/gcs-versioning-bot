@@ -7,12 +7,16 @@ This action generate the next incremented semantic version of artifact with the 
 - uses: partior-libs/gcs-versioning-bot@partior-stable
   with:
     # Jfrog username to query last artifact version
-    # Mandatory: Yes
+    # Mandatory: Yes if jfrog-token is empty. Otherwise must provide the username.
     artifactory-username: ''
 
     # Jfrog password to query last artifact version
-    # Mandatory: Yes
-    artifactory-username: ''
+    # Mandatory: Yes if jfrog-token is empty. Otherwise must provide the password.
+    artifactory-password: ''
+
+    # Jfrog password to query last artifact version
+    # Mandatory: Yes if artifactory-username/password is empty. Otherwise must provide the token.
+    jfrog-token: ''
     
     # Artifactory base URL for query endpoint
     # Mandatory: No
@@ -20,11 +24,11 @@ This action generate the next incremented semantic version of artifact with the 
     artifactory-base-url: 'https://partior.jfrog.io/artifactory'
     
     # Jira username to query versions
-    # Mandatory: Yes
+    # Mandatory: false (Mandatory if version-sources.jira.enabled in yaml config is true)
     jira-username: ''
     
     # Jira password to query versions
-    # Mandatory: Yes
+    # Mandatory: false (Mandatory if version-sources.jira.enabled in yaml config is true)
     jira-password: ''
     
     # Jira base URL for query endpoint
