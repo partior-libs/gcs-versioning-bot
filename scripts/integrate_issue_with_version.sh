@@ -48,7 +48,7 @@ function updateIssueWithVersion() {
                 -X PUT \
                 -H "Content-Type: application/json" \
                 --data '{"update" : { "fixVersions":[{ "add": { "name": "'$versionIdentifier$newVersion'" }}]}}' \
-                "https://$jiraBaseUrl/rest/api/2/issue/$issueKey")
+                "$jiraBaseUrl/rest/api/2/issue/$issueKey")
     done
                 
     if [[ $? -ne 0 ]]; then
