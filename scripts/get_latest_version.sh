@@ -101,17 +101,17 @@ function getLatestVersionFromArtifactory() {
     local versionOutputFile=$2
     echo "[INFO] Getting latest versions for RC, DEV and Release from Artifactory..."
 
-    local queryPath="-w \"status_code:[%{http_code}]\" \
+    local queryPath="-w 'status_code:[%{http_code}]' \
         -X GET \
-        \"$artifactoryBaseUrl/api/search/versions?a=${artifactoryTargetArtifactName}&g=${artifactoryTargetGroup}&repos=${targetRepo}\" -o $versionOutputFile"
+        '$artifactoryBaseUrl/api/search/versions?a=${artifactoryTargetArtifactName}&g=${artifactoryTargetGroup}&repos=${targetRepo}' -o $versionOutputFile"
 
     ## Check which credential to use
     local execQuery="curl -k -s -u $artifactoryUsername:$artifactoryPassword"
     if [[ ! -z "$jfrogToken" ]]; then
         execQuery="jfrog rt curl -k -s"
-        queryPath="-w \"status_code:[%{http_code}]\" \
+        queryPath="-w 'status_code:[%{http_code}]' \
             -XGET \
-            \"/api/search/versions?a=${artifactoryTargetArtifactName}&g=${artifactoryTargetGroup}&repos=${targetRepo}\" -o $versionOutputFile"
+            '/api/search/versions?a=${artifactoryTargetArtifactName}&g=${artifactoryTargetGroup}&repos=${targetRepo}' -o $versionOutputFile"
     fi
 
     ## Start querying
