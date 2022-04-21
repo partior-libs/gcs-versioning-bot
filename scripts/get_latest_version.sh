@@ -117,7 +117,7 @@ function getLatestVersionFromArtifactory() {
     ## Start querying
     rm -f $versionStoreFilename
     local response=""
-    response=$($execQuery $queryPath)
+    response=$(sh -c "$execQuery $queryPath")
     if [[ $? -ne 0 ]]; then
         echo "[ACTION_CURL_ERROR] $BASH_SOURCE (line:$LINENO): Error running curl to get latest version."
         echo "[DEBUG] Curl: $execQuery $queryPath"
