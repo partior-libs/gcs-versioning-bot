@@ -179,6 +179,7 @@ runs:
       ${{ github.action_path }}/scripts/integrate_version_in_issue.sh  "${{ inputs.jira-username }}" \
           "${{ inputs.jira-password }}" \
           "${{ inputs.jira-base-url }}" \
+          "${{ inputs.consolidated-commit-msg }}" \
           "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_project-key }}" \
           "${{ steps.final-version.outputs.new-version }}" \
       shell: bash
