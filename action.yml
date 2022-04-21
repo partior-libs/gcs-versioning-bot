@@ -65,7 +65,6 @@ runs:
   using: "composite"
   steps:
     - name: Validate jfrog credential
-      id: jfrog
       run: |
         if [[ -z "${{ inputs.jfrog-token }}" ]]; then
           if [[ -z "${{ inputs.artifactory-username }}" ]] || [[ -z "${{ inputs.artifactory-password }}" ]]; then
@@ -80,6 +79,13 @@ runs:
       uses: jfrog/setup-jfrog-cli@v2
       env:
         JF_ENV_1: ${{ inputs.jfrog-token }}
+
+    - name: Display jfrog setup
+      if: inputs.jfrog-token != ''
+      run: |
+        echo [DEBUG] Show jfrog setup
+        jfrog c show
+      shell: bash
 
     - name: Get PR info
       id: pr-info

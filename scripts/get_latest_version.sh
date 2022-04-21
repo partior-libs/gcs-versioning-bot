@@ -138,7 +138,7 @@ function getLatestVersionFromArtifactory() {
             echo "\"version\" : \"$resetVersion\"" > $versionOutputFile
         else
             echo "[ACTION_RESPONSE_ERROR] $BASH_SOURCE (line:$LINENO): Return code not 200 when querying latest version: [$responseStatus]"
-            echo "[DEBUG] queryPath=$queryPath" 
+            echo "[DEBUG] $execQuery $queryPath" 
             exit 1
         fi
     fi
