@@ -19,6 +19,7 @@ jiraBaseUrl=$3
 deltaMessage=$4
 projectKey=$5
 newVersion=$6
+jiraVersionIdentifier=$7
 
 echo "[INFO] Jira base URL: $jiraBaseUrl"
 echo "[INFO] Consolidated commit message: $deltaMessage"
@@ -39,13 +40,14 @@ function extractIssueKey() {
 function updateIssueWithVersion() {
     local newVersion=$1
     local jiraBaseUrl=$2
+    local versionIdentifier=$3
     local response=""
     for issueKey in ${issueKeys[@]}; do
         response=$(curl -k -s -u $jiraUsername:$jiraPassword \
                 -w "status_code:[%{http_code}]" \
                 -X PUT \
                 -H "Content-Type: application/json" \
-                --data '{"update" : { "fixVersions":[{ "add": { "name": "'$newVersion'" }}]}}' \
+                --data '{"update" : { "fixVersions":[{ "add": { "name": "'$versionIdentifier$newVersion'" }}]}}' \
                 "https://$jiraBaseUrl/rest/api/2/issue/$issueKey")
                 
     if [[ $? -ne 0 ]]; then
@@ -66,11 +68,11 @@ function updateIssueWithVersion() {
     else
         echo "[ACTION_RESPONSE_ERROR] $BASH_SOURCE (line:$LINENO): Return code not 204 when updating issue with new version in jira: [$responseStatus]" 
         echo "[ERROR] $(echo $response) "
-		exit 1
+	exit 1
     fi
 }
 
 
-local issueKeys=()
+issueKeys=()
 extractIssueKey "$deltaMessage" "$projectKey"
-updateIssueWithVersion "$newVersion" "$jiraBaseUrl"
+updateIssueWithVersion "$newVersion" "$jiraVersionIdentifier" "$jiraBaseUrl"
