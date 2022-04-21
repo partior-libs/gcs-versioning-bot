@@ -32,7 +32,7 @@ function extractIssueKey() {
     for eachWord in $deltaMessage; do
         issueKeys+=("$(grep $projectKey)")
     done
-    for key in {issueKeys[@]}; do
+    for key in ${issueKeys[@]}; do
         echo "Issue keys:::$key"
     done
 }
