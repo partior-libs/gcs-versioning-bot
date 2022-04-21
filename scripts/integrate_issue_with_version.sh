@@ -49,6 +49,7 @@ function updateIssueWithVersion() {
                 -H "Content-Type: application/json" \
                 --data '{"update" : { "fixVersions":[{ "add": { "name": "'$versionIdentifier$newVersion'" }}]}}' \
                 "https://$jiraBaseUrl/rest/api/2/issue/$issueKey")
+    done
                 
     if [[ $? -ne 0 ]]; then
         echo "[ACTION_CURL_ERROR] $BASH_SOURCE (line:$LINENO): Error running curl to post the next version."
