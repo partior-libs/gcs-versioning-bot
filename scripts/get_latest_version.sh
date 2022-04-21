@@ -120,7 +120,8 @@ function getLatestVersionFromArtifactory() {
     response=$($execQuery $queryPath)
     if [[ $? -ne 0 ]]; then
         echo "[ACTION_CURL_ERROR] $BASH_SOURCE (line:$LINENO): Error running curl to get latest version."
-        echo "[DEBUG] Curl: $artifactoryBaseUrl/api/search/versions?a=${artifactoryTargetArtifactName}&g=${artifactoryTargetGroup}&repos=${targetRepo}"
+        echo "[DEBUG] Curl: $execQuery $queryPath"
+        echo "[DEBUG] $(echo $response)"
         exit 1
     fi
     #echo "[DEBUG] response...[$response]"
