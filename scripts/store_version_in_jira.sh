@@ -84,7 +84,7 @@ function createArtifactNextVersionInJira() {
                 -w "status_code:[%{http_code}]" \
                 -X POST \
                 -H "Content-Type: application/json" \
-                --data '{"projectId" : "'$jiraProjectId'","name" : "'${jiraVersionIdentifier}_${newVersion}'","startDate" : "'$startDate'","releaseDate" : "'$releaseDate'","description" : "'$buildUrl'"}' \
+                --data '{"projectId" : "'$jiraProjectId'","name" : "'${jiraVersionIdentifier}${newVersion}'","startDate" : "'$startDate'","releaseDate" : "'$releaseDate'","description" : "'$buildUrl'"}' \
                 "$jiraBaseUrl/rest/api/2/version")
                 
     if [[ $? -ne 0 ]]; then
