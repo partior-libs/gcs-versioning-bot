@@ -3,10 +3,10 @@ name: Test Jira Versioning
 on:
   push:
     paths:
-      - 'scripts/get_latest_version.sh'
+      #- 'scripts/get_latest_version.sh'
       - '.github/workflows/unit-test-enabled-jira.yml'
-      - 'scripts/store_version_in_jira.sh'
-      - 'action.yml'
+      #- 'scripts/store_version_in_jira.sh'
+      #- 'action.yml'
   workflow_dispatch:
 
 env:
