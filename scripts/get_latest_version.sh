@@ -83,7 +83,7 @@ function getArtifactLastVersion() {
         local tmpVersionFile=versionfile_$(date +%s).tmp
         getLatestVersionFromJira "$tmpVersionFile" "$jiraVersionIdentifier"  
         echo "[DEBUG] List from Jira:"
-        cat $cat $tmpVersionFile
+        cat $tmpVersionFile
         ## combine both
         # Ensure newline
         echo "[DEBUG] Combining list with Artifactory"

@@ -4,23 +4,23 @@ inputs:
   artifactory-username:  
     description: 'Username for artifactory'
     required: true
-    default: 'NIL'
+    default: ''
   artifactory-password:  
     description: 'Password for artifactory'
     required: true
-    default: 'NIL'
+    default: ''
   artifactory-base-url:  
     description: 'Artifactory base URL'
     required: false
     default: 'https://partior.jfrog.io/artifactory'
   jira-username:
-    description: 'Jira Username'
-    required: true
-    default: 'NIL'
+    description: 'Jira Username. Mandatory if version-sources.jira.enabled is true'
+    required: false
+    default: ''
   jira-password: 
-    description: 'Jira Password'
-    required: true
-    default: 'NIL'
+    description: 'Jira Password. Mandatory if version-sources.jira.enabled is true'
+    required: false
+    default: ''
   jira-base-url:
     description: 'Jira Base Url'
     required: false
@@ -32,11 +32,11 @@ inputs:
   versioning-rules-importer-file:
     description: 'File generated from partior-libs/gcs-yaml-importer'
     required: true
-    default: 'NIL'
+    default: ''
   branch-packager-rules-importer-file:
     description: 'File generated from partior-libs/gcs-yaml-importer'
     required: true
-    default: 'NIL'
+    default: ''
   consolidated-commit-msg:
     description: 'Consolidated commit message from git log'
     required: false
