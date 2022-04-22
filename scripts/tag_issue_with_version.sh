@@ -22,16 +22,17 @@ newVersion=$6
 jiraVersionIdentifier=$7
 
 echo "[INFO] Jira base URL: $jiraBaseUrl"
-echo "[INFO] Consolidated commit message: $deltaMessage"
 echo "[INFO] Jira project key: $projectKey"
 echo "[INFO] New version: $newVersion"
+echo "[DEBUG] Consolidated commit message:"
+echo "$deltaMessage"
 
 # Extract all issue keys from consolidated commit message 
-function extractIssueKey() {
+function extractIssueKeys() {
     deltaMessage=$1
     projectKey=$2
     for word in $deltaMessage; do
-        issueKeys+=("$(echo $word | grep -i "$projectKey" | cut -d "-" --complement -f 3 | tr 'a-z' 'A-Z')")  # Grep and Convert all keys to uppercase
+        issueKeys+=("$(echo $word | grep -i "^$projectKey-" | cut -d "-" --complement -f 3 | tr 'a-z' 'A-Z')")  # Grep and Convert all keys to uppercase
     done
     issueKeys=($(echo "${issueKeys[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))  # Store only distinct keys 
     echo ${issueKeys[@]} 
@@ -69,11 +70,11 @@ function updateIssueWithVersion() {
     else
         echo "[ACTION_RESPONSE_ERROR] $BASH_SOURCE (line:$LINENO): Return code not 204 when updating issue with new version in jira: [$responseStatus]" 
         echo "[ERROR] $(echo $response) "
-	exit 1
+	    exit 1
     fi
 }
 
-
-issueKeys=()
-extractIssueKey "$deltaMessage" "$projectKey"
+# Declare a global array to store all issue keys that can be used anywhere in the code
+issueKeys=() 
+extractIssueKeys "$deltaMessage" "$projectKey"
 updateIssueWithVersion "$newVersion" "$jiraVersionIdentifier" "$jiraBaseUrl"
