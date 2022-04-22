@@ -12,6 +12,8 @@ smc:
             enabled: true
             project-key: DEVPILOT
             version-identifier: "su"
+            tag-artifact-version-in-jira:
+              enabled: true
     branches:
       default:
         artifact:

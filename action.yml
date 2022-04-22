@@ -175,8 +175,9 @@ runs:
           "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_version-identifier }}"
       shell: bash
       
-    - run: |
-        ${{ github.action_path }}/scripts/integrate_issue_with_version.sh  "${{ inputs.jira-username }}" \
+    - if: steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_tag-artifact-version-in-jira_enabled == 'true'
+      run: |
+        ${{ github.action_path }}/scripts/tag_issue_with_version.sh  "${{ inputs.jira-username }}" \
           "${{ inputs.jira-password }}" \
           "${{ inputs.jira-base-url }}" \
           "${{ inputs.consolidated-commit-msg }}" \
