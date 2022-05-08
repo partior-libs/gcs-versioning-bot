@@ -43,7 +43,7 @@ smc:
             target: test-files/app-version.cfg
             key: MINOR-VERSION
       patch-version:
-        enabled: true
+        enabled: false
         rules:
           branches: 
             target: release
@@ -112,8 +112,8 @@ smc:
           packager:
             group: antztest
             artifactory-username: svc-smc-read
-            artifactory-dev-repo: smc-generic-dev
-            artifactory-release-repo: smc-generic-release
+            artifactory-dev-repo: sandbox-generic-dev
+            artifactory-release-repo: sandbox-generic-release
       main:
         artifact:
           packager:

@@ -215,8 +215,8 @@ smc:
             enabled: false
             group: partior
             artifactory-username: svc-smc-read
-            artifactory-dev-repo: smc-generic-dev
-            artifactory-release-repo: smc-generic-release
+            artifactory-dev-repo: sandbox-generic-dev
+            artifactory-release-repo: sandbox-generic-release
             folder-list: build,config,migrations,scripts
             file-list: deployment.conf,truffle-config.js,deploy.sh,compile.sh,package.json,package-lock.json
       main:
