@@ -22,8 +22,8 @@ smc:
           packager:
             group: partior
             artifactory-username: svc-smc-read
-            artifactory-dev-repo: smc-generic-dev
-            artifactory-release-repo: smc-generic-release
+            artifactory-dev-repo: sandbox-smc-generic-dev
+            artifactory-release-repo: sandbox-smc-generic-release
       main:
         artifact:
           packager:

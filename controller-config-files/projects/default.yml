@@ -130,31 +130,31 @@ smc:
             enabled: false
             group: partior
             artifactory-username: svc-smc-read
-            artifactory-dev-repo: smc-generic-dev
-            artifactory-release-repo: smc-generic-release
+            artifactory-dev-repo: sandbox-smc-generic-dev
+            artifactory-release-repo: sandbox-smc-generic-release
             folder-list: build,config,migrations,scripts
             file-list: deployment.conf,truffle-config.js,deploy.sh,compile.sh,package.json,package-lock.json
       main:
         artifact:
           packager:
-            group: antztest
+            group: partior
       feature:
         artifact:
           packager:
-            group: antztest
+            group: partior
       release:
         artifact:
           packager:
-            group: antztest
+            group: partior
       hotfix:
         artifact:
           packager:
-            group: antztest
+            group: partior
       bugfix:
         artifact:
           packager:
-            group: antztest
+            group: partior
       develop:
         artifact:
           packager:
-            group: antztest
+            group: partior
