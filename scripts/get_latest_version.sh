@@ -66,14 +66,22 @@ function storeLatestVersionIntoFile() {
     local updatedContent=$(cat $targetSaveFile | head -1 | xargs)
     if [[ -z "$updatedContent" ]]; then
         echo "[INFO] Resetting $targetSaveFile..."
-        if [[ "$identifierType" == "$REL_SCOPE" ]]; then
-            echo "$initialVersion" > $targetSaveFile
-        else
-            echo "$initialVersion-$identifierType.0" > $targetSaveFile
+        local tmpRelVersion=$initialVersion
+        if [[ -f "$ARTIFACT_LAST_RC_VERSION_FILE" ]]; then
+            tmpRelVersion=$(cat $ARTIFACT_LAST_RC_VERSION_FILE | cut -d"-" -f1)
+        elif [[ -f "$ARTIFACT_LAST_DEV_VERSION_FILE" ]]; then
+            tmpRelVersion=$(cat $ARTIFACT_LAST_DEV_VERSION_FILE | cut -d"-" -f1)
         fi
+        if [[ "$identifierType" == "$REL_SCOPE" ]]; then
+            echo "$tmpRelVersion" > $targetSaveFile
+        else
+            echo "$tmpRelVersion-$identifierType.0" > $targetSaveFile
+        fi 
 
     fi
-
+# storeLatestVersionIntoFile "$versionListFile" "$DEV_V_IDENTIFIER" "$ARTIFACT_LAST_DEV_VERSION_FILE"
+# storeLatestVersionIntoFile "$versionListFile" "$RC_V_IDENTIFIER" "$ARTIFACT_LAST_RC_VERSION_FILE"
+# storeLatestVersionIntoFile "$versionListFile" "$REL_SCOPE" "$ARTIFACT_LAST_REL_VERSION_FILE"
 }
 
 function getArtifactLastVersion() {
