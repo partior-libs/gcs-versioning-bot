@@ -129,7 +129,7 @@ smc:
             target: ./app-version.cfg
             key: MINOR-VERSION
       patch-version:
-        enabled: true
+        enabled: false
         rules:
           branches: 
             target: release
