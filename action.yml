@@ -175,6 +175,7 @@ runs:
           "${BUILD_GH_LABEL_FILE}" \
           "${BUILD_GH_TAG_FILE}" \
           "${BUILD_GH_COMMIT_MESSAGE_FILE}" \
+          "${{ steps.yaml-config.outputs.artifact-auto-versioning_skip-release-candidate }}" \
           "${{ inputs.debug }}"
       shell: bash
 

@@ -23,6 +23,7 @@ env:
   YAML_VERSION_FROM_FILE_CI_CONFIG_IMPORTER: enable_external_version
   YAML_ENABLE_MSGTAG_CI_CONFIG_IMPORTER: enable_msgtag
   YAML_NO_PREV_ARTIFACT_CI_CONFIG_IMPORTER: enable_no_prev_artifact
+  YAML_STD_NO_RC_IMPORTER: enable_std_no_rc
 
 jobs:
 
@@ -211,13 +212,28 @@ jobs:
           query-path-for-default: .smc.ci
           upload: true
 
+  read-std-no-rc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Generate CI branch importer
+        uses: partior-libs/gcs-yaml-importer@partior-stable
+        with:
+          yaml-file: controller-config-files/projects/enable-std-no-rc.yml
+          query-path: .smc.ci
+          output-file: ${{ env.YAML_STD_NO_RC_IMPORTER }}
+          yaml-file-for-default: controller-config-files/projects/default.yml
+          query-path-for-default: .smc.ci
+          upload: true
+
   trigger-with-matrix:
     needs: [ read-config, read-std-config, read-build-config, read-replace-file-version-config, read-replace-maven-pom-config, read-external-version-config, read-enable-msgtag, read-no-prev-artifact-config ]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        rule: [ std_rule, enable_build_info, enable_file_replacement, enable_mavenpom_replacement, enable_external_version, enable_msgtag, enable_no_prev_artifact ]
+        rule: [ std_rule, enable_build_info, enable_file_replacement, enable_mavenpom_replacement, enable_external_version, enable_msgtag, enable_no_prev_artifact, enable_std_no_rc ]
         branch: [ main, release, develop, feature ]
         # rule: [ std_rule ]
         # rule: [ enable_msgtag ]
