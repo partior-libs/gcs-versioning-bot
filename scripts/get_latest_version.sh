@@ -67,9 +67,9 @@ function storeLatestVersionIntoFile() {
     if [[ -z "$updatedContent" ]]; then
         echo "[INFO] Resetting $targetSaveFile..."
         local tmpRelVersion=$initialVersion
-        if [[ -f "$ARTIFACT_LAST_RC_VERSION_FILE" ]]; then
+        if [[ -f "$ARTIFACT_LAST_RC_VERSION_FILE" ]] && [[ "$ARTIFACT_LAST_RC_VERSION_FILE" != "$targetSaveFile" ]]; then
             tmpRelVersion=$(cat $ARTIFACT_LAST_RC_VERSION_FILE | cut -d"-" -f1)
-        elif [[ -f "$ARTIFACT_LAST_DEV_VERSION_FILE" ]]; then
+        elif [[ -f "$ARTIFACT_LAST_DEV_VERSION_FILE" ]] && [[ "$ARTIFACT_LAST_DEV_VERSION_FILE" != "$targetSaveFile" ]]; then
             tmpRelVersion=$(cat $ARTIFACT_LAST_DEV_VERSION_FILE | cut -d"-" -f1)
         fi
         if [[ "$identifierType" == "$REL_SCOPE" ]]; then
