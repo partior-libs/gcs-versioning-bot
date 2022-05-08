@@ -67,11 +67,13 @@ function storeLatestVersionIntoFile() {
     if [[ -z "$updatedContent" ]]; then
         echo "[INFO] Resetting $targetSaveFile..."
         local tmpPreRelVersion=$initialVersion
+        ## Pick the release version from pre-release files if already generated.
         if [[ -f "$ARTIFACT_LAST_RC_VERSION_FILE" ]] && [[ "$ARTIFACT_LAST_RC_VERSION_FILE" != "$targetSaveFile" ]]; then
             tmpPreRelVersion=$(cat $ARTIFACT_LAST_RC_VERSION_FILE | cut -d"-" -f1)
         elif [[ -f "$ARTIFACT_LAST_DEV_VERSION_FILE" ]] && [[ "$ARTIFACT_LAST_DEV_VERSION_FILE" != "$targetSaveFile" ]]; then
             tmpPreRelVersion=$(cat $ARTIFACT_LAST_DEV_VERSION_FILE | cut -d"-" -f1)
         fi
+        ## Decrement the patch version if pre-release patch version is greater than 0
         local tmpRelMajorMinorVersion=$(echo $tmpPreRelVersion | cut -d"." -f1-2)
         local tmpRelPatchVersion=$(echo $tmpPreRelVersion | cut -d"." -f3)
         local tmpRelVersion=${tmpRelMajorMinorVersion}.0
@@ -86,9 +88,6 @@ function storeLatestVersionIntoFile() {
         fi 
 
     fi
-# storeLatestVersionIntoFile "$versionListFile" "$DEV_V_IDENTIFIER" "$ARTIFACT_LAST_DEV_VERSION_FILE"
-# storeLatestVersionIntoFile "$versionListFile" "$RC_V_IDENTIFIER" "$ARTIFACT_LAST_RC_VERSION_FILE"
-# storeLatestVersionIntoFile "$versionListFile" "$REL_SCOPE" "$ARTIFACT_LAST_REL_VERSION_FILE"
 }
 
 function getArtifactLastVersion() {

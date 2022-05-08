@@ -20,8 +20,7 @@ currentBranch=$(echo $2 | cut -d"/" -f1)
 currentLabel=$3
 currentTag=$4
 currentMsgTag=$5
-skipRC="${6:-false}"
-isDebug=$7
+isDebug=$6
 
 
 ## Trim away the build info
@@ -35,7 +34,6 @@ echo "[INFO] Source branch: $currentBranch"
 echo "[INFO] Last Dev version in Artifactory: $lastDevVersion"
 echo "[INFO] Last RC version in Artifactory: $lastRCVersion"
 echo "[INFO] Last Release version in Artifactory: $lastRelVersion"
-echo "[INFO] Skip RC version: $skipRC"
 
 ## Ensure dev and rel version are in sync
 function versionCompareLessOrEqual() {
