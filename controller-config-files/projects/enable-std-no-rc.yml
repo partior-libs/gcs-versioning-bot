@@ -1,0 +1,50 @@
+---
+smc:
+  ci:
+    artifact-base-name: settlement-utility
+    artifact-auto-versioning:
+      enabled: true
+      # skip-release-candidate: true
+      release-candidate-version:
+        enabled: false
+      patch-version:
+        enabled: true
+        rules:
+          branches: 
+            target: release
+            enabled: true
+          message-tag: 
+            target: PATCH-VERSION 
+            enabled: false
+    branches:
+      default:
+        artifact:
+          packager:
+            group: partior
+            artifactory-username: svc-smc-read
+            artifactory-dev-repo: smc-generic-dev
+            artifactory-release-repo: smc-generic-release
+      main:
+        artifact:
+          packager:
+            group: partior
+      feature:
+        artifact:
+          packager:
+            group: partior
+      release:
+        artifact:
+          packager:
+            group: partior
+      hotfix:
+        artifact:
+          packager:
+            group: partior
+      bugfix:
+        artifact:
+          packager:
+            group: partior
+      develop:
+        artifact:
+          packager:
+            group: partior
