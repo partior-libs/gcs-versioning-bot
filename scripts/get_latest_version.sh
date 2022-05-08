@@ -66,16 +66,23 @@ function storeLatestVersionIntoFile() {
     local updatedContent=$(cat $targetSaveFile | head -1 | xargs)
     if [[ -z "$updatedContent" ]]; then
         echo "[INFO] Resetting $targetSaveFile..."
-        local tmpRelVersion=$initialVersion
+        local tmpPreRelVersion=$initialVersion
         if [[ -f "$ARTIFACT_LAST_RC_VERSION_FILE" ]] && [[ "$ARTIFACT_LAST_RC_VERSION_FILE" != "$targetSaveFile" ]]; then
-            tmpRelVersion=$(cat $ARTIFACT_LAST_RC_VERSION_FILE | cut -d"-" -f1)
+            tmpPreRelVersion=$(cat $ARTIFACT_LAST_RC_VERSION_FILE | cut -d"-" -f1)
         elif [[ -f "$ARTIFACT_LAST_DEV_VERSION_FILE" ]] && [[ "$ARTIFACT_LAST_DEV_VERSION_FILE" != "$targetSaveFile" ]]; then
-            tmpRelVersion=$(cat $ARTIFACT_LAST_DEV_VERSION_FILE | cut -d"-" -f1)
+            tmpPreRelVersion=$(cat $ARTIFACT_LAST_DEV_VERSION_FILE | cut -d"-" -f1)
         fi
+        local tmpRelMajorMinorVersion=$(echo $tmpPreRelVersion | cut -d"." -f1-2)
+        local tmpRelPatchVersion=$(echo $tmpPreRelVersion | cut -d"." -f3)
+        local tmpRelVersion=${tmpRelMajorMinorVersion}.0
+        if [[ $(( tmpRelPatchVersion - 1 )) -gt 0 ]]; then
+            tmpRelVersion=${tmpRelMajorMinorVersion}.$(( tmpRelPatchVersion - 1))
+        fi
+        
         if [[ "$identifierType" == "$REL_SCOPE" ]]; then
             echo "$tmpRelVersion" > $targetSaveFile
         else
-            echo "$tmpRelVersion-$identifierType.0" > $targetSaveFile
+            echo "$tmpPreRelVersion-$identifierType.0" > $targetSaveFile
         fi 
 
     fi
