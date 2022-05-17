@@ -256,7 +256,10 @@ jobs:
       - name: View Version File - Before
         run: |
           echo [INFO] Viewing versioning file - Pre Activity
+          echo [INFO] Content on XML file..
           cat ./test-files/sample-version-file.xml
+          echo [INFO] Content on YAML file..
+          cat ./test-files/sample-version-yaml.yml
 
       - name: View Maven POM File - Before
         run: |
@@ -285,7 +288,10 @@ jobs:
       - name: View Version File - After
         run: |
           echo [INFO] Viewing versioning file - Post Activity
+          echo [INFO] Content on XML file..
           cat ./test-files/sample-version-file.xml
+          echo [INFO] Content on YAML file..
+          cat ./test-files/sample-version-yaml.yml
 
       - name: View Maven POM File - After
         run: |

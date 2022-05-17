@@ -562,6 +562,31 @@ function replaceVersionForMaven() {
     fi
 }
 
+## Replace version in yaml file
+function replaceVersionForYamlFile() {
+    local inputVersion="$1"
+    local targetYamlFile="$2"
+    local targetYamlQueryPath="$3"
+
+    ## Validate yq command first
+    yq --version
+    if [[ $? -ne 0 ]]; then
+        echo "[ERROR] $BASH_SOURCE (line:$LINENO): YQ command not executable"
+        exit 1
+    fi
+    if [[ ! -f "$targetYamlFile" ]]; then
+        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate YAML file: [$targetPomFile]"
+        exit 1
+    fi
+
+    ## Replacement start here
+    yq -i "$targetYamlQueryPath = \"$inputVersion\"" $targetYamlFile
+    if [[ $? -ne 0 ]]; then
+        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed updating version in YAML file [$targetYamlFile]"
+        exit 1
+    fi
+}
+
 ## For debugging purpose
 function debugReleaseVersionVariables() {
     local versionScope=$1
@@ -762,11 +787,15 @@ fi
 if [[ "$(checkReplacementFeatureFlag ${REPLACEMENT_SCOPE})" == "true" ]] && [[ "$REPLACE_V_RULE_FILETOKEN_ENABLED" == "true" ]]; then
     replaceVersionInFile "$nextVersion" "$REPLACE_V_CONFIG_FILETOKEN_FILE" "$REPLACE_V_CONFIG_FILETOKEN_NAME"
     echo "[INFO] Version updated successfully in $REPLACE_V_CONFIG_FILETOKEN_FILE"
-elif [[ "$(checkReplacementFeatureFlag ${REPLACEMENT_SCOPE})" == "true" ]] && [[ "$REPLACE_V_RULE_MAVEN_ENABLED" == "true" ]]; then
+fi
+if [[ "$(checkReplacementFeatureFlag ${REPLACEMENT_SCOPE})" == "true" ]] && [[ "$REPLACE_V_RULE_MAVEN_ENABLED" == "true" ]]; then
     replaceVersionForMaven "$nextVersion" "$REPLACE_V_CONFIG_MAVEN_POMFILE"
     echo "[INFO] Version updated successfully in maven POM file: $REPLACE_V_CONFIG_MAVEN_POMFILE"
 fi
-
+if [[ "$(checkReplacementFeatureFlag ${REPLACEMENT_SCOPE})" == "true" ]] && [[ "$REPLACE_V_RULE_YAMLPATH_ENABLED" == "true" ]]; then
+    replaceVersionForYamlFile "$nextVersion" "$REPLACE_V_CONFIG_YAMLPATH_FILE" "$REPLACE_V_CONFIG_YAMLPATH_QUERYPATH"
+    echo "[INFO] Version updated successfully in YAML file: $REPLACE_V_CONFIG_YAMLPATH_FILE"
+fi
 
 echo "[INFO] nextVersion = $nextVersion"
 echo $nextVersion > $ARTIFACT_NEXT_VERSION_FILE

@@ -191,6 +191,10 @@ smc:
         maven-pom: 
           enabled: false
           target: pom.xml
+        yaml-update: 
+          enabled: false
+          target: helm/Chart.yaml
+          query-path: .version
 
     branches:
       default:

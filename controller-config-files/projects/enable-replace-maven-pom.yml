@@ -105,6 +105,10 @@ smc:
         maven-pom: 
           enabled: true
           target: test-files/sample-pom-file.xml
+        yaml-update: 
+          enabled: true
+          target: test-files/sample-version-yaml.yml
+          query-path: .version
 
     branches:
       default:
