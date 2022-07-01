@@ -797,6 +797,13 @@ if [[ "$(checkReplacementFeatureFlag ${REPLACEMENT_SCOPE})" == "true" ]] && [[ "
     echo "[INFO] Version updated successfully in YAML file: $REPLACE_V_CONFIG_YAMLPATH_FILE"
 fi
 
+## If due to any circumstances the increment on nextVersion doesnt happen, it's likely due to unhandled versioning format. In that situation, try to force the patch increment by 1
+if [[ "$nextVersion" == "$lastRelVersion" ]]; then
+    echo [DEBUG] nextVersion and lastRelVersion are still identical [$nextVersion]. Force increment patch version...
+    nextVersion=$(incrementReleaseVersion $nextVersion ${PATCH_POSITION})
+    echo [DEBUG] PATCH INCREMENTED $nextVersion
+fi
+
 echo "[INFO] nextVersion = $nextVersion"
 echo $nextVersion > $ARTIFACT_NEXT_VERSION_FILE
 
