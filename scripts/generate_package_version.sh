@@ -40,8 +40,21 @@ function versionCompareLessOrEqual() {
     [  "$1" = "`echo -e "$1\n$2" | sort -V | head -n1`" ]
 }
 
-# When increment pre-release, make sure the release version is considered
+# When increment release, make sure the release version is considered
 function needToIncrementRelVersion() {
+    local inputCurrentVersion=$1
+    local inputRelVersion=$2
+    if [[  "$inputRelVersion" == "$(echo $inputCurrentVersion | cut -d'-' -f1)" ]]; then
+        echo "true"
+    elif [[ "$inputCurrentVersion" == "`echo -e "$inputCurrentVersion\n$inputRelVersion" | sort -V | head -n1`" ]]; then
+        echo "false"
+    else    
+        echo "false"
+    fi
+}
+
+# When increment pre-release, make sure the release version is considered
+function needToIncrementPreRelVersion() {
     local inputCurrentVersion=$1
     local inputRelVersion=$2
     if [[  "$inputRelVersion" == "$(echo $inputCurrentVersion | cut -d'-' -f1)" ]]; then
@@ -81,7 +94,9 @@ function incrementReleaseVersion() {
     versionArray[$versionPos]=$((versionArray[$versionPos]+1))
     if [ $versionPos -lt 2 ]; then versionArray[2]=0; fi
     if [ $versionPos -lt 1 ]; then versionArray[1]=0; fi
-    echo $(local IFS=. ; echo "${versionArray[*]}")
+    local newVersion=$(local IFS=. ; echo "${versionArray[*]}")
+    echo $newVersion > $ARTIFACT_UPDATED_REL_VERSION_FILE
+    echo $newVersion
 }
 
 ## Increment pre-release version based on identifier
@@ -89,31 +104,42 @@ function incrementPreReleaseVersion() {
     local inputVersion=$1
     local preIdentifider=$2
 
-    # if ($(echo $inputVersion | grep -E -q '[+-]\w*\.\w*')); then
 
-    # fi
-    local currentSemanticVersion=$(echo $inputVersion | awk -F"-$preIdentifider." '{print $1}')
+    local inputSemanticVersion=$(echo $inputVersion | awk -F"-$preIdentifider." '{print $1}')
+    local currentSemanticVersion=$inputSemanticVersion
     local nextPreReleaseNumber=$(( $(echo $inputVersion | awk -F"-$preIdentifider." '{print $2}') + 1 ))
     ## If not pre-release, then increment the core version too
     local lastRelVersion=$(cat $ARTIFACT_LAST_REL_VERSION_FILE)
-    # If present, use the updated release version
+    # If present, override with the updated release version
     if [[ -f $ARTIFACT_UPDATED_REL_VERSION_FILE ]]; then
-        lastRelVersion=$(cat $ARTIFACT_UPDATED_REL_VERSION_FILE)
+        currentSemanticVersion=$(cat $ARTIFACT_UPDATED_REL_VERSION_FILE)
+        # lastRelVersion=$currentSemanticVersion
     fi
     if [[ ! "$inputVersion" == *"-"* ]]; then
+
         if [[ "$lastRelVersion" = "" ]]; then
             currentSemanticVersion=$(incrementReleaseVersion $currentSemanticVersion ${PATCH_POSITION})
         else  ## Increment with last release version if present
-            currentSemanticVersion=$(incrementReleaseVersion $lastRelVersion ${PATCH_POSITION})
+            ## Skip increment release version if already increased before
+            if [[ ! -f $ARTIFACT_UPDATED_REL_VERSION_FILE ]]; then
+                currentSemanticVersion=$(incrementReleaseVersion $lastRelVersion ${PATCH_POSITION})
+            fi
+            
         fi
     else
-        local needIncreaseVersion=$(needToIncrementRelVersion "$inputVersion" "$lastRelVersion")
-
+        local needIncreaseVersion=$(needToIncrementPreRelVersion "$inputVersion" "$lastRelVersion")
         if [[ "$needIncreaseVersion" == "true" ]]; then
-            currentSemanticVersion=$(incrementReleaseVersion $lastRelVersion ${PATCH_POSITION})
+            ## Skip increment release version if already increased before
+            if [[ ! -f $ARTIFACT_UPDATED_REL_VERSION_FILE ]]; then
+                currentSemanticVersion=$(incrementReleaseVersion $lastRelVersion ${PATCH_POSITION})
+            fi
             nextPreReleaseNumber=1
         elif [[ "$needIncreaseVersion" == "false" ]]; then
             nextPreReleaseNumber=$(( $(echo $inputVersion | awk -F"-$preIdentifider." '{print $2}') + 1 ))
+            if [[ -f $ARTIFACT_UPDATED_REL_VERSION_FILE ]] && [[ ! "$inputSemanticVersion" == "$currentSemanticVersion" ]]; then
+                nextPreReleaseNumber=1
+            fi
+            
         fi       
     fi
     echo $currentSemanticVersion-$preIdentifider.$nextPreReleaseNumber
@@ -336,8 +362,10 @@ function incrementReleaseVersionByFile() {
     local versionArray=''
     IFS='. ' read -r -a versionArray <<< "$inputVersion"
     versionArray[$versionPos]=$tmpVersion
-    echo $(local IFS=. ; echo "${versionArray[*]}")
-
+    local newVersion=$(local IFS=. ; echo "${versionArray[*]}")
+    # Store in a file to be used in pre-release increment consideration later
+    echo $newVersion > $ARTIFACT_UPDATED_REL_VERSION_FILE
+    echo $newVersion
 }
 
 ## Instead of increment with logical 1, this function allow user to pick version from defined file and keyword, to increment pre-release version
@@ -414,6 +442,11 @@ function checkListIsSubstringInFileContent () {
         echo "true"
         return 0
     fi
+    # ## Return true if has been degaussed
+    # if [[ "$listString" == "false" ]] && [[ "$fileContentPath" == "false" ]]; then
+    #     echo "true"
+    #     return 0
+    # fi
 
     if [[ ! -f $fileContentPath ]]; then
         echo $(checkIsSubstring "$listString" "$fileContentPath")
@@ -462,7 +495,8 @@ function checkPreReleaseVersionFeatureFlag() {
     local vConfigTags=${versionScope}_V_CONFIG_TAGS
     local ghCurrentTag=${versionScope}_GH_CURRENT_TAG
 
-    if [[ "$VERSIONING_BOT_ENABLED" == "true" ]] && [[ "${!vRulesEnabled}" == "true" ]] &&  [[ $(checkIsSubstring "${!vConfigBranches}" "${!ghCurrentBranch}") == "true" ]] && [[ $(checkListIsSubstringInFileContent "${!vConfigTags}" "${!ghCurrentTag}") == "true" ]] && [[ ! "$(checkReleaseVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "$(checkReleaseVersionFeatureFlag ${MINOR_SCOPE})" == "true" ]] && [[ ! "$(checkReleaseVersionFeatureFlag ${PATCH_SCOPE})" == "true" ]]; then
+    # if [[ "$VERSIONING_BOT_ENABLED" == "true" ]] && [[ "${!vRulesEnabled}" == "true" ]] &&  [[ $(checkIsSubstring "${!vConfigBranches}" "${!ghCurrentBranch}") == "true" ]] && [[ $(checkListIsSubstringInFileContent "${!vConfigTags}" "${!ghCurrentTag}") == "true" ]] && [[ ! "$(checkReleaseVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "$(checkReleaseVersionFeatureFlag ${MINOR_SCOPE})" == "true" ]] && [[ ! "$(checkReleaseVersionFeatureFlag ${PATCH_SCOPE})" == "true" ]]; then
+    if [[ "$VERSIONING_BOT_ENABLED" == "true" ]] && [[ "${!vRulesEnabled}" == "true" ]] &&  [[ $(checkIsSubstring "${!vConfigBranches}" "${!ghCurrentBranch}") == "true" ]] && [[ $(checkListIsSubstringInFileContent "${!vConfigTags}" "${!ghCurrentTag}") == "true" ]]; then
         echo "true"
     else
         echo "false"
@@ -641,6 +675,8 @@ function debugPreReleaseVersionVariables() {
 
     echo checkPreReleaseVersionFeatureFlag=$(checkPreReleaseVersionFeatureFlag "${versionScope}")
     echo VERSIONING_BOT_ENABLED=$VERSIONING_BOT_ENABLED
+    echo "checkIsSubstring($vConfigBranches,$vCurrentBranch)=$(checkIsSubstring ${!vConfigBranches} ${!vCurrentBranch})"
+    echo "checkListIsSubstringInFileContent($vConfigTags,$vCurrentTag)=$(checkListIsSubstringInFileContent ${!vConfigTags} ${!vCurrentTag})"
     echo $vRulesEnabled=${!vRulesEnabled} 
     echo $ruleBranchEnabled=${!ruleBranchEnabled} 
     echo $ruleVersionFileEnabled=${!ruleVersionFileEnabled} 
@@ -649,6 +685,7 @@ function debugPreReleaseVersionVariables() {
     echo $vConfigTags=${!vConfigTags}  
     echo $vCurrentTag=${!vCurrentTag} 
     echo ==========================================
+
 }
 
 ## For debugging purpose
@@ -685,7 +722,8 @@ if [[ "$isDebug" == "true" ]]; then
     debugReleaseVersionVariables PATCH
 fi
 
-nextVersion=$(getNeededIncrementReleaseVersion "$lastDevVersion" "$lastRCVersion" "$lastRelVersion")
+# nextVersion=$(getNeededIncrementReleaseVersion "$lastDevVersion" "$lastRCVersion" "$lastRelVersion")
+nextVersion=$lastRelVersion
 echo [INFO] Before incremented: $nextVersion
 ## Process incrementation on MAJOR, MINOR and PATCH
 if [[ "$(checkReleaseVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "${MAJOR_V_RULE_VFILE_ENABLED}" == "true" ]]; then
@@ -723,8 +761,6 @@ if [[ $? -ne 0 ]]; then
     exit 1
 fi
 echo [INFO] After core version file incremented: [$nextVersion]
-# Store in a file to be used in pre-release increment consideration later
-echo $nextVersion > ARTIFACT_UPDATED_REL_VERSION_FILE
 
 ## Debug section
 if [[ "$isDebug" == "true" ]]; then
@@ -744,6 +780,7 @@ fi
 ## Process incrementation on RC and DEV 
 echo [INFO] Before RC version incremented: $lastRCVersion
 echo [INFO] Before DEV version incremented: $lastDevVersion
+echo [INFO] Last incremented release version: $(cat $ARTIFACT_UPDATED_REL_VERSION_FILE)
 if [[ "$(checkPreReleaseVersionFeatureFlag ${RC_SCOPE})" == "true" ]] && [[ ! "${RC_V_RULE_VFILE_ENABLED}" == "true" ]]; then
     nextVersion=$(incrementPreReleaseVersion "$lastRCVersion" "$RC_V_IDENTIFIER")
 elif [[ "$(checkPreReleaseVersionFeatureFlag ${DEV_SCOPE})" == "true" ]] && [[ ! "${DEV_V_RULE_VFILE_ENABLED}" == "true" ]]; then
