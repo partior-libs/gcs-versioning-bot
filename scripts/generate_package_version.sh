@@ -93,7 +93,12 @@ function incrementPreReleaseVersion() {
 
     # fi
     local currentSemanticVersion=$(echo $inputVersion | awk -F"-$preIdentifider." '{print $1}')
-    local nextPreReleaseNumber=$(( $(echo $inputVersion | awk -F"-$preIdentifider." '{print $2}') + 1 ))
+    local currentPrereleaseNumber=$(echo $inputVersion | awk -F"-dev." '{print $2}')
+    ## Ensure it's digit
+    if [[ ! "$currentPrereleaseNumber" =~ ^[0-9]+$ ]]; then
+        currentPrereleaseNumber=0
+    fi
+    local nextPreReleaseNumber=$(( $currentPrereleaseNumber + 1 ))
     ## If not pre-release, then increment the core version too
     local lastRelVersion=$(cat $ARTIFACT_LAST_REL_VERSION_FILE)
     # If present, use the updated release version
