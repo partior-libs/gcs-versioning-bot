@@ -73,6 +73,19 @@ function storeLatestVersionIntoFile() {
         elif [[ -f "$ARTIFACT_LAST_DEV_VERSION_FILE" ]] && [[ "$ARTIFACT_LAST_DEV_VERSION_FILE" != "$targetSaveFile" ]]; then
             tmpPreRelVersion=$(cat $ARTIFACT_LAST_DEV_VERSION_FILE | cut -d"-" -f1)
         fi
+        ## Adjust the version if returned version is invalid
+        if [[ -z "$tmpPreRelVersion" ]]; then
+            if [[ -f "$ARTIFACT_LAST_REL_VERSION_FILE" ]]; then
+                tmpPreRelVersion=$(cat $ARTIFACT_LAST_REL_VERSION_FILE | xargs)
+                local tmpRelMajorMinorVersion=$(echo $tmpPreRelVersion | cut -d"." -f1-2)
+                local tmpRelPatchVersion=$(echo $tmpPreRelVersion | cut -d"." -f3)
+                local tmpNewRelPatchVersion=$(( tmpRelPatchVersion + 1))
+                tmpPreRelVersion=${tmpRelMajorMinorVersion}.${tmpNewRelPatchVersion}
+            else
+                tmpPreRelVersion=$initialVersion
+            fi
+            
+        fi
         ## Decrement the patch version if pre-release patch version is greater than 0
         local tmpRelMajorMinorVersion=$(echo $tmpPreRelVersion | cut -d"." -f1-2)
         local tmpRelPatchVersion=$(echo $tmpPreRelVersion | cut -d"." -f3)
