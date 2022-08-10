@@ -85,7 +85,6 @@ function incrementReleaseVersion() {
     if [ $versionPos -lt 1 ]; then versionArray[1]=0; fi
     local incrementedRelVersion=$(local IFS=. ; echo "${versionArray[*]}")
     # Store in a file to be used in pre-release increment consideration later
-    CORE_VERSION_UPDATED=true
     echo $incrementedRelVersion > $ARTIFACT_UPDATED_REL_VERSION_FILE
     echo $incrementedRelVersion
 }
@@ -711,14 +710,17 @@ echo [INFO] Before incremented: $nextVersion
 ## Process incrementation on MAJOR, MINOR and PATCH
 if [[ "$(checkReleaseVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "${MAJOR_V_RULE_VFILE_ENABLED}" == "true" ]]; then
     # echo [DEBUG] currentRCSemanticVersion=$nextVersion
+    CORE_VERSION_UPDATED=true
     nextVersion=$(incrementReleaseVersion $nextVersion ${MAJOR_POSITION})
     echo [DEBUG] MAJOR INCREMENTED $nextVersion
 elif [[ "$(checkReleaseVersionFeatureFlag ${MINOR_SCOPE})" == "true" ]] && [[ ! "${MINOR_V_RULE_VFILE_ENABLED}" == "true" ]]; then
     # echo [DEBUG] currentRCSemanticVersion=$nextVersion
+    CORE_VERSION_UPDATED=true
     nextVersion=$(incrementReleaseVersion $nextVersion ${MINOR_POSITION})
     echo [DEBUG] MINOR INCREMENTED $nextVersion
 elif [[ "$(checkReleaseVersionFeatureFlag ${PATCH_SCOPE})" == "true" ]] && [[ ! "${PATCH_V_RULE_VFILE_ENABLED}" == "true" ]]; then
     # echo [DEBUG] currentRCSemanticVersion=$nextVersion
+    CORE_VERSION_UPDATED=true
     nextVersion=$(incrementReleaseVersion $nextVersion ${PATCH_POSITION})
     echo [DEBUG] PATCH INCREMENTED $nextVersion
 fi
