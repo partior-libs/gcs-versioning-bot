@@ -36,6 +36,7 @@ echo "[INFO] Last RC version in Artifactory: $lastRCVersion"
 echo "[INFO] Last Release version in Artifactory: $lastRelVersion"
 
 ## Ensure dev and rel version are in sync
+## Ensure dev and rel version are in sync
 function versionCompareLessOrEqual() {
     [  "$1" = "`echo -e "$1\n$2" | sort -V | head -n1`" ]
 }
@@ -69,7 +70,7 @@ function getNeededIncrementReleaseVersion() {
         newRelVersion=$(echo $rcVersion | cut -d"-" -f1)
     fi
     ## Store the updated rel version in file for next incrementation consideration
-    #echo $newRelVersion > $ARTIFACT_UPDATED_REL_VERSION_FILE
+    echo $newRelVersion > $ARTIFACT_UPDATED_REL_VERSION_FILE
     echo $newRelVersion
 }
 
@@ -77,10 +78,11 @@ function getNeededIncrementReleaseVersion() {
 function incrementReleaseVersion() {
     local inputVersion=$1
     local versionPos=$2
+    local incrementalCount=${3:-1}
 
     local versionArray=''
     IFS='. ' read -r -a versionArray <<< "$inputVersion"
-    versionArray[$versionPos]=$((versionArray[$versionPos]+1))
+    versionArray[$versionPos]=$((versionArray[$versionPos]+incrementalCount))
     if [ $versionPos -lt 2 ]; then versionArray[2]=0; fi
     if [ $versionPos -lt 1 ]; then versionArray[1]=0; fi
     local incrementedRelVersion=$(local IFS=. ; echo "${versionArray[*]}")
@@ -97,8 +99,15 @@ function incrementPreReleaseVersion() {
     # if ($(echo $inputVersion | grep -E -q '[+-]\w*\.\w*')); then
 
     # fi
-    local currentSemanticVersion=$(echo $inputVersion | awk -F"-$preIdentifider." '{print $1}')
-    local currentPrereleaseNumber=$(echo $inputVersion | awk -F"-dev." '{print $2}')
+    local currentSemanticVersion=''
+    currentSemanticVersion=$(echo $inputVersion | grep -Po "^\d+\.\d+\.\d+-$preIdentifider")
+    if [[ $? -ne 0 ]]; then
+        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to increase prerelease version. Invalid inputVersion format: $inputVersion"
+        echo "[ERROR_MSG] $currentSemanticVersion"
+        exit 1
+    fi
+
+    local currentPrereleaseNumber=$(echo $inputVersion | awk -F"-$preIdentifider." '{print $2}')
     ## Ensure it's digit
     if [[ ! "$currentPrereleaseNumber" =~ ^[0-9]+$ ]]; then
         currentPrereleaseNumber=0
@@ -130,13 +139,72 @@ function incrementPreReleaseVersion() {
             nextPreReleaseNumber=$(( $(echo $inputVersion | awk -F"-$preIdentifider." '{print $2}') + 1 ))
         fi      
     fi
-    echo $currentSemanticVersion-$preIdentifider.$nextPreReleaseNumber
+    local finalPrereleaseVersion=$currentSemanticVersion-$preIdentifider.$nextPreReleaseNumber
+    finalPrereleaseVersion=$(getPreleaseVersionFromPostTagsCountIncrement $finalPrereleaseVersion $ARTIFACT_LAST_RC_VERSION_FILE $preIdentifider)
+    finalPrereleaseVersion=$(getPreleaseVersionFromPostTagsCountIncrement $finalPrereleaseVersion $ARTIFACT_LAST_DEV_VERSION_FILE $preIdentifider)
+    echo $finalPrereleaseVersion
+}
+
+function getPreleaseVersionFromPostTagsCountIncrement() {
+    
+    local currentIncremented=$1
+    local lastVersionFile=$2
+    local preIdentifider=$3
+
+    if [[ ! -f $lastVersionFile ]]; then
+        echo "[ERROR1] $BASH_SOURCE (line:$LINENO): Version file not found: $lastVersionFile"
+        exit 1
+    fi
+
+    local currentSemanticVersion=''
+    currentSemanticVersion=$(echo $currentIncremented | grep -Po "^\d+\.\d+\.\d+-$preIdentifider")
+    if [[ $? -ne 0 ]]; then
+        ## If not found matching, return the original version
+        echo "$currentIncremented"
+        return 0
+    fi
+
+    local currentPrereleaseNumber=''
+    currentPrereleaseNumber=$(echo $currentIncremented | awk -F"-$preIdentifider." '{print $2}' | grep -Po "^\d+")
+    if [[ $? -ne 0 ]]; then
+        echo "[ERROR2] $BASH_SOURCE (line:$LINENO): Invalid currentIncremented format: $currentIncremented"
+        echo "[ERROR_MSG] $currentPrereleaseNumber"
+        exit 1
+    fi
+
+    local lastFileVersion=''
+    lastFileVersion=$(cat $lastVersionFile | grep -Po "^\d+\.\d+\.\d+-$preIdentifider")
+    if [[ $? -ne 0 ]]; then
+        ## If not found matching, return the original version
+        echo "$currentIncremented"
+        return 0
+    fi
+    local lastVersionPrereleaseNumber=''
+    lastVersionPrereleaseNumber=$(cat $lastVersionFile | awk -F"-$preIdentifider." '{print $2}' | grep -Po "^\d+")
+    if [[ $? -ne 0 ]]; then
+        echo "[ERROR4] $BASH_SOURCE (line:$LINENO): Invalid lastVersionFile $lastVersionFile file format: $(cat $lastVersionFile)"
+        echo "[ERROR_MSG] $lastVersionPrereleaseNumber"
+        exit 1
+    fi
+
+    local finalPrereleaseNumber=$currentPrereleaseNumber
+    if [[ "$currentSemanticVersion" == "$lastFileVersion" ]]; then
+        if [[ $currentPrereleaseNumber -gt $lastVersionPrereleaseNumber ]]; then
+            finalPrereleaseNumber=$((currentPrereleaseNumber+1))
+        elif [[ $lastVersionPrereleaseNumber -gt $currentPrereleaseNumber ]]; then
+            finalPrereleaseNumber=$((lastVersionPrereleaseNumber+1))
+        else
+            finalPrereleaseNumber=$((finalPrereleaseNumber+1))
+        fi
+    fi
+    echo $currentSemanticVersion.$finalPrereleaseNumber
+
 }
 
 ## Reset variables that's not used, to simplify requirement evaluation later
 function degaussCoreVersionVariables() {
     local versionScope=$1
-    local tmpVariable=source-$(date +%s).tmp
+    local tmpVariable=source-$(date +%s)-core.tmp
     rm -f $tmpVariable
 
     local branchEnabled=${versionScope}_V_RULE_BRANCH_ENABLED
@@ -171,7 +239,7 @@ function degaussCoreVersionVariables() {
         cat $currentMsgTag > $vCurrentMsgTag
         echo "export ${vCurrentMsgTag}=${vCurrentMsgTag}" >> $tmpVariable
     else 
-        echo "export ${vCurrentMsgTag}=${currentMsgTag}" >> $tmpVariable
+        echo "export ${vCurrentMsgTag}=\"${currentMsgTag}\"" >> $tmpVariable
     fi
 
 
@@ -197,13 +265,14 @@ function degaussCoreVersionVariables() {
         echo "export ${vCurrentVersionFile}=false" >> $tmpVariable
     fi
     source ./$tmpVariable
+    cat ./$tmpVariable
     rm -f $tmpVariable
 }
 
 ## Reset variables that's not used, to simplify requirement evaluation later
 function degaussReleaseVersionVariables() {
     local versionScope=$1
-    local tmpVariable=source-$(date +%s).tmp
+    local tmpVariable=source-$(date +%s)-release.tmp
     rm -f $tmpVariable
 
     local branchEnabled=${versionScope}_V_RULE_BRANCH_ENABLED
@@ -231,7 +300,7 @@ function degaussReleaseVersionVariables() {
 ## Reset variables that's not used, to simplify requirement evaluation later
 function degaussPreReleaseVersionVariables() {
     local versionScope=$1
-    local tmpVariable=source-$(date +%s).tmp
+    local tmpVariable=source-$(date +%s)-prerelease.tmp
     rm -f $tmpVariable
 
     local branchEnabled=${versionScope}_V_RULE_BRANCH_ENABLED
@@ -265,7 +334,7 @@ function degaussPreReleaseVersionVariables() {
 ## Reset variables that's not used, to simplify requirement evaluation later
 function degaussVersionReplacementVariables() {
     local versionScope=$1
-    local tmpVariable=source-$(date +%s).tmp
+    local tmpVariable=source-$(date +%s)-replacement.tmp
     rm -f $tmpVariable
 
     local branchEnabled=${versionScope}_V_RULE_BRANCH_ENABLED
@@ -311,7 +380,7 @@ function degaussVersionReplacementVariables() {
 ## Reset variables that's not used, to simplify requirement evaluation later
 function degaussBuildVersionVariables() {
     local versionScope=$1
-    local tmpVariable=source-$(date +%s).tmp
+    local tmpVariable=source-$(date +%s)-build.tmp
     rm -f $tmpVariable
 
     local branchEnabled=${versionScope}_V_RULE_BRANCH_ENABLED
@@ -393,8 +462,9 @@ function incrementPreReleaseVersionByFile() {
             currentSemanticVersion=$(incrementReleaseVersion $lastRelVersion ${PATCH_POSITION})
         fi       
     fi
-
-    echo $currentSemanticVersion-$preIdentifider.$preReleaseVersionFromFile
+    local finalPrereleaseVersion=$currentSemanticVersion-$preIdentifider.$preReleaseVersionFromFile
+    finalPrereleaseVersion=$(getPreleaseVersionFromPostTagsCountIncrement $finalPrereleaseVersion $ARTIFACT_LAST_RC_VERSION_FILE $preIdentifider)
+    finalPrereleaseVersion=$(getPreleaseVersionFromPostTagsCountIncrement $finalPrereleaseVersion $ARTIFACT_LAST_DEV_VERSION_FILE $preIdentifider)
 }
 
 
@@ -412,7 +482,7 @@ function checkIsSubstring(){
     IFS=', ' read -r -a listArray <<< "$listString"
     for eachString in "${listArray[@]}";
     do 
-        if [[ "$eachString" == "$subString" ]]; then
+        if [[ "$subString" == *"$eachString"* ]]; then
             echo "true"
             return 0
         fi
@@ -604,6 +674,39 @@ function replaceVersionForYamlFile() {
     fi
 }
 
+## Get incremental count on release version
+function getIncrementalCount() {
+    local listString=$1
+    local fileContentPath=$2
+    local listArray=''
+
+    if [[ -z $listString ]] && [[ -z $fileContentPath ]]; then
+        echo "1"
+        return 0
+    fi
+
+    local incrementCounter=0
+    IFS=', ' read -r -a listArray <<< "$listString"
+    for eachString in "${listArray[@]}";
+    do 
+        local foundPatternCount=0
+        if [[ -f $fileContentPath ]]; then
+            foundPatternCount=$(grep -o -i "$eachString" $fileContentPath | wc -l)
+            
+        else
+            foundPatternCount=$(echo $fileContentPath | grep -o -i "$eachString" | wc -l)
+        fi
+        incrementCounter=$((incrementCounter + foundPatternCount))
+    done
+    if [[ $incrementCounter -eq 0 ]]; then
+        echo 0
+    else
+        echo $incrementCounter
+    fi
+    return 0
+
+}
+
 ## For debugging purpose
 function debugReleaseVersionVariables() {
     local versionScope=$1
@@ -689,6 +792,7 @@ function debugBuildVersionVariables() {
 
 ## Global variable
 CORE_VERSION_UPDATED=false
+echo [INFO] CORE_VERSION_UPDATED=$CORE_VERSION_UPDATED
 
 ## Instrument core version variables which can be made dummy based on the config 
 degaussCoreVersionVariables $MAJOR_SCOPE
@@ -711,20 +815,45 @@ echo [INFO] Before incremented: $nextVersion
 if [[ "$(checkReleaseVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "${MAJOR_V_RULE_VFILE_ENABLED}" == "true" ]]; then
     # echo [DEBUG] currentRCSemanticVersion=$nextVersion
     CORE_VERSION_UPDATED=true
-    nextVersion=$(incrementReleaseVersion $nextVersion ${MAJOR_POSITION})
+    vConfigMsgTags=${MAJOR_SCOPE}_V_CONFIG_MSGTAGS
+    ghCurrentMsgTag=${MAJOR_SCOPE}_GH_CURRENT_MSGTAG
+    ## If there's commit message
+    if [[ $(checkListIsSubstringInFileContent "${!vConfigMsgTags}" "${!ghCurrentMsgTag}") == "true" ]]; then
+        nextVersion=$(incrementReleaseVersion $lastRelVersion ${MAJOR_POSITION} $(getIncrementalCount "${!vConfigMsgTags}" "${!ghCurrentMsgTag}"))
+    else
+        nextVersion=$(incrementReleaseVersion $nextVersion ${MAJOR_POSITION})
+    fi
+    
     echo [DEBUG] MAJOR INCREMENTED $nextVersion
 elif [[ "$(checkReleaseVersionFeatureFlag ${MINOR_SCOPE})" == "true" ]] && [[ ! "${MINOR_V_RULE_VFILE_ENABLED}" == "true" ]]; then
     # echo [DEBUG] currentRCSemanticVersion=$nextVersion
     CORE_VERSION_UPDATED=true
-    nextVersion=$(incrementReleaseVersion $nextVersion ${MINOR_POSITION})
+    # nextVersion=$(incrementReleaseVersion $nextVersion ${MINOR_POSITION})
+    vConfigMsgTags=${MINOR_SCOPE}_V_CONFIG_MSGTAGS
+    ghCurrentMsgTag=${MINOR_SCOPE}_GH_CURRENT_MSGTAG
+    ## If there's commit message
+    if [[ $(checkListIsSubstringInFileContent "${!vConfigMsgTags}" "${!ghCurrentMsgTag}") == "true" ]]; then
+        nextVersion=$(incrementReleaseVersion $lastRelVersion ${MINOR_POSITION} $(getIncrementalCount "${!vConfigMsgTags}" "${!ghCurrentMsgTag}"))
+    else
+        nextVersion=$(incrementReleaseVersion $nextVersion ${MINOR_POSITION})
+    fi
     echo [DEBUG] MINOR INCREMENTED $nextVersion
 elif [[ "$(checkReleaseVersionFeatureFlag ${PATCH_SCOPE})" == "true" ]] && [[ ! "${PATCH_V_RULE_VFILE_ENABLED}" == "true" ]]; then
     # echo [DEBUG] currentRCSemanticVersion=$nextVersion
     CORE_VERSION_UPDATED=true
-    nextVersion=$(incrementReleaseVersion $nextVersion ${PATCH_POSITION})
+    # nextVersion=$(incrementReleaseVersion $nextVersion ${PATCH_POSITION})
+    vConfigMsgTags=${PATCH_SCOPE}_V_CONFIG_MSGTAGS
+    ghCurrentMsgTag=${PATCH_SCOPE}_GH_CURRENT_MSGTAG
+    ## If there's commit message
+    if [[ $(checkListIsSubstringInFileContent "${!vConfigMsgTags}" "${!ghCurrentMsgTag}") == "true" ]]; then
+        nextVersion=$(incrementReleaseVersion $lastRelVersion ${PATCH_POSITION} $(getIncrementalCount "${!vConfigMsgTags}" "${!ghCurrentMsgTag}"))
+    else
+        nextVersion=$(incrementReleaseVersion $nextVersion ${PATCH_POSITION})
+    fi
     echo [DEBUG] PATCH INCREMENTED $nextVersion
 fi
 echo [INFO] After core version incremented: $nextVersion
+echo [INFO] CORE_VERSION_UPDATED2=$CORE_VERSION_UPDATED
 
 ## Process incrementation on MAJOR, MINOR and PATCH via version file (manual)
 nextVersion=$(processWithReleaseVersionFile ${nextVersion} ${MAJOR_POSITION} ${MAJOR_SCOPE})
@@ -746,6 +875,8 @@ if [[ $? -ne 0 ]]; then
     exit 1
 fi
 echo [INFO] After core version file incremented: [$nextVersion]
+# Store in a file to be used in pre-release increment consideration later
+echo $nextVersion > $ARTIFACT_UPDATED_REL_VERSION_FILE
 
 ## Debug section
 if [[ "$isDebug" == "true" ]]; then
@@ -765,6 +896,7 @@ fi
 ## Process incrementation on RC and DEV 
 echo [INFO] Before RC version incremented: $lastRCVersion
 echo [INFO] Before DEV version incremented: $lastDevVersion
+echo [INFO] Before nextVersion version incremented: $nextVersion
 if [[ "$(checkPreReleaseVersionFeatureFlag ${RC_SCOPE})" == "true" ]] && [[ ! "${RC_V_RULE_VFILE_ENABLED}" == "true" ]]; then
     nextVersion=$(incrementPreReleaseVersion "$lastRCVersion" "$RC_V_IDENTIFIER")
 elif [[ "$(checkPreReleaseVersionFeatureFlag ${DEV_SCOPE})" == "true" ]] && [[ ! "${DEV_V_RULE_VFILE_ENABLED}" == "true" ]]; then
@@ -813,10 +945,10 @@ if [[ "$(checkReplacementFeatureFlag ${REPLACEMENT_SCOPE})" == "true" ]] && [[ "
     replaceVersionForMaven "$nextVersion" "$REPLACE_V_CONFIG_MAVEN_POMFILE"
     echo "[INFO] Version updated successfully in maven POM file: $REPLACE_V_CONFIG_MAVEN_POMFILE"
 fi
-if [[ "$(checkReplacementFeatureFlag ${REPLACEMENT_SCOPE})" == "true" ]] && [[ "$REPLACE_V_RULE_YAMLPATH_ENABLED" == "true" ]]; then
-    replaceVersionForYamlFile "$nextVersion" "$REPLACE_V_CONFIG_YAMLPATH_FILE" "$REPLACE_V_CONFIG_YAMLPATH_QUERYPATH"
-    echo "[INFO] Version updated successfully in YAML file: $REPLACE_V_CONFIG_YAMLPATH_FILE"
-fi
+# if [[ "$(checkReplacementFeatureFlag ${REPLACEMENT_SCOPE})" == "true" ]] && [[ "$REPLACE_V_RULE_YAMLPATH_ENABLED" == "true" ]]; then
+#     replaceVersionForYamlFile "$nextVersion" "$REPLACE_V_CONFIG_YAMLPATH_FILE" "$REPLACE_V_CONFIG_YAMLPATH_QUERYPATH"
+#     echo "[INFO] Version updated successfully in YAML file: $REPLACE_V_CONFIG_YAMLPATH_FILE"
+# fi
 
 ## If due to any circumstances the increment on nextVersion doesnt happen, it's likely due to unhandled versioning format. In that situation, try to force the patch increment by 1
 if [[ "$nextVersion" == "$lastRelVersion" ]]; then
