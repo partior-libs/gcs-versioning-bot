@@ -371,7 +371,9 @@ function incrementPreReleaseVersionByFile() {
     ## If not pre-release, then increment the core version too
     local lastRelVersion=$(cat $ARTIFACT_LAST_REL_VERSION_FILE)
     # If present, use the updated release version
+    local relUpdatedByBot=false
     if [[ -f $ARTIFACT_UPDATED_REL_VERSION_FILE ]]; then
+        relUpdatedByBot=true
         lastRelVersion=$(cat $ARTIFACT_UPDATED_REL_VERSION_FILE)
     fi
     if [[ ! "$inputVersion" == *"-"* ]]; then
@@ -382,8 +384,9 @@ function incrementPreReleaseVersionByFile() {
         fi
     else
         local needIncreaseVersion=$(needToIncrementRelVersion "$inputVersion" "$lastRelVersion")
-
-        if [[ "$needIncreaseVersion" == "true" ]]; then
+        if [[ "$relUpdatedByBot" == "true" ]]; then
+            currentSemanticVersion=$lastRelVersion
+        elif [[ "$needIncreaseVersion" == "true" ]]; then
             currentSemanticVersion=$(incrementReleaseVersion $lastRelVersion ${PATCH_POSITION})
         fi       
     fi
@@ -735,7 +738,7 @@ if [[ $? -ne 0 ]]; then
 fi
 echo [INFO] After core version file incremented: [$nextVersion]
 # Store in a file to be used in pre-release increment consideration later
-echo $nextVersion > ARTIFACT_UPDATED_REL_VERSION_FILE
+echo $nextVersion > $ARTIFACT_UPDATED_REL_VERSION_FILE
 
 ## Debug section
 if [[ "$isDebug" == "true" ]]; then
