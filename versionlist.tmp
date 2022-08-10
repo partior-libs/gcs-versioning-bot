@@ -1,0 +1,15 @@
+{
+  "results" : [ {
+    "version" : "2.1.2",
+    "integration" : false
+  }, {
+    "version" : "2.1.1-dev",
+    "integration" : false
+  }, {
+    "version" : "2.1.1",
+    "integration" : false
+  }, {
+    "version" : "0",
+    "integration" : false
+  } ]
+}

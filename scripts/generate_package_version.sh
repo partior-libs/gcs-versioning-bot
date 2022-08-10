@@ -428,7 +428,7 @@ function checkListIsSubstringInFileContent () {
     IFS=', ' read -r -a listArray <<< "$listString"
     for eachString in "${listArray[@]}";
     do 
-        if (grep -q "\[$eachString\]" $fileContentPath); then
+        if (grep -q "$eachString" $fileContentPath); then
             echo "true"
             return 0
         fi
