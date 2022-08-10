@@ -4,3 +4,4 @@ artifact_next_version.txt
 artifact_last_*_version.txt
 run.sh
 run-*.sh
+artifact_updated_release_version.txt
