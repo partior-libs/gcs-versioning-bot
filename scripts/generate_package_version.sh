@@ -69,7 +69,7 @@ function getNeededIncrementReleaseVersion() {
         newRelVersion=$(echo $rcVersion | cut -d"-" -f1)
     fi
     ## Store the updated rel version in file for next incrementation consideration
-    echo $newRelVersion > $ARTIFACT_UPDATED_REL_VERSION_FILE
+    #echo $newRelVersion > $ARTIFACT_UPDATED_REL_VERSION_FILE
     echo $newRelVersion
 }
 
@@ -85,6 +85,7 @@ function incrementReleaseVersion() {
     if [ $versionPos -lt 1 ]; then versionArray[1]=0; fi
     local incrementedRelVersion=$(local IFS=. ; echo "${versionArray[*]}")
     # Store in a file to be used in pre-release increment consideration later
+    CORE_VERSION_UPDATED=true
     echo $incrementedRelVersion > $ARTIFACT_UPDATED_REL_VERSION_FILE
     echo $incrementedRelVersion
 }
@@ -106,6 +107,10 @@ function incrementPreReleaseVersion() {
     local nextPreReleaseNumber=$(( $currentPrereleaseNumber + 1 ))
     ## If not pre-release, then increment the core version too
     local lastRelVersion=$(cat $ARTIFACT_LAST_REL_VERSION_FILE)
+    # If present, use the updated release version
+    if [[ -f $ARTIFACT_UPDATED_REL_VERSION_FILE ]]; then
+        lastRelVersion=$(cat $ARTIFACT_UPDATED_REL_VERSION_FILE)
+    fi
 
     if [[ ! "$inputVersion" == *"-"* ]]; then
         if [[ "$lastRelVersion" = "" ]]; then
@@ -116,8 +121,7 @@ function incrementPreReleaseVersion() {
     else
         local needIncreaseVersion=$(needToIncrementRelVersion "$inputVersion" "$lastRelVersion")
 
-        if [[ -f $ARTIFACT_UPDATED_REL_VERSION_FILE ]]; then
-            lastRelVersion=$(cat $ARTIFACT_UPDATED_REL_VERSION_FILE)
+        if [[ "$CORE_VERSION_UPDATED" == "true" ]]; then
             currentSemanticVersion=$lastRelVersion
             nextPreReleaseNumber=1
         elif [[ "$needIncreaseVersion" == "true" ]]; then
@@ -366,11 +370,14 @@ function incrementPreReleaseVersionByFile() {
     fi
     local preReleaseVersionFromFile=$(cat ./${!vConfigVersionFileName} | grep -E "^${!vConfigVersionFileKey}" 2>/dev/null | cut -d"=" -f2)
 
-
     local currentSemanticVersion=$(echo $inputVersion | awk -F"-$preIdentifider." '{print $1}')
 
     ## If not pre-release, then increment the core version too
     local lastRelVersion=$(cat $ARTIFACT_LAST_REL_VERSION_FILE)
+    # If present, use the updated release version
+    if [[ -f $ARTIFACT_UPDATED_REL_VERSION_FILE ]]; then
+        lastRelVersion=$(cat $ARTIFACT_UPDATED_REL_VERSION_FILE)
+    fi
 
     if [[ ! "$inputVersion" == *"-"* ]]; then
         if [[ "$lastRelVersion" = "" ]]; then
@@ -380,9 +387,9 @@ function incrementPreReleaseVersionByFile() {
         fi
     else
         local needIncreaseVersion=$(needToIncrementRelVersion "$inputVersion" "$lastRelVersion")
-        if [[ -f $ARTIFACT_UPDATED_REL_VERSION_FILE ]]; then
-            lastRelVersion=$(cat $ARTIFACT_UPDATED_REL_VERSION_FILE)
+        if [[ "$CORE_VERSION_UPDATED" == "true" ]]; then
             currentSemanticVersion=$lastRelVersion
+            nextPreReleaseNumber=1
         elif [[ "$needIncreaseVersion" == "true" ]]; then
             currentSemanticVersion=$(incrementReleaseVersion $lastRelVersion ${PATCH_POSITION})
         fi       
@@ -680,6 +687,9 @@ function debugBuildVersionVariables() {
     echo $ghCurrentBranch=${!ghCurrentBranch} 
     echo ==========================================
 }
+
+## Global variable
+CORE_VERSION_UPDATED=false
 
 ## Instrument core version variables which can be made dummy based on the config 
 degaussCoreVersionVariables $MAJOR_SCOPE
