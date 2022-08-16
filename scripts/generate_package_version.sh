@@ -22,6 +22,9 @@ currentTag=$4
 currentMsgTag=$5
 isDebug=$6
 
+# Reset global state
+CORE_VERSION_UPDATED_FILE=core.updated
+rm -f $CORE_VERSION_UPDATED_FILE
 
 ## Trim away the build info
 lastDevVersion=$(cat $ARTIFACT_LAST_DEV_VERSION_FILE | cut -d"+" -f1)
@@ -35,7 +38,6 @@ echo "[INFO] Last Dev version in Artifactory: $lastDevVersion"
 echo "[INFO] Last RC version in Artifactory: $lastRCVersion"
 echo "[INFO] Last Release version in Artifactory: $lastRelVersion"
 
-## Ensure dev and rel version are in sync
 ## Ensure dev and rel version are in sync
 function versionCompareLessOrEqual() {
     [  "$1" = "`echo -e "$1\n$2" | sort -V | head -n1`" ]
@@ -64,10 +66,12 @@ function getNeededIncrementReleaseVersion() {
     local newRelVersion=$relVersion
     if [[ "$devIncrease" == "false" ]]; then
         newRelVersion=$(echo $devVersion | cut -d"-" -f1)
+        touch $CORE_VERSION_UPDATED_FILE
     fi
     local rcIncrease=$(needToIncrementRelVersion "$rcVersion" "$newRelVersion")
     if [[ "$rcIncrease" == "false" ]]; then
         newRelVersion=$(echo $rcVersion | cut -d"-" -f1)
+        touch $CORE_VERSION_UPDATED_FILE
     fi
     ## Store the updated rel version in file for next incrementation consideration
     echo $newRelVersion > $ARTIFACT_UPDATED_REL_VERSION_FILE
@@ -129,7 +133,7 @@ function incrementPreReleaseVersion() {
     else
         local needIncreaseVersion=$(needToIncrementRelVersion "$inputVersion" "$lastRelVersion")
 
-        if [[ "$CORE_VERSION_UPDATED" == "true" ]]; then
+        if [[ -f $CORE_VERSION_UPDATED_FILE ]]; then
             currentSemanticVersion=$lastRelVersion
             nextPreReleaseNumber=1
         elif [[ "$needIncreaseVersion" == "true" ]]; then
@@ -266,7 +270,7 @@ function degaussCoreVersionVariables() {
     fi
     source ./$tmpVariable
     cat ./$tmpVariable
-    rm -f $tmpVariable
+    # rm -f $tmpVariable
 }
 
 ## Reset variables that's not used, to simplify requirement evaluation later
@@ -294,7 +298,7 @@ function degaussReleaseVersionVariables() {
         echo "export ${vCurrentVersionFile}=false" >> $tmpVariable
     fi
     source ./$tmpVariable
-    rm -f $tmpVariable
+    # rm -f $tmpVariable
 }
 
 ## Reset variables that's not used, to simplify requirement evaluation later
@@ -328,7 +332,7 @@ function degaussPreReleaseVersionVariables() {
         echo "export ${vCurrentVersionFile}=false" >> $tmpVariable
     fi
     source ./$tmpVariable
-    rm -f $tmpVariable
+    # rm -f $tmpVariable
 }
 
 ## Reset variables that's not used, to simplify requirement evaluation later
@@ -455,16 +459,15 @@ function incrementPreReleaseVersionByFile() {
         fi
     else
         local needIncreaseVersion=$(needToIncrementRelVersion "$inputVersion" "$lastRelVersion")
-        if [[ "$CORE_VERSION_UPDATED" == "true" ]]; then
+        if [[ -f $CORE_VERSION_UPDATED_FILE ]]; then
             currentSemanticVersion=$lastRelVersion
             nextPreReleaseNumber=1
         elif [[ "$needIncreaseVersion" == "true" ]]; then
             currentSemanticVersion=$(incrementReleaseVersion $lastRelVersion ${PATCH_POSITION})
         fi       
     fi
-    local finalPrereleaseVersion=$currentSemanticVersion-$preIdentifider.$preReleaseVersionFromFile
-    finalPrereleaseVersion=$(getPreleaseVersionFromPostTagsCountIncrement $finalPrereleaseVersion $ARTIFACT_LAST_RC_VERSION_FILE $preIdentifider)
-    finalPrereleaseVersion=$(getPreleaseVersionFromPostTagsCountIncrement $finalPrereleaseVersion $ARTIFACT_LAST_DEV_VERSION_FILE $preIdentifider)
+
+    echo $currentSemanticVersion-$preIdentifider.$preReleaseVersionFromFile
 }
 
 
@@ -790,10 +793,6 @@ function debugBuildVersionVariables() {
     echo ==========================================
 }
 
-## Global variable
-CORE_VERSION_UPDATED=false
-echo [INFO] CORE_VERSION_UPDATED=$CORE_VERSION_UPDATED
-
 ## Instrument core version variables which can be made dummy based on the config 
 degaussCoreVersionVariables $MAJOR_SCOPE
 degaussCoreVersionVariables $MINOR_SCOPE
@@ -814,7 +813,7 @@ echo [INFO] Before incremented: $nextVersion
 ## Process incrementation on MAJOR, MINOR and PATCH
 if [[ "$(checkReleaseVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "${MAJOR_V_RULE_VFILE_ENABLED}" == "true" ]]; then
     # echo [DEBUG] currentRCSemanticVersion=$nextVersion
-    CORE_VERSION_UPDATED=true
+    touch $CORE_VERSION_UPDATED_FILE
     vConfigMsgTags=${MAJOR_SCOPE}_V_CONFIG_MSGTAGS
     ghCurrentMsgTag=${MAJOR_SCOPE}_GH_CURRENT_MSGTAG
     ## If there's commit message
@@ -827,7 +826,7 @@ if [[ "$(checkReleaseVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "$
     echo [DEBUG] MAJOR INCREMENTED $nextVersion
 elif [[ "$(checkReleaseVersionFeatureFlag ${MINOR_SCOPE})" == "true" ]] && [[ ! "${MINOR_V_RULE_VFILE_ENABLED}" == "true" ]]; then
     # echo [DEBUG] currentRCSemanticVersion=$nextVersion
-    CORE_VERSION_UPDATED=true
+    touch $CORE_VERSION_UPDATED_FILE
     # nextVersion=$(incrementReleaseVersion $nextVersion ${MINOR_POSITION})
     vConfigMsgTags=${MINOR_SCOPE}_V_CONFIG_MSGTAGS
     ghCurrentMsgTag=${MINOR_SCOPE}_GH_CURRENT_MSGTAG
@@ -840,7 +839,7 @@ elif [[ "$(checkReleaseVersionFeatureFlag ${MINOR_SCOPE})" == "true" ]] && [[ ! 
     echo [DEBUG] MINOR INCREMENTED $nextVersion
 elif [[ "$(checkReleaseVersionFeatureFlag ${PATCH_SCOPE})" == "true" ]] && [[ ! "${PATCH_V_RULE_VFILE_ENABLED}" == "true" ]]; then
     # echo [DEBUG] currentRCSemanticVersion=$nextVersion
-    CORE_VERSION_UPDATED=true
+    touch $CORE_VERSION_UPDATED_FILE
     # nextVersion=$(incrementReleaseVersion $nextVersion ${PATCH_POSITION})
     vConfigMsgTags=${PATCH_SCOPE}_V_CONFIG_MSGTAGS
     ghCurrentMsgTag=${PATCH_SCOPE}_GH_CURRENT_MSGTAG
@@ -853,7 +852,6 @@ elif [[ "$(checkReleaseVersionFeatureFlag ${PATCH_SCOPE})" == "true" ]] && [[ ! 
     echo [DEBUG] PATCH INCREMENTED $nextVersion
 fi
 echo [INFO] After core version incremented: $nextVersion
-echo [INFO] CORE_VERSION_UPDATED2=$CORE_VERSION_UPDATED
 
 ## Process incrementation on MAJOR, MINOR and PATCH via version file (manual)
 nextVersion=$(processWithReleaseVersionFile ${nextVersion} ${MAJOR_POSITION} ${MAJOR_SCOPE})
