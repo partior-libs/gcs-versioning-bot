@@ -75,7 +75,7 @@ function storeLatestVersionIntoFile() {
         fi
         ## Adjust the version if returned version is invalid
         if [[ -z "$tmpPreRelVersion" ]]; then
-            if [[ -f "$ARTIFACT_LAST_REL_VERSION_FILE" ]]; then
+            if [[ -f "$ARTIFACT_LAST_REL_VERSION_FILE" ]] && [[ ! -z $(cat $ARTIFACT_LAST_REL_VERSION_FILE) ]]; then
                 tmpPreRelVersion=$(cat $ARTIFACT_LAST_REL_VERSION_FILE | xargs)
                 local tmpRelMajorMinorVersion=$(echo $tmpPreRelVersion | cut -d"." -f1-2)
                 local tmpRelPatchVersion=$(echo $tmpPreRelVersion | cut -d"." -f3)
@@ -258,9 +258,9 @@ touch $ARTIFACT_LAST_REL_VERSION_FILE
 ## getArtifactLastVersion "$artifactoryTargetDevRepo,$artifactoryTargetRelRepo" "$versionListFile"
 getArtifactLastVersion "$versionListFile"
 ## Store respective version type into file
-storeLatestVersionIntoFile "$versionListFile" "$REL_SCOPE" "$ARTIFACT_LAST_REL_VERSION_FILE"
 storeLatestVersionIntoFile "$versionListFile" "$DEV_V_IDENTIFIER" "$ARTIFACT_LAST_DEV_VERSION_FILE"
 storeLatestVersionIntoFile "$versionListFile" "$RC_V_IDENTIFIER" "$ARTIFACT_LAST_RC_VERSION_FILE"
+storeLatestVersionIntoFile "$versionListFile" "$REL_SCOPE" "$ARTIFACT_LAST_REL_VERSION_FILE"
 
 cat $versionListFile
 rm -f $versionListFile
