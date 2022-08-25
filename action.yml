@@ -45,6 +45,10 @@ inputs:
     description: 'Consolidated commit message from git log'
     required: false
     default: '' 
+  artifact-type:
+    description: 'Type of artifact to be queried from Artifactory'
+    required: false
+    default: '' 
   debug:
     description: 'Debug mode for more logging'
     required: false
@@ -166,7 +170,8 @@ runs:
           "${{ inputs.jira-base-url }}" \
           "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_project-key }}" \
           "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_enabled }}" \
-          "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_version-identifier }}"   
+          "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_version-identifier }}" \
+          "${{ inputs.artifact-type }}"  
       shell: bash
 
     - run: |

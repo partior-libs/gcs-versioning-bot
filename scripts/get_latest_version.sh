@@ -32,6 +32,7 @@ jiraBaseUrl=${13}
 jiraProjectKey=${14}
 jiraEnabler=${15}
 jiraVersionIdentifier=${16}
+artifactType=${17:-default}
 
 
 echo "[INFO] Branch name: $sourceBranchName"
@@ -46,6 +47,7 @@ echo "[INFO] Jira Base URL: $jiraBaseUrl"
 echo "[INFO] Jira Project Key: $jiraProjectKey"
 echo "[INFO] Jira Enabler: $jiraEnabler"
 echo "[INFO] Jira Version Identifier: $jiraVersionIdentifier"
+echo "[INFO] Artifact Type: $artifactType"
 
 
 function storeLatestVersionIntoFile() {
@@ -105,7 +107,12 @@ function storeLatestVersionIntoFile() {
 
 function getArtifactLastVersion() {
     local versionListFile=$1
-    getLatestVersionFromArtifactory "$artifactoryTargetDevRepo,$artifactoryTargetRelRepo" "$versionListFile"
+    if [[ "$artifactType" == "docker" ]]; then
+        getDockerLatestVersionFromArtifactory "$artifactoryTargetDevRepo,$artifactoryTargetRelRepo" "$versionListFile"
+    else
+        getLatestVersionFromArtifactory "$artifactoryTargetDevRepo,$artifactoryTargetRelRepo" "$versionListFile"
+    fi
+    
     ## Combine result from Jira if enabled
     if [[ "$jiraEnabler" == "true" ]]; then
         local tmpVersionFile=versionfile_$(date +%s).tmp
@@ -121,6 +128,88 @@ function getArtifactLastVersion() {
         mv $versionListFile.2 $versionListFile
     fi
     
+}
+
+function getDockerLatestVersionFromArtifactory() {
+    ## Make sure targetRepo list doesnt has space
+    local targetRepo=$(echo $1 | sed "s/ //g")
+    local versionOutputFile=$2
+    local artifactoryDockerTargetArtifactName="${artifactoryTargetArtifactName}"
+
+    ## If artifact group not empty, form the final docker artifact name
+    if [[ ! -z "$artifactoryTargetGroup" ]]; then
+        artifactoryDockerTargetArtifactName="$(echo $artifactoryTargetGroup | sed "s/\./\//g")/${artifactoryTargetArtifactName}"
+    fi
+    rm -f $versionOutputFile
+    echo "[INFO] Getting latest versions for RC, DEV and Release from Artifactory..."
+    local foundValidVersion=false
+    for currentDockerRepo in ${targetRepo//,/ }
+    do
+        local tmpOutputFile=$versionOutputFile-${currentDockerRepo}
+        rm -f $tmpOutputFile
+        echo "[INFO] Querying docker registry $currentDockerRepo..."
+        local queryPath="-w 'status_code:[%{http_code}]' \
+        -X GET \
+        '$artifactoryBaseUrl/api/docker/${currentDockerRepo}/v2/${artifactoryDockerTargetArtifactName}/tags/list' -o $tmpOutputFile"
+
+
+        ## Check which credential to use
+        local execQuery="curl -k -s -u $artifactoryUsername:$artifactoryPassword"
+        if [[ ! -z "$jfrogToken" ]]; then
+            execQuery="jfrog rt curl -k -s"
+            queryPath="-w 'status_code:[%{http_code}]' \
+                -XGET \
+                '/api/docker/${currentDockerRepo}/v2/${artifactoryDockerTargetArtifactName}/tags/list' -o $tmpOutputFile"
+        fi
+
+        ## Start querying
+        rm -f $versionStoreFilename
+        local response=""
+        response=$(sh -c "$execQuery $queryPath")
+        if [[ $? -ne 0 ]]; then
+            echo "[ACTION_CURL_ERROR] $BASH_SOURCE (line:$LINENO): Error running curl to get latest version."
+            echo "[DEBUG] Curl: $execQuery $queryPath"
+            echo "[DEBUG] $(echo $response)"
+            exit 1
+        fi
+        #echo "[DEBUG] response...[$response]"
+        #responseBody=$(echo $response | awk -F'status_code:' '{print $1}')
+        local responseStatus=$(echo $response | awk -F'status_code:' '{print $2}' | awk -F'[][]' '{print $2}')
+        #echo "[INFO] responseBody: $responseBody"
+        echo "[INFO] Query status code: $responseStatus"
+        echo "[DEBUG] Latest [$tmpOutputFile] version:"
+        echo "$(cat $tmpOutputFile)"
+
+        if [[ $responseStatus -ne 200 ]]; then
+            if (cat $tmpOutputFile | grep -q "NAME_UNKNOWN");then
+                echo "[INFO] Unable to find last version on registry $currentDockerRepo"
+            else
+                echo "[ACTION_RESPONSE_ERROR] $BASH_SOURCE (line:$LINENO): Return code not 200 when querying latest version from $currentDockerRepo: [$responseStatus]"
+                echo "[DEBUG] $execQuery $queryPath" 
+                exit 1
+            fi
+        else
+            foundValidVersion=true
+        fi
+
+        cat $tmpOutputFile | jq -r ".tags[]" >> $versionOutputFile
+        echo >> $versionOutputFile
+        rm -f $tmpOutputFile
+    done
+
+    if [[ "$foundValidVersion" == "false" ]]; then
+        local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.0"
+        echo "[INFO] Unable to find last version. Resetting to: $resetVersion"
+        echo "\"version\" : \"$resetVersion\"" > $tmpOutputFile
+    else
+        ## Store all versions in the same format as artifactory list
+        local versions=$(cat $versionOutputFile | grep -v "^$")
+        rm -f $versionOutputFile
+        for eachVersion in ${versions[@]}; do 
+            echo "\"version\" : \"$eachVersion\"" >> $versionOutputFile
+        done
+    fi
+   
 }
 
 function getLatestVersionFromArtifactory() {

@@ -53,6 +53,10 @@ This action generate the next incremented semantic version of artifact with the 
     # Mandatory: No (If not used for PR), Yes (if trigger event require info from commit message)
     consolidated-commit-msg: ''
 
+    # This is the artifact type for bot to be able to query artifact version properly (ie: docker has different API)
+    # Mandatory: No
+    artifact-type: ''
+
     # Use to display more logs during action execution
     # Mandatory: No
     # Default: false
