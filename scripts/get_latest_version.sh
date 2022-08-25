@@ -200,7 +200,7 @@ function getDockerLatestVersionFromArtifactory() {
     if [[ "$foundValidVersion" == "false" ]]; then
         local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.0"
         echo "[INFO] Unable to find last version. Resetting to: $resetVersion"
-        echo "\"version\" : \"$resetVersion\"" > $tmpOutputFile
+        echo "\"version\" : \"$resetVersion\"" > $versionOutputFile
     else
         ## Store all versions in the same format as artifactory list
         local versions=$(cat $versionOutputFile | grep -v "^$")
