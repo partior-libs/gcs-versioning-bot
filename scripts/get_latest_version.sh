@@ -141,7 +141,7 @@ function getDockerLatestVersionFromArtifactory() {
         artifactoryDockerTargetArtifactName="$(echo $artifactoryTargetGroup | sed "s/\./\//g")/${artifactoryTargetArtifactName}"
     fi
     rm -f $versionOutputFile
-    echo "[INFO] Getting latest versions for RC, DEV and Release from Artifactory..."
+    echo "[INFO] Getting latest versions for RC, DEV and Release from Artifactory's Docker Registry..."
     local foundValidVersion=false
     for currentDockerRepo in ${targetRepo//,/ }
     do
