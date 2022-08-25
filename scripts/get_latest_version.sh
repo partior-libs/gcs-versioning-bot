@@ -192,9 +192,9 @@ function getDockerLatestVersionFromArtifactory() {
             fi
         else
             foundValidVersion=true
+            cat $tmpOutputFile | jq -r ".tags[]" >> $versionOutputFile
         fi
 
-        cat $tmpOutputFile | jq -r ".tags[]" >> $versionOutputFile
         echo >> $versionOutputFile
         rm -f $tmpOutputFile
     done
