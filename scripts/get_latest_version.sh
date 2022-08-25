@@ -17,27 +17,29 @@ fi
 # source ./test-files/mock-base-variables.sh
 
 artifactoryBaseUrl=$1
-artifactoryTargetDevRepo=$2
-artifactoryTargetRelRepo=$3
-artifactoryTargetGroup=$4
-artifactoryTargetArtifactName=$5
-sourceBranchName=$6
-initialVersion=$7
-artifactoryUsername=$8
-artifactoryPassword=$9
-jfrogToken=${10}
-jiraUsername=${11}
-jiraPassword=${12}
-jiraBaseUrl=${13}
-jiraProjectKey=${14}
-jiraEnabler=${15}
-jiraVersionIdentifier=${16}
-artifactType=${17:-default}
+artifactoryTargetRepo=$2
+artifactoryTargetDevRepo=$3
+artifactoryTargetRelRepo=$4
+artifactoryTargetGroup=$5
+artifactoryTargetArtifactName=$6
+sourceBranchName=$7
+initialVersion=$8
+artifactoryUsername=$9
+artifactoryPassword=$10
+jfrogToken=${11}
+jiraUsername=${12}
+jiraPassword=${13}
+jiraBaseUrl=${14}
+jiraProjectKey=${15}
+jiraEnabler=${16}
+jiraVersionIdentifier=${17}
+artifactType=${18:-default}
 
 
 echo "[INFO] Branch name: $sourceBranchName"
 echo "[INFO] Artifactory username: $artifactoryUsername"
 echo "[INFO] Artifactory Base URL: $artifactoryBaseUrl"
+echo "[INFO] Artifactory Repo: $artifactoryTargetRepo"
 echo "[INFO] Artifactory Dev Repo: $artifactoryTargetDevRepo"
 echo "[INFO] Artifactory Release Repo: $artifactoryTargetRelRepo"
 echo "[INFO] Target artifact group: $artifactoryTargetGroup"
@@ -108,9 +110,9 @@ function storeLatestVersionIntoFile() {
 function getArtifactLastVersion() {
     local versionListFile=$1
     if [[ "$artifactType" == "docker" ]]; then
-        getDockerLatestVersionFromArtifactory "$artifactoryTargetDevRepo,$artifactoryTargetRelRepo" "$versionListFile"
+        getDockerLatestVersionFromArtifactory "$artifactoryTargetRepo,$artifactoryTargetDevRepo,$artifactoryTargetRelRepo" "$versionListFile"
     else
-        getLatestVersionFromArtifactory "$artifactoryTargetDevRepo,$artifactoryTargetRelRepo" "$versionListFile"
+        getLatestVersionFromArtifactory "$artifactoryTargetRepo,$artifactoryTargetDevRepo,$artifactoryTargetRelRepo" "$versionListFile"
     fi
     
     ## Combine result from Jira if enabled
