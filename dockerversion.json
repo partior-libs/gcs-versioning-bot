@@ -1,0 +1,31 @@
+{
+    "name": "signer",
+    "tags": [
+        "0.0.12-00281a40-SNAPSHOT",
+        "0.0.12-03adfcc1-SNAPSHOT",
+        "0.0.12-23775c9f-BUILD",
+        "0.0.12-31542a15-SNAPSHOT",
+        "0.0.12-43eae8d3-SNAPSHOT",
+        "0.0.12-65a5e8a3-SNAPSHOT",
+        "0.0.12-7f083fdf-BUILD",
+        "0.0.12-803659f0-SNAPSHOT",
+        "0.0.12-8e9a49d0-BUILD",
+        "0.0.12-b78bfd1f-SNAPSHOT",
+        "0.0.12-bb865178-SNAPSHOT",
+        "0.0.12-ceb5298e-SNAPSHOT",
+        "0.0.12-d0c2d2ef-SNAPSHOT",
+        "0.0.12-d24c5faf-SNAPSHOT",
+        "0.0.12-e0022b99-SNAPSHOT_e0022b99",
+        "0.0.12-e933d41e-SNAPSHOT",
+        "0.0.12-fc3b998c-SNAPSHOT",
+        "0.0.12-fc4a49f4-SNAPSHOT",
+        "1.0.1-dev.1",
+        "1.0.1-dev.2",
+        "1.0.1-dev.3",
+        "1.0.1-dev.4",
+        "1.0.1-dev.5",
+        "1.0.1-dev.6",
+        "1.0.1-dev.7",
+        "1.0.1-dev.8"
+    ]
+}
