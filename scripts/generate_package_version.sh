@@ -942,6 +942,8 @@ fi
 if [[ "$(checkReplacementFeatureFlag ${REPLACEMENT_SCOPE})" == "true" ]] && [[ "$REPLACE_V_RULE_MAVEN_ENABLED" == "true" ]]; then
     replaceVersionForMaven "$nextVersion" "$REPLACE_V_CONFIG_MAVEN_POMFILE"
     echo "[INFO] Version updated successfully in maven POM file: $REPLACE_V_CONFIG_MAVEN_POMFILE"
+    echo "[DEBUG] Updated $REPLACE_V_CONFIG_MAVEN_POMFILE:"
+    cat $REPLACE_V_CONFIG_MAVEN_POMFILE
 fi
 # if [[ "$(checkReplacementFeatureFlag ${REPLACEMENT_SCOPE})" == "true" ]] && [[ "$REPLACE_V_RULE_YAMLPATH_ENABLED" == "true" ]]; then
 #     replaceVersionForYamlFile "$nextVersion" "$REPLACE_V_CONFIG_YAMLPATH_FILE" "$REPLACE_V_CONFIG_YAMLPATH_QUERYPATH"
