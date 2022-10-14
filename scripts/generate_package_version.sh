@@ -934,28 +934,34 @@ if [[ "$(checkBuildVersionFeatureFlag ${BUILD_SCOPE})" == "true" ]]; then
     echo [INFO] After appending build version: $nextVersion
 fi
 
-## Replace the version in file if enabled
-if [[ "$(checkReplacementFeatureFlag ${REPLACEMENT_SCOPE})" == "true" ]] && [[ "$REPLACE_V_RULE_FILETOKEN_ENABLED" == "true" ]]; then
-    replaceVersionInFile "$nextVersion" "$REPLACE_V_CONFIG_FILETOKEN_FILE" "$REPLACE_V_CONFIG_FILETOKEN_NAME"
-    echo "[INFO] Version updated successfully in $REPLACE_V_CONFIG_FILETOKEN_FILE"
-fi
-if [[ "$(checkReplacementFeatureFlag ${REPLACEMENT_SCOPE})" == "true" ]] && [[ "$REPLACE_V_RULE_MAVEN_ENABLED" == "true" ]]; then
-    replaceVersionForMaven "$nextVersion" "$REPLACE_V_CONFIG_MAVEN_POMFILE"
-    echo "[INFO] Version updated successfully in maven POM file: $REPLACE_V_CONFIG_MAVEN_POMFILE"
-    echo "[DEBUG] Updated $REPLACE_V_CONFIG_MAVEN_POMFILE:"
-    cat $REPLACE_V_CONFIG_MAVEN_POMFILE
-fi
-# if [[ "$(checkReplacementFeatureFlag ${REPLACEMENT_SCOPE})" == "true" ]] && [[ "$REPLACE_V_RULE_YAMLPATH_ENABLED" == "true" ]]; then
-#     replaceVersionForYamlFile "$nextVersion" "$REPLACE_V_CONFIG_YAMLPATH_FILE" "$REPLACE_V_CONFIG_YAMLPATH_QUERYPATH"
-#     echo "[INFO] Version updated successfully in YAML file: $REPLACE_V_CONFIG_YAMLPATH_FILE"
-# fi
-
 ## If due to any circumstances the increment on nextVersion doesnt happen, it's likely due to unhandled versioning format. In that situation, try to force the patch increment by 1
 if [[ "$nextVersion" == "$lastRelVersion" ]]; then
     echo [DEBUG] nextVersion and lastRelVersion are still identical [$nextVersion]. Force increment patch version...
     nextVersion=$(incrementReleaseVersion $nextVersion ${PATCH_POSITION})
     echo [DEBUG] PATCH INCREMENTED $nextVersion
 fi
+
+## Replace the version in file if enabled
+if [[ "$(checkReplacementFeatureFlag ${REPLACEMENT_SCOPE})" == "true" ]] && [[ "$REPLACE_V_RULE_FILETOKEN_ENABLED" == "true" ]]; then
+    replaceVersionInFile "$nextVersion" "$REPLACE_V_CONFIG_FILETOKEN_FILE" "$REPLACE_V_CONFIG_FILETOKEN_NAME"
+    echo "[INFO] Version updated successfully in $REPLACE_V_CONFIG_FILETOKEN_FILE"
+    if [[ "$isDebug" == "true" ]]; then
+        echo "[DEBUG] Updated $REPLACE_V_CONFIG_FILETOKEN_FILE:"
+        cat $REPLACE_V_CONFIG_FILETOKEN_FILE
+    fi
+fi
+if [[ "$(checkReplacementFeatureFlag ${REPLACEMENT_SCOPE})" == "true" ]] && [[ "$REPLACE_V_RULE_MAVEN_ENABLED" == "true" ]]; then
+    replaceVersionForMaven "$nextVersion" "$REPLACE_V_CONFIG_MAVEN_POMFILE"
+    echo "[INFO] Version updated successfully in maven POM file: $REPLACE_V_CONFIG_MAVEN_POMFILE"
+    if [[ "$isDebug" == "true" ]]; then
+        echo "[DEBUG] Updated $REPLACE_V_CONFIG_MAVEN_POMFILE:"
+        cat $REPLACE_V_CONFIG_MAVEN_POMFILE
+    fi
+fi
+# if [[ "$(checkReplacementFeatureFlag ${REPLACEMENT_SCOPE})" == "true" ]] && [[ "$REPLACE_V_RULE_YAMLPATH_ENABLED" == "true" ]]; then
+#     replaceVersionForYamlFile "$nextVersion" "$REPLACE_V_CONFIG_YAMLPATH_FILE" "$REPLACE_V_CONFIG_YAMLPATH_QUERYPATH"
+#     echo "[INFO] Version updated successfully in YAML file: $REPLACE_V_CONFIG_YAMLPATH_FILE"
+# fi
 
 echo "[INFO] nextVersion = $nextVersion"
 echo $nextVersion > $ARTIFACT_NEXT_VERSION_FILE
