@@ -24,10 +24,9 @@ env:
   YAML_ENABLE_MSGTAG_CI_CONFIG_IMPORTER: enable_msgtag
   YAML_NO_PREV_ARTIFACT_CI_CONFIG_IMPORTER: enable_no_prev_artifact
   YAML_STD_NO_RC_IMPORTER: enable_std_no_rc
+  YAML_STD_NO_VERSION_IMPORTER: enable_std_no_version
 
 jobs:
-
-
   read-config:
     runs-on: ubuntu-latest
     outputs:
@@ -235,9 +234,9 @@ jobs:
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@partior-stable
         with:
-          yaml-file: controller-config-files/projects/enable-std-no-rc.yml
+          yaml-file: controller-config-files/projects/enable_std_no_version.yml
           query-path: .smc.ci
-          output-file: ${{ env.YAML_STD_NO_RC_IMPORTER }}
+          output-file: ${{ env.YAML_STD_NO_VERSION_IMPORTER }}
           yaml-file-for-default: controller-config-files/projects/default.yml
           query-path-for-default: .smc.ci
           upload: true
