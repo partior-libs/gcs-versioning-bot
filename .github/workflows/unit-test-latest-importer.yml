@@ -53,12 +53,12 @@ jobs:
             commitMessages=$(git log $prTargetBranch..HEAD --pretty=format:"%s")
           fi
           
-          echo "branch-name::${branchName}" >> $GITHUB_OUTPUT
-          echo "is-PR::${isPR}" >> $GITHUB_OUTPUT
-          echo "pr-target-branch::${prTargetBranch}" >> $GITHUB_OUTPUT
-          echo "name::$(echo ${GITHUB_REPOSITORY}  | cut -d'/' -f2)" >> $GITHUB_OUTPUT
-          echo "delta-commit-msg::${commitMessages}" >> $GITHUB_OUTPUT
-          echo "source-branch::${sourceBranch}" >> $GITHUB_OUTPUT
+          echo "branch-name=${branchName}" >> $GITHUB_OUTPUT
+          echo "is-PR=${isPR}" >> $GITHUB_OUTPUT
+          echo "pr-target-branch=${prTargetBranch}" >> $GITHUB_OUTPUT
+          echo "name=$(echo ${GITHUB_REPOSITORY}  | cut -d'/' -f2)" >> $GITHUB_OUTPUT
+          echo "delta-commit-msg=${commitMessages}" >> $GITHUB_OUTPUT
+          echo "source-branch=${sourceBranch}" >> $GITHUB_OUTPUT
 
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@main
