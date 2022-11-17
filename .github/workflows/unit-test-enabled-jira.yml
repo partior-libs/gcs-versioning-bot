@@ -32,7 +32,7 @@ jobs:
       - name: Get repo details
         id: get-repo
         run: |
-          branchName="$(echo ${GITHUB_REF_NAME} | cut -d"/" -f1)"
+          branchName="$(echo ${GITHUB_REF_NAME} | cut -d'/' -f1)"
           sourceBranch=${GITHUB_REF_NAME}
           prTargetBranch=''
           isPR=false
