@@ -96,7 +96,7 @@ runs:
       run: |
         #!/bin/bash -e
 
-        branchName="$(echo ${GITHUB_REF_NAME} | cut -d'/'' -f1)"
+        branchName="$(echo ${GITHUB_REF_NAME} | cut -d'/' -f1)"
         prTargetBranch=''
         isPR=false
         commitMessages=''
