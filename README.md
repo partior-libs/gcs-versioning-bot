@@ -292,7 +292,7 @@ jobs:
           isPR=false
           commitMessages=''
           if [[ ! -z "$GITHUB_HEAD_REF" ]]; then
-            branchName=$(echo $GITHUB_HEAD_REF | cut -d"/" -f1)
+            branchName=$(echo $GITHUB_HEAD_REF | cut -d'/' -f1)
             sourceBranch=${GITHUB_HEAD_REF}
             isPR=true
             prTargetBranch=remotes/origin/${GITHUB_BASE_REF}

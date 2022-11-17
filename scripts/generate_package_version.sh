@@ -16,7 +16,7 @@ fi
 # source ./test-files/mock-base-variables.sh
 
 artifactName=$1
-currentBranch=$(echo $2 | cut -d"/" -f1)
+currentBranch=$(echo $2 | cut -d'/' -f1)
 currentLabel=$3
 currentTag=$4
 currentMsgTag=$5
