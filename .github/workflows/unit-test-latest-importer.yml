@@ -73,7 +73,7 @@ jobs:
   read-std-config:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Get repo details
         id: get-repo
@@ -117,7 +117,7 @@ jobs:
   read-enable-msgtag:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@main
@@ -132,7 +132,7 @@ jobs:
   read-build-config:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@main
@@ -147,7 +147,7 @@ jobs:
   read-replace-file-version-config:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@main
@@ -162,7 +162,7 @@ jobs:
   read-replace-maven-pom-config:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@main
@@ -177,7 +177,7 @@ jobs:
   read-external-version-config:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@main
@@ -192,7 +192,7 @@ jobs:
   read-no-prev-artifact-config:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@main
