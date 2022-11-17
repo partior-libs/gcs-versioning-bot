@@ -234,7 +234,7 @@ jobs:
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@partior-stable
         with:
-          yaml-file: controller-config-files/projects/enable_std_no_version.yml
+          yaml-file: controller-config-files/projects/enable-std-no-version.yml
           query-path: .smc.ci
           output-file: ${{ env.YAML_STD_NO_VERSION_IMPORTER }}
           yaml-file-for-default: controller-config-files/projects/default.yml
