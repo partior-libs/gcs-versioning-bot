@@ -322,7 +322,7 @@ jobs:
           configName=${{ matrix.rule }}
           if [[ "$configName" =~ docker ]]; then
               echo BUILD_GH_ARTIFACT_TYPE=docker >> $GITHUB_ENV
-              echo CURRENT_CONFIG_FILE=$(echo $configName | sed "s/_/-/g").yml
+              echo CURRENT_CONFIG_FILE=$(echo $configName | sed "s/_/-/g").yml >> $GITHUB_ENV
               rm -f ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
           fi
 
