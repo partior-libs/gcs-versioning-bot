@@ -13,4 +13,10 @@ else
     exit 1
 fi
 
-cat $ARTIFACT_NEXT_VERSION_FILE
+prependVersionLabel="$1"
+
+if [[ -z "${prependVersionLabel}" ]]; then
+    cat $ARTIFACT_NEXT_VERSION_FILE
+else
+    echo "${prependVersionLabel}-$(cat $ARTIFACT_NEXT_VERSION_FILE)"
+fi

@@ -315,7 +315,20 @@ jobs:
           configName=${{ matrix.rule }}
           if [[ "$configName" =~ docker ]]; then
               echo BUILD_GH_ARTIFACT_TYPE=docker >> $GITHUB_ENV
+              echo CURRENT_CONFIG_FILE=$(echo $configName | sed "s/_/-/g").yml >> $GITHUB_ENV
+              rm -f ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
           fi
+
+      - name: Reimport CI branch if it's docker
+        if: env.BUILD_GH_ARTIFACT_TYPE == 'docker'
+        uses: partior-libs/gcs-yaml-importer@main
+        with:
+          yaml-file: controller-config-files/projects/${{ env.CURRENT_CONFIG_FILE }}
+          query-path: .smc.ci.branches.${{ steps.get-repo.outputs.branch-name }}
+          output-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
+          yaml-file-for-default: controller-config-files/projects/${{ env.CURRENT_CONFIG_FILE }}
+          query-path-for-default: .smc.ci.branches.default
+          upload: false
 
       - name: Start versioning bot
         id: version-bot

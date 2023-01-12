@@ -13,4 +13,10 @@ else
     exit 1
 fi
 
-echo "dev=$(cat $ARTIFACT_LAST_DEV_VERSION_FILE), rc=$(cat $ARTIFACT_LAST_RC_VERSION_FILE), rel=$(cat $ARTIFACT_LAST_REL_VERSION_FILE)"
+prependVersionLabel="$1"
+
+if [[ -z "${prependVersionLabel}" ]]; then
+    echo "dev=$(cat $ARTIFACT_LAST_DEV_VERSION_FILE), rc=$(cat $ARTIFACT_LAST_RC_VERSION_FILE), rel=$(cat $ARTIFACT_LAST_REL_VERSION_FILE)"
+else
+    echo "dev=${prependVersionLabel}-$(cat $ARTIFACT_LAST_DEV_VERSION_FILE), rc=${prependVersionLabel}-$(cat $ARTIFACT_LAST_RC_VERSION_FILE), rel=${prependVersionLabel}-$(cat $ARTIFACT_LAST_REL_VERSION_FILE)"
+fi
