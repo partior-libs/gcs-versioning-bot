@@ -269,7 +269,7 @@ jobs:
           yaml-file: controller-config-files/projects/enable-docker-prepend-version.yml
           query-path: .smc.ci
           output-file: ${{ env.YAML_DOCKER_PREPEND_VERSION_CI_IMPORTER }}
-          yaml-file-for-default: controller-config-files/projects/default.yml
+          yaml-file-for-default: controller-config-files/projects/enable-docker-prepend-version.yml
           query-path-for-default: .smc.ci
           upload: true
 
