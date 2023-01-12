@@ -178,6 +178,12 @@ runs:
         fi
         echo "[INFO] Reading label from $versionLabelFile"
         versionPrependLabel=$(cat "$versionLabelFile" | grep -v "^#" | grep "$versionLabelPropKey" | cut -d"=" -f1 --complement)
+        if [[ -z "$versionPrependLabel" ]]; then
+            echo "[ERROR] Version label value for key [$versionLabelPropKey] is missing in config file: $versionLabelFile
+            echo "[DEBUG] Content of version config:"
+            cat $versionLabelFile
+            exit 1
+        fi
         echo "[INFO] Version prepend label: $versionPrependLabel"
         echo BUILD_GH_VERSION_PREPEND_LABEL=${versionPrependLabel} >> $GITHUB_ENV
       shell: bash
