@@ -259,7 +259,7 @@ jobs:
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@main
         with:
-          yaml-file: controller-config-files/projects/enable-prepend-version.yml
+          yaml-file: controller-config-files/projects/enable-docker-prepend-version.yml
           query-path: .smc.ci
           output-file: ${{ env.YAML_DOCKER_PREPEND_VERSION_CI_IMPORTER }}
           yaml-file-for-default: controller-config-files/projects/default.yml
