@@ -157,7 +157,28 @@ runs:
         fi
       shell: bash
 
-    - run: |
+    - name: Get version prepend label
+      if: ${{ steps.yaml-config.outputs.artifact-auto-versioning_prepend-version_enabled }} == "true" && ${{ steps.yaml-config.outputs.artifact-auto-versioning_prepend-version_rules_file_enabled }} == "true"
+      run: |
+        echo "[INFO] Retrieving version append label..."
+        versionLabelFile="${{ steps.yaml-config.outputs.artifact-auto-versioning_prepend-version_rules_file_target }}"
+        versionLabelPropKey="${{ steps.yaml-config.outputs.artifact-auto-versioning_prepend-version_rules_file_key }}"
+        if [[ ! -f "$versionLabelFile" ]]; then
+            echo "[ERROR] Unable to locate version label file: $versionLabelFile"
+            exit 1
+        fi
+        if [[ -z "$versionLabelPropKey" ]]; then
+            echo "[ERROR] Version label key is missing in controller. Please check the controller config and try again."
+            exit 1
+        fi
+        echo "[INFO] Reading label from $versionLabelFile"
+        versionPrependLabel=$(cat "$versionLabelFile" | grep -v "^#" | grep "$versionLabelPropKey" | cut -d"=" -f1 --complement)
+        echo "[INFO] Version prepend label: $versionPrependLabel"
+        echo BUILD_GH_VERSION_PREPEND_LABEL=${versionPrependLabel} >> $GITHUB_ENV
+      shell: bash
+
+    - name: Get the latest version
+      run: |
        ${{ github.action_path }}/scripts/get_latest_version.sh "${{ inputs.artifactory-base-url }}" \
           "${{ steps.yaml-config.outputs.artifact_packager_artifactory-repo }}" \
           "${{ steps.yaml-config.outputs.artifact_packager_artifactory-dev-repo }}" \
@@ -175,10 +196,12 @@ runs:
           "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_project-key }}" \
           "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_enabled }}" \
           "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_version-identifier }}" \
-          "${{ inputs.artifact-type }}"  
+          "${{ inputs.artifact-type }}" \
+          "${{ env.BUILD_GH_VERSION_PREPEND_LABEL }}"
       shell: bash
 
-    - run: |
+    - name: Generate next available version
+      run: |
         ${{ github.action_path }}/scripts/generate_package_version.sh "${{ steps.yaml-config.outputs.artifact-base-name }}" \
           "${BUILD_GH_BRANCH_NAME}" \
           "${BUILD_GH_LABEL_FILE}" \
@@ -190,9 +213,16 @@ runs:
 
     - id: final-version
       run: |
-        echo "full-version=${{ steps.yaml-config.outputs.artifact-base-name }}-$(echo $(${{ github.action_path }}/scripts/read_new_version.sh))" >> $GITHUB_OUTPUT
-        echo "new-version=$(echo $(${{ github.action_path }}/scripts/read_new_version.sh))" >> $GITHUB_OUTPUT
-        echo "old-version=$(echo $(${{ github.action_path }}/scripts/read_old_version.sh))" >> $GITHUB_OUTPUT
+        prependVersionLabel="${{ env.BUILD_GH_VERSION_PREPEND_LABEL }}"
+        if [[ -z "${prependVersionLabel}" ]]; then
+          echo "full-version=${{ steps.yaml-config.outputs.artifact-base-name }}-$(echo $(${{ github.action_path }}/scripts/read_new_version.sh))" >> $GITHUB_OUTPUT
+          echo "new-version=$(echo $(${{ github.action_path }}/scripts/read_new_version.sh))" >> $GITHUB_OUTPUT
+          echo "old-version=$(echo $(${{ github.action_path }}/scripts/read_old_version.sh))" >> $GITHUB_OUTPUT
+        else
+          echo "full-version=${{ steps.yaml-config.outputs.artifact-base-name }}-${prependVersionLabel}-$(echo $(${{ github.action_path }}/scripts/read_new_version.sh))" >> $GITHUB_OUTPUT
+          echo "new-version=${prependVersionLabel}-$(echo $(${{ github.action_path }}/scripts/read_new_version.sh))" >> $GITHUB_OUTPUT
+          echo "old-version=${prependVersionLabel}-$(echo $(${{ github.action_path }}/scripts/read_old_version.sh))" >> $GITHUB_OUTPUT
+        fi
       shell: bash
       
     - if: steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_enabled == 'true'

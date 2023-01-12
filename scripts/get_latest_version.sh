@@ -34,6 +34,7 @@ jiraProjectKey=${15}
 jiraEnabler=${16}
 jiraVersionIdentifier=${17}
 artifactType=${18:-default}
+prependVersionLabel=${19}
 
 
 echo "[INFO] Branch name: $sourceBranchName"
@@ -50,6 +51,7 @@ echo "[INFO] Jira Project Key: $jiraProjectKey"
 echo "[INFO] Jira Enabler: $jiraEnabler"
 echo "[INFO] Jira Version Identifier: $jiraVersionIdentifier"
 echo "[INFO] Artifact Type: $artifactType"
+echo "[INFO] Prepend Version: $prependVersionLabel"
 
 
 function storeLatestVersionIntoFile() {
@@ -97,7 +99,7 @@ function storeLatestVersionIntoFile() {
         if [[ $(( tmpRelPatchVersion - 1 )) -gt 0 ]]; then
             tmpRelVersion=${tmpRelMajorMinorVersion}.$(( tmpRelPatchVersion - 1))
         fi
-        
+
         if [[ "$identifierType" == "$REL_SCOPE" ]]; then
             echo "$tmpRelVersion" > $targetSaveFile
         else
@@ -199,6 +201,10 @@ function getDockerLatestVersionFromArtifactory() {
         rm -f $tmpOutputFile
     done
 
+    ## Filter out only with matching version prepend label
+    filterVersionListWithPrependVersion "$versionOutputFile" "$prependVersionLabel"   
+
+    ## Reformating final output for next stage processing
     if [[ "$foundValidVersion" == "false" ]]; then
         local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.0"
         echo "[INFO] Unable to find last version. Resetting to: $resetVersion"
@@ -261,10 +267,13 @@ function getLatestVersionFromArtifactory() {
             exit 1
         fi
     fi
+
     echo "[INFO] Trimming redundant lines..."
     cat $versionOutputFile | grep "\"version\"" > $versionOutputFile.2
     mv $versionOutputFile.2 $versionOutputFile
-    
+      
+    ## Filter out only with matching version prepend label
+    filterVersionListWithPrependVersion "$versionOutputFile" "$prependVersionLabel"   
 }
 
 function getLatestVersionFromJira() {
@@ -304,6 +313,8 @@ function getLatestVersionFromJira() {
                 local trimVersion=$(echo $eachVersion | awk -F "${identifierType}_" '{print $2}')
                 echo "\"version\" : \"$trimVersion\"" >> $versionOutputFile
             done
+            ## Filter out only with matching version prepend label
+            filterVersionListWithPrependVersion "$versionOutputFile" "$prependVersionLabel"
         fi
 
     else
@@ -317,6 +328,30 @@ function getLatestVersionFromJira() {
     
 }
 
+## Filter out only with matching version prepend label
+function filterVersionListWithPrependVersion() {
+    local versionOutputFile="$1"
+    local inputPrependVersionLabel="$2"
+
+    
+    if [[ ! -z "$inputPrependVersionLabel" ]]; then
+        echo "[INFO] Filtering version list with version prepend label: $inputPrependVersionLabel"
+        if [[ $(cat $versionOutputFile | grep "$inputPrependVersionLabel" | wc -l) -eq 0 ]]; then
+            local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.0"
+            echo "[INFO] No version found after filtered. Resetting to: $resetVersion"
+            echo "\"version\" : \"$resetVersion\"" > $versionOutputFile
+        else
+            cat $versionOutputFile | grep "$inputPrependVersionLabel" > $versionOutputFile.tmp
+            mv $versionOutputFile.tmp $versionOutputFile
+            echo "[INFO] List of versions after filtered"
+            cat $versionOutputFile
+            # Remove the label
+            sed -i "s/$inputPrependVersionLabel-//g" $versionOutputFile
+            echo "[INFO] List of semantic versions from filtered"
+            cat $versionOutputFile
+        fi
+    fi
+}
 
 function checkInitialReleaseVersion() {
     local initialVersion=$1
