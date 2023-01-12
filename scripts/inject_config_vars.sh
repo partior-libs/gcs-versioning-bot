@@ -7,9 +7,9 @@ if [[ ! -f "$importerFile" ]]; then
     exit 1
 fi
 
-if (grep -q "::set-output" importer.sh); then 
+if (grep -q "::set-output" $importerFile); then 
     cat $importerFile | sed -r "s/echo ::set-output name=//g" | sed -r "s/::/=/g" |  grep "=" | grep -v '$GITHUB_ENV' > $importerFile.tmp
-elif (grep -q "GITHUB_OUTPUT" importer.sh); then 
+elif (grep -q "GITHUB_OUTPUT" $importerFile); then 
     cat $importerFile | grep '$GITHUB_OUTPUT' | sed "s/\"*\s*>>\s*\$GITHUB_OUTPUT//g" | sed "s/echo\s*\"*//g" > $importerFile.tmp
 fi
 
