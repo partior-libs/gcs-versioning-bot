@@ -136,7 +136,7 @@ smc:
         enabled: false
         rules:
           branches: 
-            target: release
+            target: release,main
             enabled: true
           tag: 
             target: PATCH-VERSION 
