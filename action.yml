@@ -143,53 +143,6 @@ runs:
       run: ${{ github.action_path }}/scripts/inject_config_vars.sh "${{ inputs.versioning-rules-importer-file }}"
       shell: bash
 
-    - name: Fail if branch not valid
-      run: |
-        ## Check if given branch is in the comma delimited list of config branches
-        function validateBranch(){
-            local listString=$1
-            local subString=$2
-            local listArray=''
-
-            if [[ -z $listString ]] && [[ -z $subString ]]; then
-                echo "true"
-                return 0
-            fi
-
-            IFS=', ' read -r -a listArray <<< "$listString"
-            for eachString in "${listArray[@]}";
-            do 
-                ## Skip empty
-                if [[ -z "$eachString" ]]; then
-                    continue
-                fi
-                if [[ "$subString" == "$eachString" ]]; then
-                    echo "true"
-                    return 0
-                fi
-            done
-            echo "false"
-        }
-
-        configBranchesList=("$MAJOR_V_CONFIG_BRANCHES" "$MINOR_V_CONFIG_BRANCHES" "$PATCH_V_CONFIG_BRANCHES" "$RC_V_CONFIG_BRANCHES" "$DEV_V_CONFIG_BRANCHES" "$BUILD_V_CONFIG_BRANCHES")
-
-        # Initialize an empty variable to store the joined config branches
-        configBranches=""
-
-        # Joining the config branches
-        for eachConfigBranches in "${configBranchesList[@]}"; do
-            configBranches="$configBranches,$eachConfigBranches"
-        done
-
-        if [[ $(validateBranch "${configBranches}" "${BUILD_GH_BRANCH_NAME}") == "true" ]]; then
-            echo "[INFO] Branch [${BUILD_GH_BRANCH_NAME}] found in branch configs: $configBranches"
-        else   
-            echo "[ERROR] Branch [${BUILD_GH_BRANCH_NAME}] not found in branch configs: $configBranches"
-            exit 1
-        fi
-
-      shell: bash
-
     - name: List all config variables
       if: inputs.debug == 'true'
       run: |
@@ -204,6 +157,11 @@ runs:
         fi
       shell: bash
 
+    - name: Verify config prerequisite
+      run: |
+        ${{ github.action_path }}/scripts/verify_prerequisite.sh "${BUILD_GH_BRANCH_NAME}"
+      shell: bash
+      
     - name: Get version prepend label
       if: ${{ steps.yaml-config.outputs.artifact-auto-versioning_prepend-version_enabled }} == "true" && ${{ steps.yaml-config.outputs.artifact-auto-versioning_prepend-version_rules_file_enabled }} == "true"
       run: |
