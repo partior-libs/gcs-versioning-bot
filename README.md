@@ -348,7 +348,7 @@ jobs:
         with:
           name: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: ${{ env.YAML_STD_CI_CONFIG_IMPORTER }}
 
@@ -393,7 +393,7 @@ jobs:
           echo [INFO] Final version: ${{ steps.version-bot.outputs.artifact-version-name}}
           echo "" > rslt-${{ std-config }}_${{ env.BRANCH_NAME }}--${{ steps.version-bot.outputs.artifact-version-name}}
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: rslt-read-std-config_${{ env.BRANCH_NAME }}--${{ steps.version-bot.outputs.artifact-version-name}}
           path: rslt-read-std-config_${{ env.BRANCH_NAME }}--${{ steps.version-bot.outputs.artifact-version-name}}

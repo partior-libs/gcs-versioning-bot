@@ -116,7 +116,7 @@ jobs:
         run: |
           cat tmp-branch-importer >> ${{ env.YAML_STD_CI_CONFIG_IMPORTER }}
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: ${{ env.YAML_STD_CI_CONFIG_IMPORTER }}
           path: ${{ env.YAML_STD_CI_CONFIG_IMPORTER }}
