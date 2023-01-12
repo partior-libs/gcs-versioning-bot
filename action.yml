@@ -179,7 +179,7 @@ runs:
         echo "[INFO] Reading label from $versionLabelFile"
         versionPrependLabel=$(cat "$versionLabelFile" | grep -v "^#" | grep "$versionLabelPropKey" | cut -d"=" -f1 --complement)
         if [[ -z "$versionPrependLabel" ]]; then
-            echo "[ERROR] Version label value for key [$versionLabelPropKey] is missing in config file: $versionLabelFile
+            echo "[ERROR] Version label value for key [$versionLabelPropKey] is missing in config file: $versionLabelFile"
             echo "[DEBUG] Content of version config:"
             cat $versionLabelFile
             exit 1
