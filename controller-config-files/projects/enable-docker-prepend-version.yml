@@ -79,7 +79,7 @@ smc:
             target: RC-VERSION
             enabled: false
           file:
-            enabled: true
+            enabled: false
             target: test-files/app-version.cfg
             key: RC-VERSION
       development-version:
@@ -93,7 +93,7 @@ smc:
             target: DEV-VERSION
             enabled: false
           file:
-            enabled: true
+            enabled: false
             target: test-files/app-version.cfg
             key: DEV-VERSION
       build-version:
