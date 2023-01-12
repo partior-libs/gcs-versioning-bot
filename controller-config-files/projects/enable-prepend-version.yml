@@ -8,7 +8,7 @@ smc:
         enabled: true
         rules:
           file:
-            enable: true
+            enabled: true
             target: test-files/app-version.cfg
             key: PREPEND-LABEL
       major-version:
