@@ -11,7 +11,7 @@ smc:
         enabled: true
         rules:
           branches: 
-            target: release
+            target: release,main
             enabled: true
           message-tag: 
             target: PATCH-VERSION 
