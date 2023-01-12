@@ -16,11 +16,12 @@ env:
   YAML_VERSION_FROM_FILE_CI_CONFIG_IMPORTER: enable_external_version
   YAML_ENABLE_MSGTAG_CI_CONFIG_IMPORTER: enable_msgtag
   YAML_NO_PREV_ARTIFACT_CI_CONFIG_IMPORTER: enable_no_prev_artifact
+  YAML_STD_NO_RC_IMPORTER: enable_std_no_rc
+  YAML_STD_NO_VERSION_IMPORTER: enable_std_no_version
   YAML_PREPEND_VERSION_CI_IMPORTER: enable_prepend_version
+  YAML_DOCKER_PREPEND_VERSION_CI_IMPORTER: enable_docker_prepend_version
 
 jobs:
-
-
   read-config:
     runs-on: ubuntu-latest
     outputs:
@@ -205,6 +206,36 @@ jobs:
           query-path-for-default: .smc.ci
           upload: true
 
+  read-std-no-rc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Generate CI branch importer
+        uses: partior-libs/gcs-yaml-importer@main
+        with:
+          yaml-file: controller-config-files/projects/enable-std-no-rc.yml
+          query-path: .smc.ci
+          output-file: ${{ env.YAML_STD_NO_RC_IMPORTER }}
+          yaml-file-for-default: controller-config-files/projects/default.yml
+          query-path-for-default: .smc.ci
+          upload: true
+
+  read-std-no-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Generate CI branch importer
+        uses: partior-libs/gcs-yaml-importer@main
+        with:
+          yaml-file: controller-config-files/projects/enable-std-no-version.yml
+          query-path: .smc.ci
+          output-file: ${{ env.YAML_STD_NO_VERSION_IMPORTER }}
+          yaml-file-for-default: controller-config-files/projects/default.yml
+          query-path-for-default: .smc.ci
+          upload: true
+
   read-prepend-version-config:
     runs-on: ubuntu-latest
     steps:
@@ -220,13 +251,28 @@ jobs:
           query-path-for-default: .smc.ci
           upload: true
 
+  read-docker-prepend-version-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Generate CI branch importer
+        uses: partior-libs/gcs-yaml-importer@main
+        with:
+          yaml-file: controller-config-files/projects/enable-prepend-version.yml
+          query-path: .smc.ci
+          output-file: ${{ env.YAML_DOCKER_PREPEND_VERSION_CI_IMPORTER }}
+          yaml-file-for-default: controller-config-files/projects/default.yml
+          query-path-for-default: .smc.ci
+          upload: true
+
   trigger-with-matrix:
-    needs: [ read-config, read-std-config, read-build-config, read-replace-file-version-config, read-replace-maven-pom-config, read-external-version-config, read-enable-msgtag, read-no-prev-artifact-config, read-prepend-version-config ]
+    needs: [ read-config, read-std-config, read-build-config, read-replace-file-version-config, read-replace-maven-pom-config, read-external-version-config, read-enable-msgtag, read-no-prev-artifact-config, read-std-no-version, read-prepend-version-config, read-docker-prepend-version-config ]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        rule: [ std_rule, enable_build_info, enable_file_replacement, enable_mavenpom_replacement, enable_external_version, enable_msgtag, enable_no_prev_artifact, enable_prepend_version ]
+        rule: [ std_rule, enable_build_info, enable_file_replacement, enable_mavenpom_replacement, enable_external_version, enable_msgtag, enable_no_prev_artifact, enable_std_no_rc, enable_std_no_version, enable_prepend_version, enable_docker_prepend_version ]
         branch: [ main, release, develop, feature ]
         # rule: [ std_rule ]
         # rule: [ enable_msgtag ]
@@ -249,7 +295,10 @@ jobs:
       - name: View Version File - Before
         run: |
           echo [INFO] Viewing versioning file - Pre Activity
+          echo [INFO] Content on XML file..
           cat ./test-files/sample-version-file.xml
+          echo [INFO] Content on YAML file..
+          cat ./test-files/sample-version-yaml.yml
 
       - name: View Maven POM File - Before
         run: |
@@ -261,23 +310,35 @@ jobs:
           echo [INFO] Start viewing
           echo ${{ env.ALL_DELTA_COMMIT_MSG }}
 
+      - name: Set artifact type
+        run: |
+          configName=${{ matrix.rule }}
+          if [[ "$configName" =~ docker ]]; then
+              echo BUILD_GH_ARTIFACT_TYPE=docker >> $GITHUB_ENV
+          fi
+
       - name: Start versioning bot
         id: version-bot
         uses: partior-libs/gcs-versioning-bot@main
         with:
           artifactory-username: svc-smc-read
-          artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
+          # artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
+          jfrog-token: ${{ secrets.JFROG_TOKEN }}
           versioning-rules-importer-file: ${{ matrix.rule }}
           branch-packager-rules-importer-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
           consolidated-commit-msg: ${{ env.ALL_DELTA_COMMIT_MSG }}
           branch-name: ${{ matrix.branch }}
+          artifact-type: ${{ env.BUILD_GH_ARTIFACT_TYPE }}
           debug: true
           # branch-name: ${{ env.BRANCH_NAME }}
 
       - name: View Version File - After
         run: |
           echo [INFO] Viewing versioning file - Post Activity
+          echo [INFO] Content on XML file..
           cat ./test-files/sample-version-file.xml
+          echo [INFO] Content on YAML file..
+          cat ./test-files/sample-version-yaml.yml
 
       - name: View Maven POM File - After
         run: |
