@@ -227,7 +227,7 @@ runs:
         prependVersionLabel="${{ env.BUILD_GH_VERSION_PREPEND_LABEL }}"
         echo "full-version=${{ steps.yaml-config.outputs.artifact-base-name }}-$(echo $(${{ github.action_path }}/scripts/read_new_version.sh $prependVersionLabel))" >> $GITHUB_OUTPUT
         echo "new-version=$(echo $(${{ github.action_path }}/scripts/read_new_version.sh $prependVersionLabel))" >> $GITHUB_OUTPUT
-        echo "old-version=$(echo $(${{ github.action_path }}/scripts/read_old_version.sh #prependVersionLabel))" >> $GITHUB_OUTPUT
+        echo "old-version=$(echo $(${{ github.action_path }}/scripts/read_old_version.sh $prependVersionLabel))" >> $GITHUB_OUTPUT
       shell: bash
       
     - if: steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_enabled == 'true'
