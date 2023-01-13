@@ -273,7 +273,7 @@ jobs:
           query-path-for-default: .smc.ci
           upload: true
 
-  trigger-with-matrix:
+  test:
     needs: [ read-config, read-std-config, read-build-config, read-replace-file-version-config, read-replace-maven-pom-config, read-external-version-config, read-enable-msgtag, read-no-prev-artifact-config, read-std-no-version, read-prepend-version-config, read-docker-prepend-version-config ]
     runs-on: ubuntu-latest
     strategy:
