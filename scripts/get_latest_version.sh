@@ -202,7 +202,7 @@ function getDockerLatestVersionFromArtifactory() {
     done
 
     ## Filter out only with matching version prepend label
-    filterVersionListWithPrependVersion "$versionOutputFile" "$prependVersionLabel"   
+    filterVersionListWithPrependVersion "$versionOutputFile" "$prependVersionLabel"  "docker"
 
     ## Reformating final output for next stage processing
     if [[ "$foundValidVersion" == "false" ]]; then
@@ -332,6 +332,7 @@ function getLatestVersionFromJira() {
 function filterVersionListWithPrependVersion() {
     local versionOutputFile="$1"
     local inputPrependVersionLabel="$2"
+    local isDockerOutput="$3"
 
     
     if [[ ! -z "$inputPrependVersionLabel" ]]; then
@@ -340,6 +341,9 @@ function filterVersionListWithPrependVersion() {
             local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.0"
             echo "[INFO] No version found after filtered. Resetting to: $resetVersion"
             echo "\"version\" : \"$resetVersion\"" > $versionOutputFile
+            if [[ ! -z "$isDockerOutput" ]]; then
+                echo "$resetVersion" > $versionOutputFile
+            fi
         else
             cat $versionOutputFile | grep "$inputPrependVersionLabel" > $versionOutputFile.tmp
             mv $versionOutputFile.tmp $versionOutputFile
