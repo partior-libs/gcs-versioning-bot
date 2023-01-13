@@ -27,7 +27,7 @@ env:
   YAML_STD_NO_VERSION_IMPORTER: enable_std_no_version
   YAML_PREPEND_VERSION_CI_IMPORTER: enable_prepend_version
   YAML_DOCKER_PREPEND_VERSION_CI_IMPORTER: enable_docker_prepend_version
-  YAML_DOCKER_PREPEND_VERSION_NO_PREV_CI_IMPORTER: enable_docker_prepend_no_prev_version
+  YAML_DOCKER_PREPEND_VERSION_NO_PREV_CI_IMPORTER: enable_docker_prepend_version_no_prev
 
 jobs:
   read-config:
@@ -297,7 +297,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rule: [ std_rule, enable_build_info, enable_file_replacement, enable_mavenpom_replacement, enable_external_version, enable_msgtag, enable_no_prev_artifact, enable_std_no_rc, enable_std_no_version, enable_prepend_version, enable_docker_prepend_version, enable_docker_prepend_no_prev_version ]
+        rule: [ std_rule, enable_build_info, enable_file_replacement, enable_mavenpom_replacement, enable_external_version, enable_msgtag, enable_no_prev_artifact, enable_std_no_rc, enable_std_no_version, enable_prepend_version, enable_docker_prepend_version, enable_docker_prepend_version_no_prev ]
         branch: [ main, release, develop, feature ]
         # rule: [ std_rule ]
         # rule: [ enable_msgtag ]
