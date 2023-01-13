@@ -100,9 +100,6 @@ function incrementPreReleaseVersion() {
     local inputVersion=$1
     local preIdentifider=$2
 
-    # if ($(echo $inputVersion | grep -E -q '[+-]\w*\.\w*')); then
-
-    # fi
     local currentSemanticVersion=''
     currentSemanticVersion=$(echo $inputVersion | grep -Po "^\d+\.\d+\.\d+-$preIdentifider")
     if [[ $? -ne 0 ]]; then
@@ -110,6 +107,8 @@ function incrementPreReleaseVersion() {
         echo "[ERROR_MSG] $currentSemanticVersion"
         exit 1
     fi
+    ## Clean up identifier
+    currentSemanticVersion=$(echo $currentSemanticVersion | sed "s/-$preIdentifider//g")
 
     local currentPrereleaseNumber=$(echo $inputVersion | awk -F"-$preIdentifider." '{print $2}')
     ## Ensure it's digit
