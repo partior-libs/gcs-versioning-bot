@@ -41,7 +41,8 @@ function validateBranch(){
     echo "false"
 }
 
-configBranchesList=("$MAJOR_V_CONFIG_BRANCHES" "$MINOR_V_CONFIG_BRANCHES" "$PATCH_V_CONFIG_BRANCHES" "$RC_V_CONFIG_BRANCHES" "$DEV_V_CONFIG_BRANCHES" "$BUILD_V_CONFIG_BRANCHES")
+specialExcludedBranches="main,master"
+configBranchesList=("$MAJOR_V_CONFIG_BRANCHES" "$MINOR_V_CONFIG_BRANCHES" "$PATCH_V_CONFIG_BRANCHES" "$RC_V_CONFIG_BRANCHES" "$DEV_V_CONFIG_BRANCHES" "$BUILD_V_CONFIG_BRANCHES" "$specialExcludedBranches" )
 
 # Initialize an empty variable to store the joined config branches
 configBranches=""
