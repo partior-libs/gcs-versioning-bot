@@ -35,7 +35,7 @@ jiraEnabler=${16}
 jiraVersionIdentifier=${17}
 artifactType=${18:-default}
 prependVersionLabel=${19}
-excludeVersionName=${20:-VBOT-NA}
+excludeVersionName=${20:-latest}
 
 
 echo "[INFO] Branch name: $sourceBranchName"

@@ -144,7 +144,7 @@ runs:
       run: |
         versionExclusionString="${{ steps.yaml-config.outputs.artifact-auto-versioning_exclude-tagname }}"
         if [[ -z "$versionExclusionString" ]]; then
-          versionExclusionString="VBOT-NA"
+          versionExclusionString="latest"
         fi
         echo "[INFO] versionExclusionString=$versionExclusionString"
         echo "name=$versionExclusionString" >> $GITHUB_OUTPUT
