@@ -220,7 +220,7 @@ runs:
           "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_version-identifier }}" \
           "${{ inputs.artifact-type }}" \
           "${{ env.BUILD_GH_VERSION_PREPEND_LABEL }}" \
-          "${{ steps.exclusion-string.outputs.name }}
+          "${{ steps.exclusion-string.outputs.name }}"
       shell: bash
 
     - name: Generate next available version
