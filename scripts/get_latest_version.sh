@@ -35,6 +35,7 @@ jiraEnabler=${16}
 jiraVersionIdentifier=${17}
 artifactType=${18:-default}
 prependVersionLabel=${19}
+excludeVersionName=${20:-VBOT-NA}
 
 
 echo "[INFO] Branch name: $sourceBranchName"
@@ -52,6 +53,8 @@ echo "[INFO] Jira Enabler: $jiraEnabler"
 echo "[INFO] Jira Version Identifier: $jiraVersionIdentifier"
 echo "[INFO] Artifact Type: $artifactType"
 echo "[INFO] Prepend Version: $prependVersionLabel"
+echo "[INFO] Exclude Version: $excludeVersionName"
+
 
 
 function storeLatestVersionIntoFile() {
@@ -132,6 +135,17 @@ function getArtifactLastVersion() {
         mv $versionListFile.2 $versionListFile
     fi
     
+    ## Exclude the excluded version if it's not blank
+    if [[ ! -z "$excludeVersionName" ]];
+    then
+        echo "[DEBUG] Clean up with exclusion"
+        cat $versionListFile | grep -v "$excludeVersionName" > $versionListFile.2
+        mv $versionListFile.2 $versionListFile
+        echo "[DEBUG] List after cleaned up with exclusion"
+        cat $versionListFile
+
+    fi
+
 }
 
 function getDockerLatestVersionFromArtifactory() {
