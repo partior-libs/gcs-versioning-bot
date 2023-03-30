@@ -227,7 +227,7 @@ runs:
       run: |
         ## To get mvn version, needs to add mvn function as jf mnvc. Adding variables to make it as backward compatible possible
         if [[ "${{ steps.yaml-config.outputs.artifact-auto-versioning_replacement_maven-pom_enabled }}" == "true" ]]; then
-            jfrogServerID=artifactoryPartior
+            jfrogServerID=$(jf config show | grep "Server ID" | cut -d":" -f2 | xargs)
             mvnRepoResolveRelease="maven-release"
             mvnRepoResolveDev="maven-dev"
             mvnRepoDeployRelease="${{ steps.yaml-config.outputs.artifact_packager_artifactory-maven-repo }}"
