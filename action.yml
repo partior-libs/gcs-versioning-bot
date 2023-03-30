@@ -237,6 +237,9 @@ runs:
                 mvnRepoResolveDev="${{ steps.yaml-config.outputs.artifact_maven-packager_artifactory-dev-repo }}"
                 mvnRepoDeployRelease="${{ steps.yaml-config.outputs.artifact_maven-packager_artifactory-repo }}"
             fi
+            if [[ -z "$mvnRepoDeployRelease" ]]; then
+                mvnRepoDeployRelease="$mvnRepoResolveRelease"
+            fi
             echo "[DEBUG] Jfrog Server ID: $jfrogServerID"
             echo "[DEBUG] Maven Resolve Release Repo: $mvnRepoResolveRelease"
             echo "[DEBUG] Maven Resolve Dev Repo: $mvnRepoResolveDev"
