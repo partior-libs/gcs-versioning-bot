@@ -242,12 +242,11 @@ runs:
             echo "[DEBUG] Maven Resolve Dev Repo: $mvnRepoResolveDev"
             echo "[DEBUG] Maven Deploy Repo: $mvnRepoDeployRelease"
 
-            if [[ -z "$mvnRepoResolveRelease" ]]; then
-              function mvn() { local myparam=$@; jf mvn $myparam; }
-              # Export the function, so it can be accessed from generate.sh
-              export -f mvn
-              jf mvnc --server-id-resolve="$jfrogServerID" --repo-resolve-releases="$mvnRepoResolveRelease" --repo-resolve-snapshots="$mvnRepoResolveDev" --repo-deploy-releases="$mvnRepoDeployRelease"  --repo-deploy-snapshots="$mvnRepoResolveDev"
-            fi
+            function mvn() { local myparam=$@; jf mvn $myparam; }
+            # Export the function, so it can be accessed from generate.sh
+            export -f mvn
+            echo jf mvnc --server-id-resolve="$jfrogServerID" --repo-resolve-releases="$mvnRepoResolveRelease" --repo-resolve-snapshots="$mvnRepoResolveDev" --repo-deploy-releases="$mvnRepoDeployRelease"  --repo-deploy-snapshots="$mvnRepoResolveDev"
+            jf mvnc --server-id-resolve="$jfrogServerID" --repo-resolve-releases="$mvnRepoResolveRelease" --repo-resolve-snapshots="$mvnRepoResolveDev" --repo-deploy-releases="$mvnRepoDeployRelease"  --repo-deploy-snapshots="$mvnRepoResolveDev"
         fi
 
         ${{ github.action_path }}/scripts/generate_package_version.sh "${{ steps.yaml-config.outputs.artifact-base-name }}" \
