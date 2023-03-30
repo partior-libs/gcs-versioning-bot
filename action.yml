@@ -225,6 +225,31 @@ runs:
 
     - name: Generate next available version
       run: |
+        ## To get mvn version, needs to add mvn function as jf mnvc. Adding variables to make it as backward compatible possible
+        if [[ "${{ steps.yaml-config.outputs.artifact-auto-versioning_replacement_maven-pom_enabled }}" == "true" ]]; then
+            jfrogServerID=artifactoryPartior
+            mvnRepoResolveRelease="maven-release"
+            mvnRepoResolveDev="maven-dev"
+            mvnRepoDeployRelease="${{ steps.yaml-config.outputs.artifact_packager_artifactory-maven-repo }}"
+            if [[ ! -z "${{ steps.yaml-config.outputs.artifact_maven-packager_enabled }}" ]]; then
+                jfrogServerID="${{ steps.yaml-config.outputs.artifact_maven-packager_jfrog-config-id }}"
+                mvnRepoResolveRelease="${{ steps.yaml-config.outputs.artifact_maven-packager_artifactory-release-repo }}"
+                mvnRepoResolveDev="${{ steps.yaml-config.outputs.artifact_maven-packager_artifactory-dev-repo }}"
+                mvnRepoDeployRelease="${{ steps.yaml-config.outputs.artifact_maven-packager_artifactory-repo }}"
+            fi
+            echo "[DEBUG] Jfrog Server ID: $jfrogServerID"
+            echo "[DEBUG] Maven Resolve Release Repo: $mvnRepoResolveRelease"
+            echo "[DEBUG] Maven Resolve Dev Repo: $mvnRepoResolveDev"
+            echo "[DEBUG] Maven Deploy Repo: $mvnRepoDeployRelease"
+
+            if [[ -z "$mvnRepoResolveRelease"]]; then
+              function mvn() { local myparam=$@; jf mvn $myparam; }
+              # Export the function, so it can be accessed from generate.sh
+              export -f mvn
+              jf mvnc --server-id-resolve="$jfrogServerID" --repo-resolve-releases="$mvnRepoResolveRelease" --repo-resolve-snapshots="$mvnRepoResolveDev" --repo-deploy-releases="$mvnRepoDeployRelease"  --repo-deploy-snapshots="$mvnRepoResolveDev"
+            fi
+        fi
+
         ${{ github.action_path }}/scripts/generate_package_version.sh "${{ steps.yaml-config.outputs.artifact-base-name }}" \
           "${BUILD_GH_BRANCH_NAME}" \
           "${BUILD_GH_LABEL_FILE}" \
