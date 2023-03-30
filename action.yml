@@ -242,7 +242,7 @@ runs:
             echo "[DEBUG] Maven Resolve Dev Repo: $mvnRepoResolveDev"
             echo "[DEBUG] Maven Deploy Repo: $mvnRepoDeployRelease"
 
-            if [[ -z "$mvnRepoResolveRelease"]]; then
+            if [[ -z "$mvnRepoResolveRelease" ]]; then
               function mvn() { local myparam=$@; jf mvn $myparam; }
               # Export the function, so it can be accessed from generate.sh
               export -f mvn
