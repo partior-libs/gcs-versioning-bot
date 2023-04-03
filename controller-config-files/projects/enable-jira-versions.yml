@@ -12,6 +12,7 @@ smc:
             enabled: true
             project-key: DEVPILOT
             version-identifier: "su"
+
     branches:
       default:
         artifact:
@@ -21,6 +22,9 @@ smc:
             artifactory-dev-repo: sandbox-generic-dev
             artifactory-release-repo: sandbox-generic-release
       main:
+        jira-issue:
+          tag-fix-version:
+            enabled: true
         artifact:
           packager:
             group: partior
