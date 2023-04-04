@@ -96,8 +96,6 @@ function tagFixVersionInJira() {
 
     if [[ $responseStatus -eq 204 ]]; then
         echo "[INFO] Response status $responseStatus"
-        echo "[INFO] Version updated: $(echo $response | awk -F'status_code:' '{print $1}' | jq ) "
-
     else
         echo "[ACTION_RESPONSE_ERROR] $BASH_SOURCE (line:$LINENO): Return code not 204 when updating Jira ticket $jiraIssue: [$responseStatus]" 
         echo "[ERROR] $(echo $response)"
@@ -126,7 +124,7 @@ function startTaggingFixVersion() {
     # Loop through ticket IDs and do something
     for eachJiraIssue in $(cat "${jiraListFile}" | tr ',' ' '); do
         if [[ "$eachJiraIssue" =~ ^$jiraKey-[0-9]+ ]]; then
-            echo "Processing Jira ticket ${eachJiraIssue}"
+            echo "[INFO] Processing Jira ticket ${eachJiraIssue}"
             tagFixVersionInJira "$eachJiraIssue" "$targetVersion" "$identifierType" "$prependLabel"
         else
             echo "[INFO] [$eachJiraIssue] not matching Jira key [$jiraKey]. Skipping.."

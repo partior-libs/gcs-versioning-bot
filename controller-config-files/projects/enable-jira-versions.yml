@@ -10,7 +10,8 @@ smc:
             enabled: false
           jira:
             enabled: true
-            project-key: DEVPILOT
+            ## Comma delimited
+            project-keys: DEVPILOT
             version-identifier: "su"
 
     branches:

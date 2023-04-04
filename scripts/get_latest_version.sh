@@ -30,7 +30,7 @@ jfrogToken=${11}
 jiraUsername=${12}
 jiraPassword=${13}
 jiraBaseUrl=${14}
-jiraProjectKey=${15}
+jiraProjectKeyList=${15}
 jiraEnabler=${16}
 jiraVersionIdentifier=${17}
 artifactType=${18:-default}
@@ -48,7 +48,7 @@ echo "[INFO] Target artifact group: $artifactoryTargetGroup"
 echo "[INFO] Target artifact name: $artifactoryTargetArtifactName"
 echo "[INFO] Initial version if empty: $initialVersion"
 echo "[INFO] Jira Base URL: $jiraBaseUrl" 
-echo "[INFO] Jira Project Key: $jiraProjectKey"
+echo "[INFO] Jira Project Keys: $jiraProjectKeyList"
 echo "[INFO] Jira Enabler: $jiraEnabler"
 echo "[INFO] Jira Version Identifier: $jiraVersionIdentifier"
 echo "[INFO] Artifact Type: $artifactType"
@@ -113,7 +113,9 @@ function storeLatestVersionIntoFile() {
 }
 
 function getArtifactLastVersion() {
-    local versionListFile=$1
+    local versionListFile="$1"
+    local jiraPojectKeyCommaList="$2"
+
     if [[ "$artifactType" == "docker" ]]; then
         getDockerLatestVersionFromArtifactory "$artifactoryTargetRepo,$artifactoryTargetDevRepo,$artifactoryTargetRelRepo" "$versionListFile"
     else
@@ -122,17 +124,19 @@ function getArtifactLastVersion() {
     
     ## Combine result from Jira if enabled
     if [[ "$jiraEnabler" == "true" ]]; then
-        local tmpVersionFile=versionfile_$(date +%s).tmp
-        getLatestVersionFromJira "$tmpVersionFile" "$jiraVersionIdentifier"  
-        echo "[DEBUG] List from Jira:"
-        cat $tmpVersionFile
-        ## combine both
-        # Ensure newline
-        echo "[DEBUG] Combining list with Artifactory"
-        echo >> $versionListFile
-        cat $tmpVersionFile >> $versionListFile
-        cat $versionListFile | sort -u | grep -v "^\n" > $versionListFile.2
-        mv $versionListFile.2 $versionListFile
+        for eachJiraProjectKey in $(cat "${jiraPojectKeyCommaList}" | tr ',' ' '); do
+            local tmpVersionFile=versionfile_$(date +%s).tmp
+            getLatestVersionFromJira "$tmpVersionFile" "$jiraVersionIdentifier" "$eachJiraProjectKey"
+            echo "[DEBUG] List from Jira $eachJiraProjectKey:"
+            cat $tmpVersionFile
+            ## combine both
+            # Ensure newline
+            echo "[DEBUG] Combining list with Artifactory"
+            echo >> $versionListFile
+            cat $tmpVersionFile >> $versionListFile
+            cat $versionListFile | sort -u | grep -v "^\n" > $versionListFile.2
+            mv $versionListFile.2 $versionListFile
+        done
     fi
     
     ## Exclude the excluded version if it's not blank
@@ -291,11 +295,13 @@ function getLatestVersionFromArtifactory() {
 }
 
 function getLatestVersionFromJira() {
-    local versionOutputFile=$1
-    local identifierType=$2
+    local versionOutputFile="$1"
+    local identifierType="$2"
+    local jiraProjectKey="$3"
     local response=""
     local version=""
     local tempVariable=""
+
     echo "[INFO] Getting all versions from Jira... "
     response=$(curl -k -s -u $jiraUsername:$jiraPassword \
                     -w "status_code:[%{http_code}]" \
@@ -400,7 +406,7 @@ touch $ARTIFACT_LAST_DEV_VERSION_FILE
 touch $ARTIFACT_LAST_RC_VERSION_FILE
 touch $ARTIFACT_LAST_REL_VERSION_FILE
 ## getArtifactLastVersion "$artifactoryTargetDevRepo,$artifactoryTargetRelRepo" "$versionListFile"
-getArtifactLastVersion "$versionListFile"
+getArtifactLastVersion "$versionListFile" "$jiraProjectKeyList"
 ## Store respective version type into file
 storeLatestVersionIntoFile "$versionListFile" "$DEV_V_IDENTIFIER" "$ARTIFACT_LAST_DEV_VERSION_FILE"
 storeLatestVersionIntoFile "$versionListFile" "$RC_V_IDENTIFIER" "$ARTIFACT_LAST_RC_VERSION_FILE"

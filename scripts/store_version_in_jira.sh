@@ -16,14 +16,14 @@ fi
 jiraUsername="${1}"
 jiraPassword="${2}"
 jiraBaseUrl="${3}"
-jiraProjectKey="${4}"
+jiraPojectKeyList="${4}"
 newVersion="${5}"
 jiraVersionIdentifier="${6}"
 versionPrependLabel="${7}"
 
 
 echo "[INFO] Jira Base Url: $jiraBaseUrl"
-echo "[INFO] Jira Project Key: $jiraProjectKey"
+echo "[INFO] Jira Project Keys: $jiraPojectKeyList"
 echo "[INFO] New Version: $newVersion"
 echo "[INFO] Jira Version Identifier: $jiraVersionIdentifier"
 echo "[INFO] Prepend Label: $versionPrependLabel"
@@ -33,6 +33,7 @@ projectDetails=tempfile.tmp
 
 
 function getJiraProjectId() {
+    local jiraProjectKey="$1"
     local responseOutFile=responseOutFile.tmp
     local response=""
     response=$(curl -k -s -u $jiraUsername:$jiraPassword \
@@ -67,6 +68,8 @@ function createArtifactNextVersionInJira() {
     local jiraVersionIdentifier="$2"
     local jiraProjectId="$3"
     local versionPrependLabel="$4"
+    local jiraProjectKey="$5"
+
     ## Handle prepend label
     local finalPrepend=${jiraVersionIdentifier}_
     if [[ ! -z "$versionPrependLabel" ]]; then
@@ -147,6 +150,7 @@ function getUnreleasedVersionsFromJira() {
     local versionOutputFile="$1"
     local identifierType="$2"
     local prependLabel="$3"
+    local jiraProjectKey="$4"
     local response=""
     local version=""
     local tempVariable=""
@@ -216,10 +220,11 @@ function startArchiveJiraVersions() {
     local currentVersion="$1"
     local identifierType="$2"
     local prependLabel="$3"
+    local jiraProjectKey="$4"
 
     local versionFileList=jiraVersions.list
-
-    getUnreleasedVersionsFromJira "$versionFileList" "$identifierType" "$prependLabel"
+    rm -f $versionFileList
+    getUnreleasedVersionsFromJira "$versionFileList" "$identifierType" "$prependLabel" "$jiraProjectKey"
     if [[ ! -f "$versionFileList" ]]; then
         echo "[WARNING] Version file not found"
         return 0
@@ -266,21 +271,26 @@ function isReleaseVersion() {
     fi
 }
 
-jiraProjectId=$(getJiraProjectId)
-if [[ $? -ne 0 ]]; then
-	echo "[ERROR] $BASH_SOURCE (line:$LINENO): Error getting Jira Project ID"
-	echo "[DEBUG] echo $jiraProjectId"
-	exit 1
-fi
 
-createArtifactNextVersionInJira "$newVersion" "$jiraVersionIdentifier" "$jiraProjectId" "$versionPrependLabel"
+for eachJiraProjectKey in $(cat "${jiraPojectKeyList}" | tr ',' ' '); do
+    jiraProjectId=$(getJiraProjectId $eachJiraProjectKey)
+    if [[ $? -ne 0 ]]; then
+        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Error getting Jira Project ID for $eachJiraProjectKey"
+        echo "[DEBUG] echo $jiraProjectId"
+        exit 1
+    fi
+    createArtifactNextVersionInJira "$newVersion" "$jiraVersionIdentifier" "$jiraProjectId" "$versionPrependLabel" "$eachJiraProjectKey"
 
-if (isReleaseVersion $newVersion); then
-    echo "[INFO] Detected fixed release version. Processing the versions..."
-    startArchiveJiraVersions "$newVersion" "$jiraVersionIdentifier" "$versionPrependLabel"
-else
-    echo "[INFO] $newVersion is not a released version. Skip archiving..."
-fi
+    if (isReleaseVersion $newVersion); then
+        echo "[INFO] Detected fixed release version. Processing the versions..."
+        startArchiveJiraVersions "$newVersion" "$jiraVersionIdentifier" "$versionPrependLabel" "$eachJiraProjectKey"
+    else
+        echo "[INFO] $newVersion is not a released version. Skip archiving..."
+    fi
+done
+
+
+
 
 
 
