@@ -103,10 +103,13 @@ runs:
         BUILD_GH_COMMIT_MESSAGE_FILE=commit-message-$(date +%s).tmp
 
         if [[ ! -z "$GITHUB_HEAD_REF" ]]; then
+          echo "[DEBUG] This is a PR event..."
           branchName=$(echo $GITHUB_HEAD_REF | cut -d'/' -f1)
           isPR=true
           prTargetBranch=remotes/origin/${GITHUB_BASE_REF}
           echo "${{ inputs.consolidated-commit-msg }}" > $BUILD_GH_COMMIT_MESSAGE_FILE
+        else
+          echo "[DEBUG] This is NOT a PR event..."
         fi
 
         if [[ ! "${{ inputs.branch-name }}" == "" ]]; then
