@@ -98,9 +98,10 @@ function tagFixVersionInJira() {
     if [[ $responseStatus -eq 204 ]]; then
         echo "[INFO] Response status $responseStatus"
     else
-        echo "[ACTION_RESPONSE_ERROR] $BASH_SOURCE (line:$LINENO): Return code not 204 when updating Jira ticket $jiraIssue: [$responseStatus]" 
-        echo "[ERROR] $(echo $response)"
-		exit 1
+        ## If cant update, skip it
+        echo "[ACTION_CURL_WARNING] $BASH_SOURCE (line:$LINENO): Return code not 204 when updating Jira ticket $jiraIssue: [$responseStatus]" 
+        echo "[WARNING] $(echo $response)"
+		return 0
     fi
 }
 
