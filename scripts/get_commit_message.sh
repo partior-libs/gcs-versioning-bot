@@ -31,7 +31,7 @@ if (isReleaseVersion $newVersion); then
     echo "[INFO] Detected fixed release version. Trying to get commit message between tags..."
     lastVersion="v$(cat $ARTIFACT_LAST_REL_VERSION_FILE | xargs)"
 
-    commitMessage=$(git log  -c ${lastVersion}..HEAD
+    commitMessage=$(git log  -c ${lastVersion}..HEAD)
     if [[ $? -ne 0 ]]; then
         echo "[ACTION_CURL_WARNING] $BASH_SOURCE (line:$LINENO): Unable to get commit message between ${lastVersion}..HEAD"
         echo "[DEBUG] $(echo $commitMessage)"
