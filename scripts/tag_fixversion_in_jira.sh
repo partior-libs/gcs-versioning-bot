@@ -134,7 +134,7 @@ function startTaggingFixVersion() {
     done
 }
 
-for eachJiraProjectKey in $(cat "${jiraPojectKeyList}" | tr ',' ' '); do
+for eachJiraProjectKey in $(echo "${jiraPojectKeyList}" | tr ',' ' '); do
     jiraProjectId=$(getJiraProjectId $eachJiraProjectKey)
 
     if [[ $? -ne 0 ]]; then

@@ -124,7 +124,7 @@ function getArtifactLastVersion() {
     
     ## Combine result from Jira if enabled
     if [[ "$jiraEnabler" == "true" ]]; then
-        for eachJiraProjectKey in $(cat "${jiraPojectKeyCommaList}" | tr ',' ' '); do
+        for eachJiraProjectKey in $(echo "${jiraPojectKeyCommaList}" | tr ',' ' '); do
             local tmpVersionFile=versionfile_$(date +%s).tmp
             getLatestVersionFromJira "$tmpVersionFile" "$jiraVersionIdentifier" "$eachJiraProjectKey"
             echo "[DEBUG] List from Jira $eachJiraProjectKey:"
