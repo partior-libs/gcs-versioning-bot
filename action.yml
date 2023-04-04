@@ -303,6 +303,18 @@ runs:
           "$prependVersionLabel"
       shell: bash
 
+    - name: Get delta commit message if not PR
+      if: steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_enabled == 'true' && steps.yaml-config.outputs.tag-version_jira-issue_enabled == 'true'
+      run: |
+        commitMessageFile="${{ env.BUILD_GH_COMMIT_MESSAGE_FILE }}"
+        ## Check if file is empty
+        if [[ -z $(cat $commitMessageFile | xargs) ]] && [[ -f $commitMessageFile ]]; then
+          ${{ github.action_path }}/scripts/get_commit_message.sh \
+            "${{ steps.final-version.outputs.new-version }}"  \
+            "$commitMessageFile" 
+        fi
+      shell: bash
+
     - if: steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_enabled == 'true' && steps.yaml-config.outputs.tag-version_jira-issue_enabled == 'true'
       run: |
         commitMessageFile="${{ env.BUILD_GH_COMMIT_MESSAGE_FILE }}"
