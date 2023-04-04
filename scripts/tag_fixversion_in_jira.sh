@@ -16,7 +16,7 @@ fi
 jiraUsername="${1}"
 jiraPassword="${2}"
 jiraBaseUrl="${3}"
-jiraProjectKey="${4}"
+jiraProjectKeyList="${4}"
 newVersion="${5}"
 jiraVersionIdentifier="${6}"
 versionPrependLabel="${7}"
@@ -24,7 +24,7 @@ commitMessageFile="${8}"
 
 
 echo "[INFO] Jira Base Url: $jiraBaseUrl"
-echo "[INFO] Jira Project Key: $jiraProjectKey"
+echo "[INFO] Jira Project Keys: $jiraProjectKeyList"
 echo "[INFO] New Version: $newVersion"
 echo "[INFO] Jira Version Identifier: $jiraVersionIdentifier"
 echo "[INFO] Prepend Label: $versionPrependLabel"
@@ -32,6 +32,7 @@ echo "[INFO] Commit Message File: $commitMessageFile"
 
 
 function getJiraProjectId() {
+    local jiraProjectKey="$1"
     local responseOutFile=responseOutFile.tmp
     local response=""
     response=$(curl -k -s -u $jiraUsername:$jiraPassword \
@@ -133,13 +134,16 @@ function startTaggingFixVersion() {
     done
 }
 
-jiraProjectId=$(getJiraProjectId)
-if [[ $? -ne 0 ]]; then
-	echo "[ERROR] $BASH_SOURCE (line:$LINENO): Error getting Jira Project ID"
-	echo "[DEBUG] echo $jiraProjectId"
-	exit 1
-fi
+for eachJiraProjectKey in $(cat "${jiraPojectKeyList}" | tr ',' ' '); do
+    jiraProjectId=$(getJiraProjectId $eachJiraProjectKey)
 
-startTaggingFixVersion "$commitMessageFile" "$jiraProjectKey" "$newVersion" "$jiraVersionIdentifier" "$versionPrependLabel"
+    if [[ $? -ne 0 ]]; then
+        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Error getting Jira Project ID"
+        echo "[DEBUG] echo $jiraProjectId"
+        exit 1
+    fi
+
+    startTaggingFixVersion "$commitMessageFile" "$eachJiraProjectKey" "$newVersion" "$jiraVersionIdentifier" "$versionPrependLabel"
+done
 echo "[INFO] Jira issue update done!"
 
