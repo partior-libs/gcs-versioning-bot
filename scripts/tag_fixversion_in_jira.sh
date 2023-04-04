@@ -120,7 +120,7 @@ function startTaggingFixVersion() {
     fi
 
     # Extract Jira ticket IDs using regex and write to file
-    cat "${messageFile}" | grep -oP '([A-Z]+-[0-9]+)+' | tr '\n' ',' | sed 's/,$//' > "${jiraListFile}"
+    cat "${messageFile}" | grep -oP '([A-Z]+-[0-9]+)+' | uniq | tr '\n' ',' | sed 's/,$//' > "${jiraListFile}"
     
     # Loop through ticket IDs and do something
     for eachJiraIssue in $(cat "${jiraListFile}" | tr ',' ' '); do
