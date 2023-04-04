@@ -29,7 +29,7 @@ function isReleaseVersion() {
 
 if (isReleaseVersion $newVersion); then
     echo "[INFO] Detected fixed release version. Trying to get commit message between tags..."
-    lastVersion="v$ARTIFACT_LAST_REL_VERSION_FILE"
+    lastVersion="v$(cat $ARTIFACT_LAST_REL_VERSION_FILE | xargs)"
 
     commitMessage=$(git log  --pretty=format:"%s" HEAD ${lastVersion}..v${newVersion})
     if [[ $? -ne 0 ]]; then
