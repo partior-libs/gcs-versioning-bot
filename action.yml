@@ -120,6 +120,7 @@ runs:
         echo BUILD_GH_PR_EXIST=${isPR} >> $GITHUB_ENV
         echo BUILD_GH_PR_TARGET_BRANCH=${prTargetBranch} >> $GITHUB_ENV
         echo BUILD_GH_COMMIT_MESSAGE_FILE=$BUILD_GH_COMMIT_MESSAGE_FILE >> $GITHUB_ENV
+        echo "[DEBUG] Commit message: $(cat $BUILD_GH_COMMIT_MESSAGE_FILE)"
       shell: bash
 
     - name: Import importer files
