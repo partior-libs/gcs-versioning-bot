@@ -6,13 +6,13 @@ smc:
       enabled: true
       initial-release-version: 0.0.1
       version-sources:
-          artifactory:
-            enabled: false
-          jira:
-            enabled: true
-            ## Comma delimited
-            project-keys: DEVPILOT
-            version-identifier: "su"
+        artifactory:
+          enabled: false
+        jira:
+          enabled: true
+          ## Comma delimited
+          project-keys: DEVPILOT
+          version-identifier: "su"
 
     branches:
       default:
