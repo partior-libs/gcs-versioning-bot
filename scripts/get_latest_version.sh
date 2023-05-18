@@ -365,7 +365,7 @@ function filterVersionListWithPrependVersion() {
                 echo "$resetVersion" > $versionOutputFile
             fi
         else
-            cat $versionOutputFile | grep "\"$inputPrependVersionLabel-\<[0-9]+\.[0-9]+\.[0-9]+\>" > $versionOutputFile.tmp
+            cat $versionOutputFile | grep -E "\"$inputPrependVersionLabel-\<[0-9]+\.[0-9]+\.[0-9]+\>" > $versionOutputFile.tmp
             mv $versionOutputFile.tmp $versionOutputFile
             echo "[INFO] List of versions after filtered"
             cat $versionOutputFile
