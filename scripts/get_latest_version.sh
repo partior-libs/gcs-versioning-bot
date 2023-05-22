@@ -359,7 +359,7 @@ function filterVersionListWithPrependVersion() {
     echo "[DEBUG] Start filtering..."
     if [[ ! -z "$inputPrependVersionLabel" ]]; then
         echo "[INFO] Filtering version list with version prepend label: $inputPrependVersionLabel"
-        if [[ $(cat $versionOutputFile | grep -E "\"$inputPrependVersionLabel-\<[0-9]+\.[0-9]+\.[0-9]+\>" | wc -l) -eq 0 ]]; then
+        if [[ $(cat $versionOutputFile | grep -E "(^|\"|\s)$inputPrependVersionLabel-\<[0-9]+\.[0-9]+\.[0-9]+\>" | wc -l) -eq 0 ]]; then
             local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.0"
             echo "[INFO] No version found after filtered. Resetting to: $resetVersion"
             echo "\"version\" : \"$resetVersion\"" > $versionOutputFile
@@ -367,12 +367,12 @@ function filterVersionListWithPrependVersion() {
                 echo "$resetVersion" > $versionOutputFile
             fi
         else
-            cat $versionOutputFile | grep -E "\"$inputPrependVersionLabel-\<[0-9]+\.[0-9]+\.[0-9]+\>" > $versionOutputFile.tmp
+            cat $versionOutputFile | grep -E "(^|\"|\s)$inputPrependVersionLabel-\<[0-9]+\.[0-9]+\.[0-9]+\>" > $versionOutputFile.tmp
             mv $versionOutputFile.tmp $versionOutputFile
             echo "[INFO] List of versions after filtered"
             cat $versionOutputFile
             # Remove the label
-            sed -i "s/\"$inputPrependVersionLabel-/\"/g" $versionOutputFile
+            sed -i "s/$inputPrependVersionLabel-//g" $versionOutputFile
             echo "[INFO] List of semantic versions from filtered"
             cat $versionOutputFile
         fi
