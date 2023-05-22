@@ -354,7 +354,9 @@ function filterVersionListWithPrependVersion() {
     local inputPrependVersionLabel="$2"
     local isDockerOutput="$3"
 
-    
+    echo "[DEBUG] Filtering following list:"
+    cat $versionOutputFile
+    echo "[DEBUG] Start filtering..."
     if [[ ! -z "$inputPrependVersionLabel" ]]; then
         echo "[INFO] Filtering version list with version prepend label: $inputPrependVersionLabel"
         if [[ $(cat $versionOutputFile | grep -E "\"$inputPrependVersionLabel-\<[0-9]+\.[0-9]+\.[0-9]+\>" | wc -l) -eq 0 ]]; then
