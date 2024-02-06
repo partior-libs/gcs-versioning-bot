@@ -36,6 +36,7 @@ jiraVersionIdentifier=${17}
 artifactType=${18:-default}
 prependVersionLabel=${19}
 excludeVersionName=${20:-latest}
+computeGitTag=${21:-true}
 
 
 echo "[INFO] Branch name: $sourceBranchName"
@@ -54,6 +55,7 @@ echo "[INFO] Jira Version Identifier: $jiraVersionIdentifier"
 echo "[INFO] Artifact Type: $artifactType"
 echo "[INFO] Prepend Version: $prependVersionLabel"
 echo "[INFO] Exclude Version: $excludeVersionName"
+echo "[INFO] Compute Git Tag: $computeGitTag"
 
 
 
@@ -407,12 +409,85 @@ versionListFile=versionlist.tmp
 touch $ARTIFACT_LAST_DEV_VERSION_FILE
 touch $ARTIFACT_LAST_RC_VERSION_FILE
 touch $ARTIFACT_LAST_REL_VERSION_FILE
-## getArtifactLastVersion "$artifactoryTargetDevRepo,$artifactoryTargetRelRepo" "$versionListFile"
-getArtifactLastVersion "$versionListFile" "$jiraProjectKeyList"
-## Store respective version type into file
-storeLatestVersionIntoFile "$versionListFile" "$DEV_V_IDENTIFIER" "$ARTIFACT_LAST_DEV_VERSION_FILE"
-storeLatestVersionIntoFile "$versionListFile" "$RC_V_IDENTIFIER" "$ARTIFACT_LAST_RC_VERSION_FILE"
-storeLatestVersionIntoFile "$versionListFile" "$REL_SCOPE" "$ARTIFACT_LAST_REL_VERSION_FILE"
+
+if [[ "$computeGitTag" != "true" ]]; then
+    ## getArtifactLastVersion "$artifactoryTargetDevRepo,$artifactoryTargetRelRepo" "$versionListFile"
+    getArtifactLastVersion "$versionListFile" "$jiraProjectKeyList"
+    ## Store respective version type into file
+    storeLatestVersionIntoFile "$versionListFile" "$DEV_V_IDENTIFIER" "$ARTIFACT_LAST_DEV_VERSION_FILE"
+    storeLatestVersionIntoFile "$versionListFile" "$RC_V_IDENTIFIER" "$ARTIFACT_LAST_RC_VERSION_FILE"
+    storeLatestVersionIntoFile "$versionListFile" "$REL_SCOPE" "$ARTIFACT_LAST_REL_VERSION_FILE"
+else
+    cd ~/ws/partior-sandbox/poc-generic-trunk-strategies
+    tmpMainRecord=main.lst
+    tmpCurrentBranchRecord=currentBranch.lst
+    rm -f $tmpMainRecord
+    rm -f $tmpCurrentBranchRecord
+    touch $tmpMainRecord
+    touch $tmpCurrentBranchRecord
+    echo "[INFO] Git tag from main branch"
+    git rev-list --left-right  --pretty=oneline  main
+    lastMainTag=NA
+    lastHeadTag=NA
+    for eachCommit in $(git rev-list --left-right  --pretty=oneline  main | cut -d" " -f1 | sed s/\>//g); do
+        currentTag=$(git tag --points-at $eachCommit | xargs)
+        if [[ -z "$currentTag" ]]; then
+            echo "[DEBUG] Commit: $eachCommit, Tag: NA"
+        else
+            echo "[DEBUG] Commit: $eachCommit, Tag: $currentTag"
+            echo "$eachCommit,$currentTag" >> $tmpMainRecord
+            ## set only for the latest tag
+            if [[ "$lastMainTag" == "NA" ]]; then
+                lastMainTag=$currentTag
+            fi
+        fi
+    done
+
+    currentBranch=$(git branch --show-current | xargs) 
+    if [[ -z "$currentBranch" ]]; then
+        echo "[ERROR] Unable to get current branch"
+        exit 1
+    fi
+    if [[ "$currentBranch" != "main" ]]; then
+        echo "[INFO] Git tag from [$currentBranch] branch"
+        git rev-list --left-right  --pretty=oneline  HEAD
+        for eachCommit in $(git rev-list --left-right  --pretty=oneline  HEAD | cut -d" " -f1 | sed s/\>//g); do
+            currentTag=$(git tag --points-at $eachCommit | xargs)
+            if [[ -z "$currentTag" ]]; then
+                echo "[DEBUG] Commit: $eachCommit, Tag: NA"
+            else
+                echo "[DEBUG] Commit: $eachCommit, Tag: $currentTag"
+                echo "$eachCommit,$currentTag" >> $tmpCurrentBranchRecord
+                ## set only for the latest tag
+                if [[ "$lastHeadTag" == "NA" ]]; then
+                    lastHeadTag=$currentTag
+                fi
+            fi
+        done
+    fi
+    
+
+    if [[ "$currentBranch" == "main" ]]; then
+        echo "[INFO] This is main branch. The last tag is [$lastMainTag]"
+    else
+        echo "[INFO] This is [$currentBranch] branch."
+        prevTrunkTag=NA
+        for eachHeadCommit in $(cat $tmpCurrentBranchRecord); do
+            tmpCommitHash=$(echo $eachHeadCommit | cut -d"," -f1)
+            prevTrunkRecord=$(grep $tmpCommitHash $tmpMainRecord)
+            if [[ $? -gt 0 ]]; then
+                echo cont
+                continue;
+            else
+                prevTrunkTag=$(echo $prevTrunkRecord | cut -d"," -f2)
+                echo break
+                break;
+            fi
+        done
+        echo "[INFO] The latest tag for [$currentBranch] branch is [$lastHeadTag]"
+        echo "[INFO] The last trunk tag prior this branch is [$prevTrunkTag]"
+    fi
+fi
 
 cat $versionListFile
 rm -f $versionListFile
