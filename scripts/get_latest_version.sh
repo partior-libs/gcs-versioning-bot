@@ -119,7 +119,7 @@ function getArtifactLastVersion() {
     if [[ "$artifactType" == "docker" ]]; then
         getDockerLatestVersionFromArtifactory "$artifactoryTargetRepo,$artifactoryTargetDevRepo,$artifactoryTargetRelRepo" "$versionListFile"
     else
-        getLatestVersionFromArtifactory "$artifactoryTargetRepo,$artifactoryTargetDevRepo,$artifactoryTargetRelRepo" "$versionListFile"
+        getLatestVersionFromArtifactory "$artifactoryTargetRepo" "$artifactoryTargetDevRepo" "$artifactoryTargetRelRepo" "$versionListFile"
     fi
     
     ## Combine result from Jira if enabled
@@ -239,21 +239,39 @@ function getDockerLatestVersionFromArtifactory() {
 }
 
 function getLatestVersionFromArtifactory() {
-    local targetRepo=$1
-    local versionOutputFile=$2
+    local targetRepo="$1"
+    local targetDevRepo="$2"
+    local targetReleaseRepo="$3"
+    local versionOutputFile="$4"
     echo "[INFO] Getting latest versions for RC, DEV and Release from Artifactory..."
+    local aqlTargetGroup=$(echo ${artifactoryTargetGroup} | sed "s/\./\//g")
+    local aqlQueryPayloadFile="aql.json"
 
+cat << EOF > $aqlQueryPayloadFile
+items.find(
+    { 
+        "name": {"\$match": "$artifactoryTargetArtifactName-*"}, 
+        "\$or": [
+            { "repo": "$targetRepo" },
+            { "repo": "$targetDevRepo" },
+            { "repo": "$targetReleaseRepo" }
+        ], 
+        "path": 
+            {"\$match" : "$aqlTargetGroup/$artifactoryTargetArtifactName"}
+    }
+).sort({"\$desc" : ["created"]}).limit(500)
+EOF
     local queryPath="-w 'status_code:[%{http_code}]' \
-        -X GET \
-        '$artifactoryBaseUrl/api/search/versions?a=${artifactoryTargetArtifactName}&g=${artifactoryTargetGroup}&repos=${targetRepo}' -o $versionOutputFile"
+        -X POST \
+        '$artifactoryBaseUrl/api/search/aql' -H 'Content-Type: text/plain' -d @$aqlQueryPayloadFile -o $versionOutputFile.tmp"
 
     ## Check which credential to use
     local execQuery="curl -k -s -u $artifactoryUsername:$artifactoryPassword"
     if [[ ! -z "$jfrogToken" ]]; then
         execQuery="jfrog rt curl -k -s"
         queryPath="-w 'status_code:[%{http_code}]' \
-            -XGET \
-            '/api/search/versions?a=${artifactoryTargetArtifactName}&g=${artifactoryTargetGroup}&repos=${targetRepo}' -o $versionOutputFile"
+            -X POST \
+            '/api/search/aql' -H 'Content-Type: text/plain' -d @$aqlQueryPayloadFile -o $versionOutputFile.tmp"
     fi
 
     ## Start querying
@@ -271,19 +289,27 @@ function getLatestVersionFromArtifactory() {
     local responseStatus=$(echo $response | awk -F'status_code:' '{print $2}' | awk -F'[][]' '{print $2}')
     #echo "[INFO] responseBody: $responseBody"
     echo "[INFO] Query status code: $responseStatus"
-    echo "[DEBUG] Latest [$versionOutputFile] version:"
-    echo "$(cat $versionOutputFile)"
 
     if [[ $responseStatus -ne 200 ]]; then
-        if (cat $versionOutputFile | grep -q "Unable to find artifact versions");then
-            local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.0"
-            echo "[INFO] Unable to find last version. Resetting to: $resetVersion"
-            echo "\"version\" : \"$resetVersion\"" > $versionOutputFile
-        else
-            echo "[ACTION_RESPONSE_ERROR] $BASH_SOURCE (line:$LINENO): Return code not 200 when querying latest version: [$responseStatus]"
-            echo "[DEBUG] $execQuery $queryPath" 
-            exit 1
-        fi
+        echo "[ACTION_RESPONSE_ERROR] $BASH_SOURCE (line:$LINENO): Return code not 200 when querying latest version: [$responseStatus]"
+        echo "[DEBUG] $execQuery $queryPath" 
+        exit 1
+    fi
+
+    ## Reset to init version if empty
+    local returnResultCount=$(jq '.range.total' "$versionOutputFile.tmp")
+    if [[ "$returnResultCount" -eq 0 ]];then
+        local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.0"
+        echo "[INFO] Unable to find last version. Resetting to: $resetVersion"
+        echo "\"version\" : \"$resetVersion\"" > $versionOutputFile
+    else
+        local foundArtifactList=($(jq -r '.results[].name' "$versionOutputFile.tmp"))
+        touch "$versionOutputFile"
+        for foundArtifactFile in "${foundArtifactList[@]}"; do
+            local artifactVersion=$(echo $foundArtifactFile | sed "s/$artifactoryTargetArtifactName-//g")
+            artifactVersion=${artifactVersion%.*}       # Remove the last "." and everything after it
+            echo "\"version\": \"$artifactVersion\"" >> "$versionOutputFile"
+        done
     fi
 
     echo "[INFO] Trimming redundant lines..."
