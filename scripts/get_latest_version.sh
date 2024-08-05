@@ -296,7 +296,7 @@ EOF
         exit 1
     fi
 
-    ## Reset to init version if empty
+    ## Store in the compatible format if found something, otherwise reset to init version if empty
     local returnResultCount=$(jq '.range.total' "$versionOutputFile.tmp")
     if [[ "$returnResultCount" -gt 0 ]];then
         local foundArtifactList=($(jq -r '.results[].name' "$versionOutputFile.tmp"))
