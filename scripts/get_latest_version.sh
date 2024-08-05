@@ -298,11 +298,7 @@ EOF
 
     ## Reset to init version if empty
     local returnResultCount=$(jq '.range.total' "$versionOutputFile.tmp")
-    if [[ "$returnResultCount" -eq 0 ]];then
-        local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.0"
-        echo "[INFO] Unable to find last version. Resetting to: $resetVersion"
-        echo "\"version\" : \"$resetVersion\"" > $versionOutputFile
-    else
+    if [[ "$returnResultCount" -gt 0 ]];then
         local foundArtifactList=($(jq -r '.results[].name' "$versionOutputFile.tmp"))
         touch "$versionOutputFile"
         for foundArtifactFile in "${foundArtifactList[@]}"; do
@@ -310,6 +306,10 @@ EOF
             artifactVersion=${artifactVersion%.*}       # Remove the last "." and everything after it
             echo "\"version\": \"$artifactVersion\"" >> "$versionOutputFile"
         done
+    else
+        local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.0"
+        echo "[INFO] Unable to find last version. Resetting to: $resetVersion"
+        echo "\"version\" : \"$resetVersion\"" > $versionOutputFile
     fi
 
     echo "[INFO] Trimming redundant lines..."
