@@ -51,6 +51,7 @@ jobs:
           sourceBranch=${GITHUB_REF_NAME}
           prTargetBranch=''
           isPR=false
+          commitHash=${GITHUB_SHA}
           commitMessages=''
           if [[ ! -z "$GITHUB_HEAD_REF" ]]; then
             branchName=$(echo $GITHUB_HEAD_REF | cut -d'/' -f1)
@@ -59,8 +60,9 @@ jobs:
             prTargetBranch=remotes/origin/${GITHUB_BASE_REF}
             git fetch --all
             git branch --all
-            echo git log $prTargetBranch..HEAD
-            commitMessages=$(git log $prTargetBranch..HEAD --pretty=format:"%s")
+            echo [DEBUG] git log $prTargetBranch..$commitHash --pretty=format:"%s"
+            echo [DEBUG] commitMessages=[$(git log $prTargetBranch..$commitHash --pretty=format:"%s" | sed s/[\`\']//g | tr "\t\r\f\n\'\"" ' ')]
+            commitMessages=$(git log $prTargetBranch..$commitHash --pretty=format:"%s" | sed s/[\`\']//g | tr "\t\r\f\n\'\"" ' ' | xargs)
           fi
           
           echo "branch-name=${branchName}" >> $GITHUB_OUTPUT
