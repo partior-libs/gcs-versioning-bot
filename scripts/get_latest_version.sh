@@ -256,8 +256,10 @@ items.find(
             { "repo": "$targetDevRepo" },
             { "repo": "$targetReleaseRepo" }
         ], 
-        "path": 
-            {"\$match" : "$aqlTargetGroup/$artifactoryTargetArtifactName"}
+        "\$or": [
+            { "path": {"\$match" : "$aqlTargetGroup/$artifactoryTargetArtifactName"}},
+            { "path": {"\$match" : "$aqlTargetGroup/$artifactoryTargetArtifactName/*"}}
+        ]
     }
 ).sort({"\$desc" : ["created"]}).limit(500)
 EOF
@@ -304,7 +306,9 @@ EOF
         for foundArtifactFile in "${foundArtifactList[@]}"; do
             local artifactVersion=$(echo $foundArtifactFile | sed "s/$artifactoryTargetArtifactName-//g")
             artifactVersion=${artifactVersion%.*}       # Remove the last "." and everything after it
-            echo "\"version\": \"$artifactVersion\"" >> "$versionOutputFile"
+            if (! grep -q "\"$artifactVersion\"" "$versionOutputFile"); then  ## store only unique
+                echo "\"version\": \"$artifactVersion\"" >> "$versionOutputFile"
+            fi
         done
     else
         local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.0"
