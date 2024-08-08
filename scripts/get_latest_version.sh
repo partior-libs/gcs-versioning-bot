@@ -263,12 +263,13 @@ items.find(
     }
 ).sort({"\$desc" : ["created"]}).limit(500)
 EOF
-    echo "[INFO] AQL query:"
-    cat "$aqlQueryPayloadFile"
     local queryPath="-w 'status_code:[%{http_code}]' \
         -X POST \
         '$artifactoryBaseUrl/api/search/aql' -H 'Content-Type: text/plain' -d @$aqlQueryPayloadFile -o $versionOutputFile.tmp"
 
+    echo "[INFO] AQL query:"
+    cat "$aqlQueryPayloadFile"
+    
     ## Check which credential to use
     local execQuery="curl -k -s -u $artifactoryUsername:$artifactoryPassword"
     if [[ ! -z "$jfrogToken" ]]; then
