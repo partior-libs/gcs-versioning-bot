@@ -263,13 +263,12 @@ items.find(
     }
 ).sort({"\$desc" : ["created"]}).limit(500)
 EOF
+    echo "[INFO] AQL query:"
+    cat "$aqlQueryPayloadFile"
     local queryPath="-w 'status_code:[%{http_code}]' \
         -X POST \
         '$artifactoryBaseUrl/api/search/aql' -H 'Content-Type: text/plain' -d @$aqlQueryPayloadFile -o $versionOutputFile.tmp"
 
-    echo "[INFO] AQL query:"
-    cat "$aqlQueryPayloadFile"
-    
     ## Check which credential to use
     local execQuery="curl -k -s -u $artifactoryUsername:$artifactoryPassword"
     if [[ ! -z "$jfrogToken" ]]; then
@@ -278,7 +277,6 @@ EOF
             -X POST \
             '/api/search/aql' -H 'Content-Type: text/plain' -d @$aqlQueryPayloadFile -o $versionOutputFile.tmp"
     fi
-    rm -f $aqlQueryPayloadFile
     ## Start querying
     rm -f $versionStoreFilename
     local response=""
@@ -289,6 +287,8 @@ EOF
         echo "[DEBUG] $(echo $response)"
         exit 1
     fi
+    ## Clean up aql file
+    rm -f $aqlQueryPayloadFile
     #echo "[DEBUG] response...[$response]"
     #responseBody=$(echo $response | awk -F'status_code:' '{print $1}')
     local responseStatus=$(echo $response | awk -F'status_code:' '{print $2}' | awk -F'[][]' '{print $2}')
