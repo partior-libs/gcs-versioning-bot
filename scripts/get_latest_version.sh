@@ -263,6 +263,8 @@ items.find(
     }
 ).sort({"\$desc" : ["created"]}).limit(500)
 EOF
+    echo "[INFO] AQL query:"
+    cat "$aqlQueryPayloadFile"
     local queryPath="-w 'status_code:[%{http_code}]' \
         -X POST \
         '$artifactoryBaseUrl/api/search/aql' -H 'Content-Type: text/plain' -d @$aqlQueryPayloadFile -o $versionOutputFile.tmp"
@@ -275,7 +277,7 @@ EOF
             -X POST \
             '/api/search/aql' -H 'Content-Type: text/plain' -d @$aqlQueryPayloadFile -o $versionOutputFile.tmp"
     fi
-
+    rm -f $aqlQueryPayloadFile
     ## Start querying
     rm -f $versionStoreFilename
     local response=""
