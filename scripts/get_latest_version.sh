@@ -297,6 +297,7 @@ EOF
     if [[ $responseStatus -ne 200 ]]; then
         echo "[ACTION_RESPONSE_ERROR] $BASH_SOURCE (line:$LINENO): Return code not 200 when querying latest version: [$responseStatus]"
         echo "[DEBUG] $execQuery $queryPath" 
+        echo "[DEBUG] response: $response"
         exit 1
     fi
 
