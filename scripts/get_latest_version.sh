@@ -263,6 +263,8 @@ items.find(
     }
 ).sort({"\$desc" : ["created"]}).limit(500)
 EOF
+    echo "[INFO] AQL query:"
+    cat "$aqlQueryPayloadFile"
     local queryPath="-w 'status_code:[%{http_code}]' \
         -X POST \
         '$artifactoryBaseUrl/api/search/aql' -H 'Content-Type: text/plain' -d @$aqlQueryPayloadFile -o $versionOutputFile.tmp"
@@ -275,7 +277,6 @@ EOF
             -X POST \
             '/api/search/aql' -H 'Content-Type: text/plain' -d @$aqlQueryPayloadFile -o $versionOutputFile.tmp"
     fi
-
     ## Start querying
     rm -f $versionStoreFilename
     local response=""
@@ -286,6 +287,8 @@ EOF
         echo "[DEBUG] $(echo $response)"
         exit 1
     fi
+    ## Clean up aql file
+    rm -f $aqlQueryPayloadFile
     #echo "[DEBUG] response...[$response]"
     #responseBody=$(echo $response | awk -F'status_code:' '{print $1}')
     local responseStatus=$(echo $response | awk -F'status_code:' '{print $2}' | awk -F'[][]' '{print $2}')
@@ -295,20 +298,38 @@ EOF
     if [[ $responseStatus -ne 200 ]]; then
         echo "[ACTION_RESPONSE_ERROR] $BASH_SOURCE (line:$LINENO): Return code not 200 when querying latest version: [$responseStatus]"
         echo "[DEBUG] $execQuery $queryPath" 
+        echo "[DEBUG] returned:"
+        cat "$versionOutputFile.tmp"
         exit 1
     fi
 
     ## Store in the compatible format if found something, otherwise reset to init version if empty
     local returnResultCount=$(jq '.range.total' "$versionOutputFile.tmp")
     if [[ "$returnResultCount" -gt 0 ]];then
-        local foundArtifactList=($(jq -r '.results[].name' "$versionOutputFile.tmp"))
+        local foundArtifactList=($(jq -r '.results[] | "\(.name),\(.path)"' "$versionOutputFile.tmp"))
         touch "$versionOutputFile"
-        for foundArtifactFile in "${foundArtifactList[@]}"; do
-            local artifactVersion=$(echo $foundArtifactFile | sed "s/$artifactoryTargetArtifactName-//g")
-            artifactVersion=${artifactVersion%.*}       # Remove the last "." and everything after it
-            if (! grep -q "\"$artifactVersion\"" "$versionOutputFile"); then  ## store only unique
-                echo "\"version\": \"$artifactVersion\"" >> "$versionOutputFile"
+        for eachFoundArtifact in "${foundArtifactList[@]}"; do
+            local currentArtifactFile=$(echo "$eachFoundArtifact" | cut -d"," -f1)
+            local currentArtifactPath=$(echo "$eachFoundArtifact" | cut -d"," -f2)
+            local artifactPathBasename=$(basename "$currentArtifactPath")
+            #echo "[DEBUG] artifactPathBasename=[$artifactPathBasename]"
+            #echo "[DEBUG] artifactoryTargetArtifactName=[$artifactoryTargetArtifactName]"
+            if [[ "$artifactPathBasename" != "$artifactoryTargetArtifactName" ]]; then
+                #echo "[DEBUG] Path basename [$artifactPathBasename] is not the same as artifact name [$artifactoryTargetArtifactName]. Proceed to extract version from basename..."
+                ## Verify base is a version
+                if [[ "$artifactPathBasename" =~ [0-9]+\.[0-9]+\.[0-9]+ ]]; then
+                    if (! grep -q "\"$artifactPathBasename\"" "$versionOutputFile"); then  ## store only unique
+                        echo "\"version\": \"$artifactPathBasename\"" >> "$versionOutputFile"
+                    fi
+                else
+                    #echo "[DEBUG] Path basename [$artifactPathBasename] is not a valid semver. Proceed to extract version from filename..."
+                    extractAndStoreVersionFromArtifactName "$artifactoryTargetArtifactName" "$currentArtifactFile" "$versionOutputFile"
+                fi
+            else
+                #echo "[DEBUG] Path basename [$artifactPathBasename] is the same as artifact name. Proceed to extract version from filename..."
+                extractAndStoreVersionFromArtifactName "$artifactoryTargetArtifactName" "$currentArtifactFile" "$versionOutputFile"
             fi
+            
         done
     else
         local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.0"
@@ -324,6 +345,18 @@ EOF
     filterVersionListWithPrependVersion "$versionOutputFile" "$prependVersionLabel"   
 }
 
+function extractAndStoreVersionFromArtifactName() {
+    local artifactoryTargetArtifactName="$1"
+    local foundArtifactFile="$2"
+    local versionOutputFile="$3"
+
+    local artifactVersion=$(echo "$foundArtifactFile" | sed "s/$artifactoryTargetArtifactName-//g")
+    artifactVersion=${artifactVersion%.*}       # Remove the last "." and everything after it
+    artifactVersion=$(echo "$artifactVersion" | sed "s/-linux_amd64//g" | sed "s/-darwin_arm64//g")  # Remove any arch or OS related
+    if (! grep -q "\"$artifactVersion\"" "$versionOutputFile"); then  ## store only unique
+        echo "\"version\": \"$artifactVersion\"" >> "$versionOutputFile"
+    fi
+}
 function getLatestVersionFromJira() {
     local versionOutputFile="$1"
     local identifierType="$2"
