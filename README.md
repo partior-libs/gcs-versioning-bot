@@ -279,7 +279,7 @@ jobs:
       source-branch: ${{ steps.get-repo.outputs.source-branch }}
       delta-commit-msg: ${{ steps.get-repo.outputs.delta-commit-msg }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -322,7 +322,7 @@ jobs:
   read-std-config:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@partior-stable
@@ -343,7 +343,7 @@ jobs:
       ALL_DELTA_COMMIT_MSG: ${{ needs.read-config.outputs.delta-commit-msg }}
       SOURCE_BRANCH: ${{ needs.read-config.outputs.source-branch }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v2
         with:
           name: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
