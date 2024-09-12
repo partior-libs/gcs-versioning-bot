@@ -40,7 +40,7 @@ jobs:
       source-branch: ${{ steps.get-repo.outputs.source-branch }}
       delta-commit-msg: ${{ steps.get-repo.outputs.delta-commit-msg }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -85,7 +85,7 @@ jobs:
   read-std-config:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Get repo details
         id: get-repo
@@ -129,7 +129,7 @@ jobs:
   read-enable-msgtag:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@partior-stable
@@ -144,7 +144,7 @@ jobs:
   read-build-config:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@partior-stable
@@ -159,7 +159,7 @@ jobs:
   read-replace-file-version-config:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@partior-stable
@@ -174,7 +174,7 @@ jobs:
   read-replace-maven-pom-config:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@partior-stable
@@ -189,7 +189,7 @@ jobs:
   read-external-version-config:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@partior-stable
@@ -204,7 +204,7 @@ jobs:
   read-no-prev-artifact-config:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@partior-stable
@@ -219,7 +219,7 @@ jobs:
   read-std-no-rc:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@partior-stable
@@ -234,7 +234,7 @@ jobs:
   read-std-no-version:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@partior-stable
@@ -249,7 +249,7 @@ jobs:
   read-prepend-version-config:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@partior-stable
@@ -264,7 +264,7 @@ jobs:
   read-docker-prepend-version-config:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@partior-stable
@@ -279,7 +279,7 @@ jobs:
   read-enable-docker-prepend-version-no-prev-config:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Generate CI branch importer
         uses: partior-libs/gcs-yaml-importer@partior-stable
@@ -310,7 +310,7 @@ jobs:
       ALL_DELTA_COMMIT_MSG: ${{ needs.read-config.outputs.delta-commit-msg }}
       SOURCE_BRANCH: ${{ needs.read-config.outputs.source-branch }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v3
         with:
           name: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
