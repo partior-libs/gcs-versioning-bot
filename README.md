@@ -393,7 +393,7 @@ jobs:
           echo [INFO] Final version: ${{ steps.version-bot.outputs.artifact-version-name}}
           echo "" > rslt-${{ std-config }}_${{ env.BRANCH_NAME }}--${{ steps.version-bot.outputs.artifact-version-name}}
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: rslt-read-std-config_${{ env.BRANCH_NAME }}--${{ steps.version-bot.outputs.artifact-version-name}}
           path: rslt-read-std-config_${{ env.BRANCH_NAME }}--${{ steps.version-bot.outputs.artifact-version-name}}
