@@ -344,11 +344,11 @@ jobs:
       SOURCE_BRANCH: ${{ needs.read-config.outputs.source-branch }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
         with:
           name: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: ${{ env.YAML_STD_CI_CONFIG_IMPORTER }}
 
