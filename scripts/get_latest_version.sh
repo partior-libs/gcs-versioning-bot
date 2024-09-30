@@ -74,9 +74,11 @@ function storeLatestBaseVersionIntoFile() {
         exit 1
     fi
     echo "[INFO] Store the latest hotfix from base [$targetBaseVersion]..."
-    if (cat $inputList | grep -qE "\$targetBaseVersion-$identifierType\."); then
-        echo $(cat $inputList | grep -E "version" | grep -E "\$targetBaseVersion-$identifierType\." | cut -d"\"" -f4 | sort -rV | head -1) > $targetSaveFile
+    if (cat $inputList | grep -qE "$targetBaseVersion-$identifierType\."); then
+        echo "[INFO] Found existing..."
+        echo $(cat $inputList | grep -E "version" | grep -E "$targetBaseVersion-$identifierType\." | cut -d"\"" -f4 | sort -rV | head -1) > $targetSaveFile
     else
+        echo "[INFO] Not found. Resetting to 0"
         echo "$targetBaseVersion-$identifierType.0" > $targetSaveFile
     fi
 
