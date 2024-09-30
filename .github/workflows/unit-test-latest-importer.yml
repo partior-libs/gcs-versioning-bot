@@ -372,12 +372,12 @@ test-base-branch:
       - name: Final version - ${{ steps.version-bot.outputs.artifact-version-name}}
         run: |
           echo [INFO] Final version: ${{ steps.version-bot.outputs.artifact-version-name}}
-          echo "" > rs-std_rule_basehfx--${{ steps.version-bot.outputs.artifact-version-name}}
+          echo "" > rs-std_rule_basehfx-${{ steps.version-bot.outputs.artifact-version-name}}
 
       - uses: actions/upload-artifact@v3
         with:
-          name: rs-std_rule_basehfx--${{ steps.version-bot.outputs.artifact-version-name}}
-          path: rs-std_rule_basehfx--${{ steps.version-bot.outputs.artifact-version-name}}
+          name: rs-std_rule_basehfx-${{ steps.version-bot.outputs.artifact-version-name}}
+          path: rs-std_rule_basehfx-${{ steps.version-bot.outputs.artifact-version-name}}
           retention-days: 1
 
   test:
