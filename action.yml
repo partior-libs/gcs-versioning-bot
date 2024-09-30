@@ -33,6 +33,10 @@ inputs:
     description: 'Override branch type name. Use only for testing purpose'
     required: false
     default: ''
+  hotfix-base-branch:  
+    description: 'Override branch type name. Use only for testing purpose'
+    required: false
+    default: ''
   versioning-rules-importer-file:
     description: 'File generated from partior-libs/gcs-yaml-importer'
     required: true
@@ -97,6 +101,7 @@ runs:
         #!/bin/bash -e
 
         branchName="$(echo ${GITHUB_REF_NAME} | cut -d'/' -f1)"
+        branchReference="$(echo ${GITHUB_REF_NAME} | cut -d'/' -f2)"
         prTargetBranch=''
         isPR=false
         commitMessages=''
@@ -105,6 +110,7 @@ runs:
         if [[ ! -z "$GITHUB_HEAD_REF" ]]; then
           echo "[DEBUG] This is a PR event..."
           branchName=$(echo $GITHUB_HEAD_REF | cut -d'/' -f1)
+          branchReference="$(echo ${GITHUB_HEAD_REF} | cut -d'/' -f2)"
           isPR=true
           prTargetBranch=remotes/origin/${GITHUB_BASE_REF}
           echo "${{ inputs.consolidated-commit-msg }}" > $BUILD_GH_COMMIT_MESSAGE_FILE
@@ -112,15 +118,32 @@ runs:
           echo "[DEBUG] This is NOT a PR event..."
         fi
 
-        if [[ ! "${{ inputs.branch-name }}" == "" ]]; then
+        if [[ ! -z "${{ inputs.branch-name }}" ]]; then
           branchName=${{ inputs.branch-name }}
+        fi
+        if [[ ! -z "${{ inputs.hotfix-base-branch }}" ]]; then
+          branchName=$(echo "${{ inputs.hotfix-base-branch }}" | cut -d"/" -f1)
+          branchReference=$(echo "${{ inputs.hotfix-base-branch }}" | cut -d"/" -f2)
         fi
 
         echo BUILD_GH_BRANCH_NAME=${branchName} >> $GITHUB_ENV
+        echo BUILD_GH_BRANCH_REFERENCE=${branchReference} >> $GITHUB_ENV
         echo BUILD_GH_PR_EXIST=${isPR} >> $GITHUB_ENV
         echo BUILD_GH_PR_TARGET_BRANCH=${prTargetBranch} >> $GITHUB_ENV
         echo BUILD_GH_COMMIT_MESSAGE_FILE=$BUILD_GH_COMMIT_MESSAGE_FILE >> $GITHUB_ENV
         echo "[DEBUG] Commit message: $(cat $BUILD_GH_COMMIT_MESSAGE_FILE)"
+      shell: bash
+
+    - name: Validate if hotfix base branch
+      id: hotfix-base
+      run: |
+        enabled=false
+        if [[ "${BUILD_GH_BRANCH_NAME}" == "hotfix-base" ]]; then
+          enabled=true
+        fi
+        echo "BUILD_GH_HOTFIX_BASE_ENABLED=${enabled}" | tee -a >> $GITHUB_ENV
+        echo "enabled=${enabled}" | tee -a >> $GITHUB_OUTPUT
+        echo "version=${BUILD_GH_BRANCH_REFERENCE}" | tee -a >> $GITHUB_OUTPUT
       shell: bash
 
     - name: Import importer files
@@ -173,12 +196,13 @@ runs:
       shell: bash
 
     - name: Verify config prerequisite
+      if: steps.hotfix-base.outputs.enabled != 'true'
       run: |
         ${{ github.action_path }}/scripts/verify_prerequisite.sh "${BUILD_GH_BRANCH_NAME}"
       shell: bash
 
     - name: Get version prepend label
-      if: steps.yaml-config.outputs.artifact-auto-versioning_prepend-version_enabled == 'true' && steps.yaml-config.outputs.artifact-auto-versioning_prepend-version_rules_file_enabled == 'true'
+      if: steps.yaml-config.outputs.artifact-auto-versioning_prepend-version_enabled == 'true' && steps.yaml-config.outputs.artifact-auto-versioning_prepend-version_rules_file_enabled == 'true' && steps.hotfix-base.outputs.enabled != 'true'
       run: |
         echo "[INFO] Retrieving version append label..."
         versionLabelFile="${{ steps.yaml-config.outputs.artifact-auto-versioning_prepend-version_rules_file_target }}"
@@ -224,19 +248,20 @@ runs:
           "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_version-identifier }}" \
           "${{ inputs.artifact-type }}" \
           "${{ env.BUILD_GH_VERSION_PREPEND_LABEL }}" \
-          "${{ steps.exclusion-string.outputs.name }}"
+          "${{ steps.exclusion-string.outputs.name }}" \
+          "${BUILD_GH_BRANCH_REFERENCE}"
       shell: bash
 
     - name: Generate next available version
       run: |
         #!/bin/bash 
         set +e
-
         ${{ github.action_path }}/scripts/generate_package_version.sh "${{ steps.yaml-config.outputs.artifact-base-name }}" \
           "${BUILD_GH_BRANCH_NAME}" \
           "${BUILD_GH_LABEL_FILE}" \
           "${BUILD_GH_TAG_FILE}" \
           "${BUILD_GH_COMMIT_MESSAGE_FILE}" \
+          "${BUILD_GH_BRANCH_REFERENCE}" \
           "${{ inputs.debug }}"
         exitCode=$?
 
@@ -274,6 +299,7 @@ runs:
                   "${BUILD_GH_LABEL_FILE}" \
                   "${BUILD_GH_TAG_FILE}" \
                   "${BUILD_GH_COMMIT_MESSAGE_FILE}" \
+                  "${BUILD_GH_BRANCH_REFERENCE}" \
                   "${{ inputs.debug }}"
             fi
         else

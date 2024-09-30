@@ -283,6 +283,102 @@ jobs:
           upload: true
 
           
+test-base-branch:
+    needs: [ read-config, read-std-config]
+    runs-on: ubuntu-latest
+    env:
+      BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
+      REPO_NAME: ${{ needs.read-config.outputs.repo-name }}
+      ALL_DELTA_COMMIT_MSG: ${{ needs.read-config.outputs.delta-commit-msg }}
+      SOURCE_BRANCH: ${{ needs.read-config.outputs.source-branch }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v3
+        with:
+          name: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: std_rule
+
+      - name: View Version File - Before
+        run: |
+          echo [INFO] Viewing versioning file - Pre Activity
+          echo [INFO] Content on XML file..
+          cat ./test-files/sample-version-file.xml
+          echo [INFO] Content on YAML file..
+          cat ./test-files/sample-version-yaml.yml
+
+      - name: View Maven POM File - Before
+        run: |
+          echo [INFO] Viewing Maven POM file - Pre Activity
+          cat ./test-files/sample-pom-file.xml
+
+      - name: View commit message
+        run: |
+          echo [INFO] Start viewing
+          echo ${{ env.ALL_DELTA_COMMIT_MSG }}
+
+      - name: Set artifact type
+        run: |
+          configName=std_rule
+          if [[ "$configName" =~ docker ]]; then
+              echo BUILD_GH_ARTIFACT_TYPE=docker >> $GITHUB_ENV
+              echo CURRENT_CONFIG_FILE=$(echo $configName | sed "s/_/-/g").yml >> $GITHUB_ENV
+              rm -f ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
+          fi
+
+      - name: Reimport CI branch if it's docker
+        if: env.BUILD_GH_ARTIFACT_TYPE == 'docker'
+        uses: partior-libs/gcs-yaml-importer@main
+        with:
+          yaml-file: controller-config-files/projects/${{ env.CURRENT_CONFIG_FILE }}
+          query-path: .smc.ci.branches.${{ steps.get-repo.outputs.branch-name }}
+          output-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
+          yaml-file-for-default: controller-config-files/projects/${{ env.CURRENT_CONFIG_FILE }}
+          query-path-for-default: .smc.ci.branches.default
+          upload: false
+
+      - name: Start versioning bot
+        id: version-bot
+        uses: partior-libs/gcs-versioning-bot@main
+        with:
+          jfrog-token: ${{ secrets.JFROG_TOKEN }}
+          versioning-rules-importer-file: std_rule
+          branch-packager-rules-importer-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
+          consolidated-commit-msg: ${{ env.ALL_DELTA_COMMIT_MSG }}
+          artifact-type: ${{ env.BUILD_GH_ARTIFACT_TYPE }}
+          hotfix-base-branch: "hotfix-base/1.2.3"
+          debug: true
+          # branch-name: ${{ env.BRANCH_NAME }}
+
+      - name: View Version File - After
+        run: |
+          echo [INFO] Viewing versioning file - Post Activity
+          echo [INFO] Content on XML file..
+          cat ./test-files/sample-version-file.xml
+          echo [INFO] Content on YAML file..
+          cat ./test-files/sample-version-yaml.yml
+
+      - name: View Maven POM File - After
+        run: |
+          echo [INFO] Viewing Maven POM file - Post Activity
+          cat ./test-files/sample-pom-file.xml
+
+      - name: Before version update - ${{ steps.version-bot.outputs.artifact-old-version}}
+        run: |
+          echo [INFO] Final version: ${{ steps.version-bot.outputs.artifact-old-version}}
+
+      - name: Final version - ${{ steps.version-bot.outputs.artifact-version-name}}
+        run: |
+          echo [INFO] Final version: ${{ steps.version-bot.outputs.artifact-version-name}}
+          echo "" > rs-std_rule_basehfx--${{ steps.version-bot.outputs.artifact-version-name}}
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: rs-std_rule_basehfx--${{ steps.version-bot.outputs.artifact-version-name}}
+          path: rs-std_rule_basehfx--${{ steps.version-bot.outputs.artifact-version-name}}
+          retention-days: 1
 
   test:
     needs: [ read-config, read-std-config, read-build-config, read-replace-file-version-config, read-replace-maven-pom-config, read-external-version-config, read-enable-msgtag, read-no-prev-artifact-config, read-std-no-version, read-prepend-version-config, read-docker-prepend-version-config, read-enable-docker-prepend-version-no-prev-config]
