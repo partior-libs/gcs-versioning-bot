@@ -134,16 +134,18 @@ runs:
         echo "[DEBUG] Commit message: $(cat $BUILD_GH_COMMIT_MESSAGE_FILE)"
       shell: bash
 
-    - name: Validate if hotfix base branch
+    - name: Setup hotfix base branch
       id: hotfix-base
       run: |
         enabled=false
+        baseReference=""
         if [[ "${BUILD_GH_BRANCH_NAME}" == "hotfix-base" ]]; then
           enabled=true
+          baseReference=${BUILD_GH_BRANCH_REFERENCE}"
         fi
         echo "BUILD_GH_HOTFIX_BASE_ENABLED=${enabled}" | tee -a >> $GITHUB_ENV
         echo "enabled=${enabled}" | tee -a >> $GITHUB_OUTPUT
-        echo "version=${BUILD_GH_BRANCH_REFERENCE}" | tee -a >> $GITHUB_OUTPUT
+        echo "version=${baseReference}" | tee -a >> $GITHUB_OUTPUT
       shell: bash
 
     - name: Import importer files
@@ -249,7 +251,7 @@ runs:
           "${{ inputs.artifact-type }}" \
           "${{ env.BUILD_GH_VERSION_PREPEND_LABEL }}" \
           "${{ steps.exclusion-string.outputs.name }}" \
-          "${BUILD_GH_BRANCH_REFERENCE}"
+          "${{ steps.hotfix-base.outputs.version }}"
       shell: bash
 
     - name: Generate next available version
@@ -261,7 +263,7 @@ runs:
           "${BUILD_GH_LABEL_FILE}" \
           "${BUILD_GH_TAG_FILE}" \
           "${BUILD_GH_COMMIT_MESSAGE_FILE}" \
-          "${BUILD_GH_BRANCH_REFERENCE}" \
+          "${{ steps.hotfix-base.outputs.version }}" \
           "${{ inputs.debug }}"
         exitCode=$?
 
