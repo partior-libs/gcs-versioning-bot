@@ -341,7 +341,7 @@ jobs:
 
       - name: Start versioning bot
         id: version-bot
-        uses: partior-libs/gcs-versioning-bot@main
+        uses: partior-libs/gcs-versioning-bot@feature/DSO-3143_support_hotfix_base
         with:
           jfrog-token: ${{ secrets.JFROG_TOKEN }}
           versioning-rules-importer-file: std_rule
@@ -446,7 +446,7 @@ jobs:
 
       - name: Start versioning bot
         id: version-bot
-        uses: partior-libs/gcs-versioning-bot@main
+        uses: partior-libs/gcs-versioning-bot@feature/DSO-3143_support_hotfix_base
         with:
           artifactory-username: svc-smc-read
           # artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
