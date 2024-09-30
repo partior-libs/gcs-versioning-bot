@@ -36,6 +36,7 @@ jiraVersionIdentifier=${17}
 artifactType=${18:-default}
 prependVersionLabel=${19}
 excludeVersionName=${20:-latest}
+hotfixBaseVersion="${21}"
 
 
 echo "[INFO] Branch name: $sourceBranchName"
@@ -54,8 +55,34 @@ echo "[INFO] Jira Version Identifier: $jiraVersionIdentifier"
 echo "[INFO] Artifact Type: $artifactType"
 echo "[INFO] Prepend Version: $prependVersionLabel"
 echo "[INFO] Exclude Version: $excludeVersionName"
+echo "[INFO] Hotfix Base Version: $hotfixBaseVersion"
 
 
+
+function storeLatestBaseVersionIntoFile() {
+    local inputList="$1"
+    local identifierType="$2"
+    local targetSaveFile="$3"
+    local targetBaseVersion="$4"
+
+    if [[ -z "$targetBaseVersion" ]]; then
+        return 0
+    fi
+
+    if [[ ! -f "$inputList" ]]; then
+        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Artifact list file not found: [$inputList]"
+        exit 1
+    fi
+    echo "[INFO] Store the latest hotfix from base [$targetBaseVersion]..."
+    if (cat $inputList | grep -qE "$targetBaseVersion-$identifierType\."); then
+        echo "[INFO] Found existing..."
+        echo $(cat $inputList | grep -E "version" | grep -E "$targetBaseVersion-$identifierType\." | cut -d"\"" -f4 | sort -rV | head -1) > $targetSaveFile
+    else
+        echo "[INFO] Not found. Resetting to 0"
+        echo "$targetBaseVersion-$identifierType.0" > $targetSaveFile
+    fi
+
+}
 
 function storeLatestVersionIntoFile() {
     local inputList=$1
@@ -470,11 +497,13 @@ versionListFile=versionlist.tmp
 touch $ARTIFACT_LAST_DEV_VERSION_FILE
 touch $ARTIFACT_LAST_RC_VERSION_FILE
 touch $ARTIFACT_LAST_REL_VERSION_FILE
+touch $ARTIFACT_LAST_BASE_VERSION_FILE
 ## getArtifactLastVersion "$artifactoryTargetDevRepo,$artifactoryTargetRelRepo" "$versionListFile"
 getArtifactLastVersion "$versionListFile" "$jiraProjectKeyList"
 ## Store respective version type into file
 storeLatestVersionIntoFile "$versionListFile" "$DEV_V_IDENTIFIER" "$ARTIFACT_LAST_DEV_VERSION_FILE"
 storeLatestVersionIntoFile "$versionListFile" "$RC_V_IDENTIFIER" "$ARTIFACT_LAST_RC_VERSION_FILE"
+storeLatestBaseVersionIntoFile "$versionListFile" "$BASE_V_IDENTIFIER" "$ARTIFACT_LAST_BASE_VERSION_FILE" "$hotfixBaseVersion"
 storeLatestVersionIntoFile "$versionListFile" "$REL_SCOPE" "$ARTIFACT_LAST_REL_VERSION_FILE"
 
 cat $versionListFile

@@ -15,12 +15,13 @@ fi
 ## ANTZ TEMPORARY
 # source ./test-files/mock-base-variables.sh
 
-artifactName=$1
+artifactName="$1"
 currentBranch=$(echo $2 | cut -d'/' -f1)
-currentLabel=$3
-currentTag=$4
-currentMsgTag=$5
-isDebug=$6
+currentLabel="$3"
+currentTag="$4"
+currentMsgTag="$5"
+hotfixBaseVersion="$6"
+isDebug="$7"
 
 # Reset global state
 CORE_VERSION_UPDATED_FILE=core.updated
@@ -30,6 +31,7 @@ rm -f $CORE_VERSION_UPDATED_FILE
 lastDevVersion=$(cat $ARTIFACT_LAST_DEV_VERSION_FILE | cut -d"+" -f1)
 lastRCVersion=$(cat $ARTIFACT_LAST_RC_VERSION_FILE | cut -d"+" -f1)
 lastRelVersion=$(cat $ARTIFACT_LAST_REL_VERSION_FILE | cut -d"+" -f1)
+lastBaseVersion=$(cat $ARTIFACT_LAST_BASE_VERSION_FILE | cut -d"+" -f1)
 
 echo "[INFO] Start generating package version..."
 echo "[INFO] Artifact Name: $artifactName"
@@ -37,6 +39,9 @@ echo "[INFO] Source branch: $currentBranch"
 echo "[INFO] Last Dev version in Artifactory: $lastDevVersion"
 echo "[INFO] Last RC version in Artifactory: $lastRCVersion"
 echo "[INFO] Last Release version in Artifactory: $lastRelVersion"
+echo "[INFO] Last Base version in Artifactory: $lastBaseVersion"
+echo "[INFO] Current Base: $hotfixBaseVersion"
+
 
 ## Ensure dev and rel version are in sync
 function versionCompareLessOrEqual() {
@@ -807,139 +812,150 @@ if [[ "$isDebug" == "true" ]]; then
     debugReleaseVersionVariables PATCH
 fi
 
-nextVersion=$(getNeededIncrementReleaseVersion "$lastDevVersion" "$lastRCVersion" "$lastRelVersion")
-echo [INFO] Before incremented: $nextVersion
-## Process incrementation on MAJOR, MINOR and PATCH
-if [[ "$(checkReleaseVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "${MAJOR_V_RULE_VFILE_ENABLED}" == "true" ]]; then
-    # echo [DEBUG] currentRCSemanticVersion=$nextVersion
-    touch $CORE_VERSION_UPDATED_FILE
-    vConfigMsgTags=${MAJOR_SCOPE}_V_CONFIG_MSGTAGS
-    ghCurrentMsgTag=${MAJOR_SCOPE}_GH_CURRENT_MSGTAG
-    ## If there's commit message
-    if [[ $(checkListIsSubstringInFileContent "${!vConfigMsgTags}" "${!ghCurrentMsgTag}") == "true" ]]; then
-        nextVersion=$(incrementReleaseVersion $lastRelVersion ${MAJOR_POSITION} $(getIncrementalCount "${!vConfigMsgTags}" "${!ghCurrentMsgTag}"))
-    else
-        nextVersion=$(incrementReleaseVersion $nextVersion ${MAJOR_POSITION})
+if [[ ! -z "$hotfixBaseVersion" ]]; then
+    baseCurrentVersion="$lastBaseVersion"
+    if [[ -z "$lastBaseVersion" ]]; then
+        baseCurrentVersion="$hotfixBaseVersion-hf.0"
     fi
-    
-    echo [DEBUG] MAJOR INCREMENTED $nextVersion
-elif [[ "$(checkReleaseVersionFeatureFlag ${MINOR_SCOPE})" == "true" ]] && [[ ! "${MINOR_V_RULE_VFILE_ENABLED}" == "true" ]]; then
-    # echo [DEBUG] currentRCSemanticVersion=$nextVersion
-    touch $CORE_VERSION_UPDATED_FILE
-    # nextVersion=$(incrementReleaseVersion $nextVersion ${MINOR_POSITION})
-    vConfigMsgTags=${MINOR_SCOPE}_V_CONFIG_MSGTAGS
-    ghCurrentMsgTag=${MINOR_SCOPE}_GH_CURRENT_MSGTAG
-    ## If there's commit message
-    if [[ $(checkListIsSubstringInFileContent "${!vConfigMsgTags}" "${!ghCurrentMsgTag}") == "true" ]]; then
-        nextVersion=$(incrementReleaseVersion $lastRelVersion ${MINOR_POSITION} $(getIncrementalCount "${!vConfigMsgTags}" "${!ghCurrentMsgTag}"))
-    else
-        nextVersion=$(incrementReleaseVersion $nextVersion ${MINOR_POSITION})
+    hfNum=$(echo "$baseCurrentVersion" | awk -F"-hf." '{print $2}')
+    nextHfNum=$((hfNum + 1))
+    nextVersion=${hotfixBaseVersion}-hf.$nextHfNum
+
+else
+    nextVersion=$(getNeededIncrementReleaseVersion "$lastDevVersion" "$lastRCVersion" "$lastRelVersion")
+    echo [INFO] Before incremented: $nextVersion
+    ## Process incrementation on MAJOR, MINOR and PATCH
+    if [[ "$(checkReleaseVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "${MAJOR_V_RULE_VFILE_ENABLED}" == "true" ]]; then
+        # echo [DEBUG] currentRCSemanticVersion=$nextVersion
+        touch $CORE_VERSION_UPDATED_FILE
+        vConfigMsgTags=${MAJOR_SCOPE}_V_CONFIG_MSGTAGS
+        ghCurrentMsgTag=${MAJOR_SCOPE}_GH_CURRENT_MSGTAG
+        ## If there's commit message
+        if [[ $(checkListIsSubstringInFileContent "${!vConfigMsgTags}" "${!ghCurrentMsgTag}") == "true" ]]; then
+            nextVersion=$(incrementReleaseVersion $lastRelVersion ${MAJOR_POSITION} $(getIncrementalCount "${!vConfigMsgTags}" "${!ghCurrentMsgTag}"))
+        else
+            nextVersion=$(incrementReleaseVersion $nextVersion ${MAJOR_POSITION})
+        fi
+        
+        echo [DEBUG] MAJOR INCREMENTED $nextVersion
+    elif [[ "$(checkReleaseVersionFeatureFlag ${MINOR_SCOPE})" == "true" ]] && [[ ! "${MINOR_V_RULE_VFILE_ENABLED}" == "true" ]]; then
+        # echo [DEBUG] currentRCSemanticVersion=$nextVersion
+        touch $CORE_VERSION_UPDATED_FILE
+        # nextVersion=$(incrementReleaseVersion $nextVersion ${MINOR_POSITION})
+        vConfigMsgTags=${MINOR_SCOPE}_V_CONFIG_MSGTAGS
+        ghCurrentMsgTag=${MINOR_SCOPE}_GH_CURRENT_MSGTAG
+        ## If there's commit message
+        if [[ $(checkListIsSubstringInFileContent "${!vConfigMsgTags}" "${!ghCurrentMsgTag}") == "true" ]]; then
+            nextVersion=$(incrementReleaseVersion $lastRelVersion ${MINOR_POSITION} $(getIncrementalCount "${!vConfigMsgTags}" "${!ghCurrentMsgTag}"))
+        else
+            nextVersion=$(incrementReleaseVersion $nextVersion ${MINOR_POSITION})
+        fi
+        echo [DEBUG] MINOR INCREMENTED $nextVersion
+    elif [[ "$(checkReleaseVersionFeatureFlag ${PATCH_SCOPE})" == "true" ]] && [[ ! "${PATCH_V_RULE_VFILE_ENABLED}" == "true" ]]; then
+        # echo [DEBUG] currentRCSemanticVersion=$nextVersion
+        touch $CORE_VERSION_UPDATED_FILE
+        # nextVersion=$(incrementReleaseVersion $nextVersion ${PATCH_POSITION})
+        vConfigMsgTags=${PATCH_SCOPE}_V_CONFIG_MSGTAGS
+        ghCurrentMsgTag=${PATCH_SCOPE}_GH_CURRENT_MSGTAG
+        ## If there's commit message
+        if [[ $(checkListIsSubstringInFileContent "${!vConfigMsgTags}" "${!ghCurrentMsgTag}") == "true" ]]; then
+            nextVersion=$(incrementReleaseVersion $lastRelVersion ${PATCH_POSITION} $(getIncrementalCount "${!vConfigMsgTags}" "${!ghCurrentMsgTag}"))
+        else
+            nextVersion=$(incrementReleaseVersion $nextVersion ${PATCH_POSITION})
+        fi
+        echo [DEBUG] PATCH INCREMENTED $nextVersion
     fi
-    echo [DEBUG] MINOR INCREMENTED $nextVersion
-elif [[ "$(checkReleaseVersionFeatureFlag ${PATCH_SCOPE})" == "true" ]] && [[ ! "${PATCH_V_RULE_VFILE_ENABLED}" == "true" ]]; then
-    # echo [DEBUG] currentRCSemanticVersion=$nextVersion
-    touch $CORE_VERSION_UPDATED_FILE
-    # nextVersion=$(incrementReleaseVersion $nextVersion ${PATCH_POSITION})
-    vConfigMsgTags=${PATCH_SCOPE}_V_CONFIG_MSGTAGS
-    ghCurrentMsgTag=${PATCH_SCOPE}_GH_CURRENT_MSGTAG
-    ## If there's commit message
-    if [[ $(checkListIsSubstringInFileContent "${!vConfigMsgTags}" "${!ghCurrentMsgTag}") == "true" ]]; then
-        nextVersion=$(incrementReleaseVersion $lastRelVersion ${PATCH_POSITION} $(getIncrementalCount "${!vConfigMsgTags}" "${!ghCurrentMsgTag}"))
-    else
+    echo [INFO] After core version incremented: $nextVersion
+
+    ## Process incrementation on MAJOR, MINOR and PATCH via version file (manual)
+    nextVersion=$(processWithReleaseVersionFile ${nextVersion} ${MAJOR_POSITION} ${MAJOR_SCOPE})
+    if [[ $? -ne 0 ]]; then
+        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed processing incrementation on MAJOR, MINOR and PATCH via version file on MAJOR VERSION."
+        echo "[ERROR_MSG] $nextVersion"
+        exit 1
+    fi
+    nextVersion=$(processWithReleaseVersionFile ${nextVersion} ${MINOR_POSITION} ${MINOR_SCOPE})
+    if [[ $? -ne 0 ]]; then
+        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed processing incrementation on MAJOR, MINOR and PATCH via version file on MINOR VERSION."
+        echo "[ERROR_MSG] $nextVersion"
+        exit 1
+    fi
+    nextVersion=$(processWithReleaseVersionFile ${nextVersion} ${PATCH_POSITION} ${PATCH_SCOPE})
+    if [[ $? -ne 0 ]]; then
+        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed processing incrementation on MAJOR, MINOR and PATCH via version file on PATCH VERSION."
+        echo "[ERROR_MSG] $nextVersion"
+        exit 1
+    fi
+    echo [INFO] After core version file incremented: [$nextVersion]
+    # Store in a file to be used in pre-release increment consideration later
+    echo $nextVersion > $ARTIFACT_UPDATED_REL_VERSION_FILE
+
+    ## Debug section
+    if [[ "$isDebug" == "true" ]]; then
+        debugPreReleaseVersionVariables $RC_SCOPE
+        debugPreReleaseVersionVariables $DEV_SCOPE
+    fi
+
+    # ## Combined incremented release version with pre-release
+    # if [[ ! -z $lastRCVersion ]] && [[ ! -z $nextVersion ]]; then
+    #     tmpRCVersion=$(echo $lastRCVersion | cut -d"-" -f1 --complement)
+    #     nextVersion=$nextVersion-$tmpRCVersion
+    # fi
+    # if [[ ! -z $lastDevVersion ]] && [[ ! -z $nextVersion ]]; then
+    #     tmpDevVersion=$(echo $lastDevVersion | cut -d"-" -f1 --complement)
+    #     nextVersion=$nextVersion-$tmpDevVersion
+    # fi
+    ## Process incrementation on RC and DEV 
+    echo [INFO] Before RC version incremented: $lastRCVersion
+    echo [INFO] Before DEV version incremented: $lastDevVersion
+    echo [INFO] Before BASE version incremented: $lastBaseVersion
+    echo [INFO] Before nextVersion version incremented: $nextVersion
+    if [[ "$(checkPreReleaseVersionFeatureFlag ${RC_SCOPE})" == "true" ]] && [[ ! "${RC_V_RULE_VFILE_ENABLED}" == "true" ]]; then
+        nextVersion=$(incrementPreReleaseVersion "$lastRCVersion" "$RC_V_IDENTIFIER")
+    elif [[ "$(checkPreReleaseVersionFeatureFlag ${DEV_SCOPE})" == "true" ]] && [[ ! "${DEV_V_RULE_VFILE_ENABLED}" == "true" ]]; then
+        nextVersion=$(incrementPreReleaseVersion "$lastDevVersion" "$DEV_V_IDENTIFIER")
+    fi
+    echo [INFO] After prerelease version incremented: [$nextVersion]
+
+    ## Process incrementation on RC and DEV with version file
+    if [[ "$(checkPreReleaseVersionFeatureFlag ${RC_SCOPE})" == "true" ]] && [[ "${RC_V_RULE_VFILE_ENABLED}" == "true" ]]; then
+        nextVersion=$(incrementPreReleaseVersionByFile "$lastRCVersion" "$RC_V_IDENTIFIER" "${RC_SCOPE}")
+    elif [[ "$(checkPreReleaseVersionFeatureFlag ${DEV_SCOPE})" == "true" ]] && [[ "${DEV_V_RULE_VFILE_ENABLED}" == "true" ]]; then
+        nextVersion=$(incrementPreReleaseVersionByFile "$lastDevVersion" "$DEV_V_IDENTIFIER" "${DEV_SCOPE}")
+    fi
+    echo [INFO] After prerelease version incremented with input from version file: [$nextVersion]
+
+
+    degaussBuildVersionVariables "$BUILD_SCOPE"
+    ## Debug section
+    if [[ "$isDebug" == "true" ]]; then
+        debugBuildVersionVariables "$BUILD_SCOPE"
+    fi
+    ## Append build number infos if enabled
+    if [[ "$(checkBuildVersionFeatureFlag ${BUILD_SCOPE})" == "true" ]]; then
+        if [[ -z "$BUILD_V_IDENTIFIER" ]]; then
+            echo "[ERROR] $BASH_SOURCE (line:$LINENO): Missing build identifier"
+            exit 1
+        fi
+        if [[ -z "$BUILD_GH_RUN_NUMBER" ]]; then
+            echo "[ERROR] $BASH_SOURCE (line:$LINENO): Missing GitHub job number"
+            exit 1
+        fi
+        if [[ -z "$BUILD_GH_RUN_ATTEMPT" ]]; then
+            echo "[ERROR] $BASH_SOURCE (line:$LINENO): Missing GitHub job attempt number"
+            exit 1
+        fi
+        nextVersion=${nextVersion}+${BUILD_V_IDENTIFIER}.${BUILD_GH_RUN_NUMBER}.${BUILD_GH_RUN_ATTEMPT}
+        echo [INFO] After appending build version: $nextVersion
+    fi
+
+    ## If due to any circumstances the increment on nextVersion doesnt happen, it's likely due to unhandled versioning format. In that situation, try to force the patch increment by 1
+    if [[ "$nextVersion" == "$lastRelVersion" ]]; then
+        echo [DEBUG] nextVersion and lastRelVersion are still identical [$nextVersion]. Force increment patch version...
         nextVersion=$(incrementReleaseVersion $nextVersion ${PATCH_POSITION})
+        echo [DEBUG] PATCH INCREMENTED $nextVersion
     fi
-    echo [DEBUG] PATCH INCREMENTED $nextVersion
 fi
-echo [INFO] After core version incremented: $nextVersion
-
-## Process incrementation on MAJOR, MINOR and PATCH via version file (manual)
-nextVersion=$(processWithReleaseVersionFile ${nextVersion} ${MAJOR_POSITION} ${MAJOR_SCOPE})
-if [[ $? -ne 0 ]]; then
-    echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed processing incrementation on MAJOR, MINOR and PATCH via version file on MAJOR VERSION."
-    echo "[ERROR_MSG] $nextVersion"
-    exit 1
-fi
-nextVersion=$(processWithReleaseVersionFile ${nextVersion} ${MINOR_POSITION} ${MINOR_SCOPE})
-if [[ $? -ne 0 ]]; then
-    echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed processing incrementation on MAJOR, MINOR and PATCH via version file on MINOR VERSION."
-    echo "[ERROR_MSG] $nextVersion"
-    exit 1
-fi
-nextVersion=$(processWithReleaseVersionFile ${nextVersion} ${PATCH_POSITION} ${PATCH_SCOPE})
-if [[ $? -ne 0 ]]; then
-    echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed processing incrementation on MAJOR, MINOR and PATCH via version file on PATCH VERSION."
-    echo "[ERROR_MSG] $nextVersion"
-    exit 1
-fi
-echo [INFO] After core version file incremented: [$nextVersion]
-# Store in a file to be used in pre-release increment consideration later
-echo $nextVersion > $ARTIFACT_UPDATED_REL_VERSION_FILE
-
-## Debug section
-if [[ "$isDebug" == "true" ]]; then
-    debugPreReleaseVersionVariables $RC_SCOPE
-    debugPreReleaseVersionVariables $DEV_SCOPE
-fi
-
-# ## Combined incremented release version with pre-release
-# if [[ ! -z $lastRCVersion ]] && [[ ! -z $nextVersion ]]; then
-#     tmpRCVersion=$(echo $lastRCVersion | cut -d"-" -f1 --complement)
-#     nextVersion=$nextVersion-$tmpRCVersion
-# fi
-# if [[ ! -z $lastDevVersion ]] && [[ ! -z $nextVersion ]]; then
-#     tmpDevVersion=$(echo $lastDevVersion | cut -d"-" -f1 --complement)
-#     nextVersion=$nextVersion-$tmpDevVersion
-# fi
-## Process incrementation on RC and DEV 
-echo [INFO] Before RC version incremented: $lastRCVersion
-echo [INFO] Before DEV version incremented: $lastDevVersion
-echo [INFO] Before nextVersion version incremented: $nextVersion
-if [[ "$(checkPreReleaseVersionFeatureFlag ${RC_SCOPE})" == "true" ]] && [[ ! "${RC_V_RULE_VFILE_ENABLED}" == "true" ]]; then
-    nextVersion=$(incrementPreReleaseVersion "$lastRCVersion" "$RC_V_IDENTIFIER")
-elif [[ "$(checkPreReleaseVersionFeatureFlag ${DEV_SCOPE})" == "true" ]] && [[ ! "${DEV_V_RULE_VFILE_ENABLED}" == "true" ]]; then
-    nextVersion=$(incrementPreReleaseVersion "$lastDevVersion" "$DEV_V_IDENTIFIER")
-fi
-echo [INFO] After prerelease version incremented: [$nextVersion]
-
-## Process incrementation on RC and DEV with version file
-if [[ "$(checkPreReleaseVersionFeatureFlag ${RC_SCOPE})" == "true" ]] && [[ "${RC_V_RULE_VFILE_ENABLED}" == "true" ]]; then
-    nextVersion=$(incrementPreReleaseVersionByFile "$lastRCVersion" "$RC_V_IDENTIFIER" "${RC_SCOPE}")
-elif [[ "$(checkPreReleaseVersionFeatureFlag ${DEV_SCOPE})" == "true" ]] && [[ "${DEV_V_RULE_VFILE_ENABLED}" == "true" ]]; then
-    nextVersion=$(incrementPreReleaseVersionByFile "$lastDevVersion" "$DEV_V_IDENTIFIER" "${DEV_SCOPE}")
-fi
-echo [INFO] After prerelease version incremented with input from version file: [$nextVersion]
-
-
-degaussBuildVersionVariables "$BUILD_SCOPE"
-## Debug section
-if [[ "$isDebug" == "true" ]]; then
-    debugBuildVersionVariables "$BUILD_SCOPE"
-fi
-## Append build number infos if enabled
-if [[ "$(checkBuildVersionFeatureFlag ${BUILD_SCOPE})" == "true" ]]; then
-    if [[ -z "$BUILD_V_IDENTIFIER" ]]; then
-        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Missing build identifier"
-        exit 1
-    fi
-    if [[ -z "$BUILD_GH_RUN_NUMBER" ]]; then
-        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Missing GitHub job number"
-        exit 1
-    fi
-    if [[ -z "$BUILD_GH_RUN_ATTEMPT" ]]; then
-        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Missing GitHub job attempt number"
-        exit 1
-    fi
-    nextVersion=${nextVersion}+${BUILD_V_IDENTIFIER}.${BUILD_GH_RUN_NUMBER}.${BUILD_GH_RUN_ATTEMPT}
-    echo [INFO] After appending build version: $nextVersion
-fi
-
-## If due to any circumstances the increment on nextVersion doesnt happen, it's likely due to unhandled versioning format. In that situation, try to force the patch increment by 1
-if [[ "$nextVersion" == "$lastRelVersion" ]]; then
-    echo [DEBUG] nextVersion and lastRelVersion are still identical [$nextVersion]. Force increment patch version...
-    nextVersion=$(incrementReleaseVersion $nextVersion ${PATCH_POSITION})
-    echo [DEBUG] PATCH INCREMENTED $nextVersion
-fi
-
 ## Replace the version in file if enabled
 if [[ "$(checkReplacementFeatureFlag ${REPLACEMENT_SCOPE})" == "true" ]] && [[ "$REPLACE_V_RULE_FILETOKEN_ENABLED" == "true" ]]; then
     replaceVersionInFile "$nextVersion" "$REPLACE_V_CONFIG_FILETOKEN_FILE" "$REPLACE_V_CONFIG_FILETOKEN_NAME"
