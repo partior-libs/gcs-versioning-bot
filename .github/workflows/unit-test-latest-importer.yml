@@ -284,7 +284,7 @@ jobs:
 
           
 test-base-branch:
-    needs: [ read-config, read-std-config]
+    needs: [ read-config, read-std-config ]
     runs-on: ubuntu-latest
     env:
       BRANCH_NAME: ${{ needs.read-config.outputs.branch-name }}
