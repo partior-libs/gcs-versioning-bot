@@ -141,7 +141,7 @@ runs:
         baseReference=""
         if [[ "${BUILD_GH_BRANCH_NAME}" == "hotfix-base" ]]; then
           enabled=true
-          baseReference=${BUILD_GH_BRANCH_REFERENCE}"
+          baseReference="${BUILD_GH_BRANCH_REFERENCE}"
         fi
         echo "BUILD_GH_HOTFIX_BASE_ENABLED=${enabled}" | tee -a >> $GITHUB_ENV
         echo "enabled=${enabled}" | tee -a >> $GITHUB_OUTPUT
