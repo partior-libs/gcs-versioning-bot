@@ -301,7 +301,7 @@ runs:
                   "${BUILD_GH_LABEL_FILE}" \
                   "${BUILD_GH_TAG_FILE}" \
                   "${BUILD_GH_COMMIT_MESSAGE_FILE}" \
-                  "${BUILD_GH_BRANCH_REFERENCE}" \
+                  "${{ steps.hotfix-base.outputs.version }}" \
                   "${{ inputs.debug }}"
             fi
         else
