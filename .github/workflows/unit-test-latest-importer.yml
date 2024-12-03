@@ -116,6 +116,7 @@ jobs:
           name: ${{ env.YAML_STD_CI_CONFIG_IMPORTER }}
           path: ${{ env.YAML_STD_CI_CONFIG_IMPORTER }}
           retention-days: 1
+          overwrite: true
 
   read-enable-msgtag:
     runs-on: ubuntu-latest
