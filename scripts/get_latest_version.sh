@@ -344,7 +344,8 @@ EOF
             if [[ "$artifactPathBasename" != "$artifactoryTargetArtifactName" ]]; then
                 #echo "[DEBUG] Path basename [$artifactPathBasename] is not the same as artifact name [$artifactoryTargetArtifactName]. Proceed to extract version from basename..."
                 ## Verify base is a version
-                if [[ "$artifactPathBasename" =~ [0-9]+\.[0-9]+\.[0-9]+ ]]; then
+                #if [[ "$artifactPathBasename" =~ [0-9]+\.[0-9]+\.[0-9]+ ]]; then
+                if (echo "$artifactPathBasename" | grep -qE '^([0-9]+\.){2}[0-9]+((-|\+)[0-9a-zA-Z]+\.[0-9]+)*$'); then ## ensure only recognized format is stored
                     if (! grep -q "\"$artifactPathBasename\"" "$versionOutputFile"); then  ## store only unique
                         echo "\"version\": \"$artifactPathBasename\"" >> "$versionOutputFile"
                     fi
@@ -380,8 +381,10 @@ function extractAndStoreVersionFromArtifactName() {
     local artifactVersion=$(echo "$foundArtifactFile" | sed "s/$artifactoryTargetArtifactName-//g")
     artifactVersion=${artifactVersion%.*}       # Remove the last "." and everything after it
     artifactVersion=$(echo "$artifactVersion" | sed "s/-linux_amd64//g" | sed "s/-darwin_arm64//g")  # Remove any arch or OS related
-    if (! grep -q "\"$artifactVersion\"" "$versionOutputFile"); then  ## store only unique
-        echo "\"version\": \"$artifactVersion\"" >> "$versionOutputFile"
+    if (echo "$artifactVersion" | grep -qE '^([0-9]+\.){2}[0-9]+((-|\+)[0-9a-zA-Z]+\.[0-9]+)*$'); then ## ensure only recognized format is stored
+        if (! grep -q "\"$artifactVersion\"" "$versionOutputFile"); then  ## store only unique
+            echo "\"version\": \"$artifactVersion\"" >> "$versionOutputFile"
+        fi
     fi
 }
 function getLatestVersionFromJira() {

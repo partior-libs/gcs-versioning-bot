@@ -125,6 +125,7 @@ jobs:
           name: ${{ env.YAML_STD_CI_CONFIG_IMPORTER }}
           path: ${{ env.YAML_STD_CI_CONFIG_IMPORTER }}
           retention-days: 1
+          overwrite: true
 
   read-enable-msgtag:
     runs-on: ubuntu-latest
@@ -399,3 +400,4 @@ jobs:
           name: rs-${{ matrix.rule }}_${{ matrix.branch }}--${{ steps.version-bot.outputs.artifact-version-name}}
           path: rs-${{ matrix.rule }}_${{ matrix.branch }}--${{ steps.version-bot.outputs.artifact-version-name}}
           retention-days: 1
+          overwrite: true
