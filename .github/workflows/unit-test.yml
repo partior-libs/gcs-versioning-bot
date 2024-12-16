@@ -362,7 +362,7 @@ jobs:
         id: version-bot
         uses: partior-libs/gcs-versioning-bot@main
         with:
-          artifactory-username: svc-smc-read
+          # artifactory-username: svc-smc-read
           # artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
           jfrog-token: ${{ secrets.JFROG_TOKEN }}
           versioning-rules-importer-file: ${{ matrix.rule }}
