@@ -110,7 +110,7 @@ jobs:
    
      - name: Start versioning bot
        id: version-bot
-       uses: partior-libs/gcs-versioning-bot@main
+       uses: partior-libs/gcs-versioning-bot@${{ needs.read-config.outputs.source-branch }}
        with:
          jfrog-token: ${{ secrets.JFROG_TOKEN }}
          jira-username: ${{ secrets.JIRA_USERNAME }}

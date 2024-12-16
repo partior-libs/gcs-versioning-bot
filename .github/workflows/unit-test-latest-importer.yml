@@ -448,7 +448,7 @@ jobs:
 
       - name: Start versioning bot
         id: version-bot
-        uses: partior-libs/gcs-versioning-bot@feature/DSO-3143_support_hotfix_base
+        uses: partior-libs/gcs-versioning-bot@${{ needs.read-config.outputs.source-branch }}
         with:
           # artifactory-username: svc-smc-read
           # artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
