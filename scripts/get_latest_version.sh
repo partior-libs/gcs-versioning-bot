@@ -385,6 +385,8 @@ function extractAndStoreVersionFromArtifactName() {
         if (! grep -q "\"$artifactVersion\"" "$versionOutputFile"); then  ## store only unique
             echo "\"version\": \"$artifactVersion\"" >> "$versionOutputFile"
         fi
+    else
+        echo "[WARNING] Invalid format detected. Ignored: [$artifactVersion]" >&2
     fi
 }
 function getLatestVersionFromJira() {
