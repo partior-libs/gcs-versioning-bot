@@ -116,6 +116,7 @@ jobs:
           name: ${{ env.YAML_STD_CI_CONFIG_IMPORTER }}
           path: ${{ env.YAML_STD_CI_CONFIG_IMPORTER }}
           retention-days: 1
+          overwrite: true
 
   read-enable-msgtag:
     runs-on: ubuntu-latest
@@ -293,11 +294,11 @@ jobs:
       SOURCE_BRANCH: ${{ needs.read-config.outputs.source-branch }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: std_rule
 
@@ -374,11 +375,12 @@ jobs:
           echo [INFO] Final version: ${{ steps.version-bot.outputs.artifact-version-name}}
           echo "" > rs-std_rule_basehfx-${{ steps.version-bot.outputs.artifact-version-name}}
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: rs-std_rule_basehfx-${{ steps.version-bot.outputs.artifact-version-name}}
           path: rs-std_rule_basehfx-${{ steps.version-bot.outputs.artifact-version-name}}
           retention-days: 1
+          overwrite: true
 
   test:
     needs: [ read-config, read-std-config, read-build-config, read-replace-file-version-config, read-replace-maven-pom-config, read-external-version-config, read-enable-msgtag, read-no-prev-artifact-config, read-std-no-version, read-prepend-version-config, read-docker-prepend-version-config, read-enable-docker-prepend-version-no-prev-config]
@@ -446,9 +448,9 @@ jobs:
 
       - name: Start versioning bot
         id: version-bot
-        uses: partior-libs/gcs-versioning-bot@feature/DSO-3143_support_hotfix_base
+        uses: ./
         with:
-          artifactory-username: svc-smc-read
+          # artifactory-username: svc-smc-read
           # artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
           jfrog-token: ${{ secrets.JFROG_TOKEN }}
           versioning-rules-importer-file: ${{ matrix.rule }}
@@ -486,3 +488,4 @@ jobs:
           name: rs-${{ matrix.rule }}_${{ matrix.branch }}--${{ steps.version-bot.outputs.artifact-version-name}}
           path: rs-${{ matrix.rule }}_${{ matrix.branch }}--${{ steps.version-bot.outputs.artifact-version-name}}
           retention-days: 1
+          overwrite: true

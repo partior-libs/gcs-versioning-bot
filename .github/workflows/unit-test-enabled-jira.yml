@@ -110,10 +110,9 @@ jobs:
    
      - name: Start versioning bot
        id: version-bot
-       uses: partior-libs/gcs-versioning-bot@main
+       uses: ./
        with:
-         artifactory-username: svc-smc-read
-         artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
+         jfrog-token: ${{ secrets.JFROG_TOKEN }}
          jira-username: ${{ secrets.JIRA_USERNAME }}
          jira-password: ${{ secrets.JIRA_API_TOKEN }}
          versioning-rules-importer-file: ${{ matrix.rule }}

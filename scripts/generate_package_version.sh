@@ -819,6 +819,11 @@ if [[ ! -z "$hotfixBaseVersion" ]]; then
     fi
     hfNum=$(echo "$baseCurrentVersion" | awk -F"-hf." '{print $2}')
     nextHfNum=$((hfNum + 1))
+    if [[ $? -ne 0 ]]; then
+        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed incrementation on hf version."
+        echo "[DEBUG] baseCurrentVersion=$baseCurrentVersion, hfNum=$hfNum"
+        exit 1
+    fi
     nextVersion=${hotfixBaseVersion}-hf.$nextHfNum
 
 else

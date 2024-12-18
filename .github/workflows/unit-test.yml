@@ -125,6 +125,7 @@ jobs:
           name: ${{ env.YAML_STD_CI_CONFIG_IMPORTER }}
           path: ${{ env.YAML_STD_CI_CONFIG_IMPORTER }}
           retention-days: 1
+          overwrite: true
 
   read-enable-msgtag:
     runs-on: ubuntu-latest
@@ -359,9 +360,9 @@ jobs:
 
       - name: Start versioning bot
         id: version-bot
-        uses: partior-libs/gcs-versioning-bot@main
+        uses: ./
         with:
-          artifactory-username: svc-smc-read
+          # artifactory-username: svc-smc-read
           # artifactory-password: ${{ secrets.ARTIFACTORY_NPM_TOKEN_SVC_SMC_READ }}
           jfrog-token: ${{ secrets.JFROG_TOKEN }}
           versioning-rules-importer-file: ${{ matrix.rule }}
@@ -399,3 +400,4 @@ jobs:
           name: rs-${{ matrix.rule }}_${{ matrix.branch }}--${{ steps.version-bot.outputs.artifact-version-name}}
           path: rs-${{ matrix.rule }}_${{ matrix.branch }}--${{ steps.version-bot.outputs.artifact-version-name}}
           retention-days: 1
+          overwrite: true
