@@ -596,13 +596,18 @@ function processWithReleaseVersionFile() {
     local versionPos=$2
     local versionScope=$3
 
+    echo "[DEBUG] $BASH_SOURCE (line:$LINENO): inputVersion=$inputVersion" >&2
+    echo "[DEBUG] $BASH_SOURCE (line:$LINENO): versionPos=$versionPos" >&2
+    echo "[DEBUG] $BASH_SOURCE (line:$LINENO): versionScope=$versionScope" >&2
+
     local versionFileRuleEnabled=${versionScope}_V_RULE_VFILE_ENABLED
     local currentIncrementedVersion="$inputVersion"
+    echo "[DEBUG] $BASH_SOURCE (line:$LINENO): checkReleaseVersionFeatureFlag=$(checkReleaseVersionFeatureFlag ${versionScope}) and versionFileRuleEnabled=${!versionFileRuleEnabled}" >&2
     if [[ "$(checkReleaseVersionFeatureFlag ${versionScope})" == "true" ]] && [[ "${!versionFileRuleEnabled}" == "true" ]]; then
         currentIncrementedVersion=$(incrementReleaseVersionByFile $currentIncrementedVersion ${versionPos} ${versionScope})
         if [[ $? -ne 0 ]]; then
-            echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed retrieving version from version file."
-            echo "[ERROR_MSG] $currentIncrementedVersion"
+            echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed retrieving version from version file." >&2
+            echo "[ERROR_MSG] $currentIncrementedVersion" >&2
             return 1
         fi
     fi
