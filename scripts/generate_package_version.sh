@@ -538,13 +538,13 @@ function checkReleaseVersionFeatureFlag() {
     local vConfigMsgTags=${versionScope}_V_CONFIG_MSGTAGS
     local ghCurrentMsgTag=${versionScope}_GH_CURRENT_MSGTAG
 
-    echo "[antz1] $VERSIONING_BOT_ENABLED" 
-    echo "[antz2] ${!vRulesEnabled}" 
-    echo "[antz3] $VERSIONING_BOT_ENABLED" 
-    echo "[antz4]" $(checkIsSubstring "${!vConfigBranches}" "${!ghCurrentBranch}")
-    echo "[antz5]" $(checkListIsSubstringInFileContent "${!vConfigLabels}" "${!ghCurrentLabel}")
-    echo "[antz6]" $(checkListIsSubstringInFileContent "${!vConfigTags}" ${!ghCurrentTag})
-    echo "[antz7]" $(checkListIsSubstringInFileContent "${!vConfigMsgTags}" "${!ghCurrentMsgTag}") 
+    echo "[antz1] $VERSIONING_BOT_ENABLED" >&2
+    echo "[antz2] ${!vRulesEnabled}" >&2
+    echo "[antz3] $VERSIONING_BOT_ENABLED" >&2
+    echo "[antz4]" $(checkIsSubstring "${!vConfigBranches}" "${!ghCurrentBranch}") >&2
+    echo "[antz5]" $(checkListIsSubstringInFileContent "${!vConfigLabels}" "${!ghCurrentLabel}") >&2
+    echo "[antz6]" $(checkListIsSubstringInFileContent "${!vConfigTags}" ${!ghCurrentTag}) >&2
+    echo "[antz7]" $(checkListIsSubstringInFileContent "${!vConfigMsgTags}" "${!ghCurrentMsgTag}") >&2
 
     if [[ "$VERSIONING_BOT_ENABLED" == "true" ]] && [[ "${!vRulesEnabled}" == "true" ]] && [[ $(checkIsSubstring "${!vConfigBranches}" "${!ghCurrentBranch}") == "true" ]] && [[ $(checkListIsSubstringInFileContent "${!vConfigLabels}" "${!ghCurrentLabel}") == "true" ]] && [[ $(checkListIsSubstringInFileContent "${!vConfigTags}" "${!ghCurrentTag}") == "true" ]] && [[ $(checkListIsSubstringInFileContent "${!vConfigMsgTags}" "${!ghCurrentMsgTag}") == "true" ]]; then
         echo "true"
