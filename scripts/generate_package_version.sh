@@ -592,7 +592,8 @@ function checkPreReleaseVersionFeatureFlag() {
 
     ##if [[ "$VERSIONING_BOT_ENABLED" == "true" ]] && [[ "${!vRulesEnabled}" == "true" ]] &&  [[ $(checkIsSubstring "${!vConfigBranches}" "${!ghCurrentBranch}") == "true" ]] && [[ $(checkListIsSubstringInFileContent "${!vConfigTags}" "${!ghCurrentTag}") == "true" ]] && [[ ! "$(checkReleaseVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "$(checkReleaseVersionFeatureFlag ${MINOR_SCOPE})" == "true" ]] && [[ ! "$(checkReleaseVersionFeatureFlag ${PATCH_SCOPE})" == "true" ]]; then
     echo [antz22] "VERSIONING_BOT_ENABLED=$VERSIONING_BOT_ENABLED", "vRulesEnabled=${!vRulesEnabled}", checkIsSubstring=$(checkIsSubstring "${!vConfigBranches}" "${!ghCurrentBranch}"), checkListIsSubstringInFileContent=$(checkListIsSubstringInFileContent "${!vConfigTags}" "${!ghCurrentTag}"), checkReleaseVersionFeatureFlag="$(checkReleaseVersionFeatureFlag ${PATCH_SCOPE})" >&2
-    if [[ "$VERSIONING_BOT_ENABLED" == "true" ]] && [[ "${!vRulesEnabled}" == "true" ]] &&  [[ $(checkIsSubstring "${!vConfigBranches}" "${!ghCurrentBranch}") == "true" ]] && [[ $(checkListIsSubstringInFileContent "${!vConfigTags}" "${!ghCurrentTag}") == "true" ]] && [[ "$(checkReleaseVersionFeatureFlag ${PATCH_SCOPE})" == "true" ]]; then
+    ##if [[ "$VERSIONING_BOT_ENABLED" == "true" ]] && [[ "${!vRulesEnabled}" == "true" ]] &&  [[ $(checkIsSubstring "${!vConfigBranches}" "${!ghCurrentBranch}") == "true" ]] && [[ $(checkListIsSubstringInFileContent "${!vConfigTags}" "${!ghCurrentTag}") == "true" ]] && [[ "$(checkReleaseVersionFeatureFlag ${PATCH_SCOPE})" == "true" ]]; then
+    if [[ "$VERSIONING_BOT_ENABLED" == "true" ]] && [[ "${!vRulesEnabled}" == "true" ]] &&  [[ $(checkIsSubstring "${!vConfigBranches}" "${!ghCurrentBranch}") == "true" ]] && [[ $(checkListIsSubstringInFileContent "${!vConfigTags}" "${!ghCurrentTag}") == "true"  ]]; then
         echo [antzzz] true >&2
         echo "true"
     else
@@ -975,6 +976,7 @@ else
     echo [INFO] Before BASE version incremented: $lastBaseVersion
     echo [INFO] Before nextVersion version incremented: $nextVersion
     echo antz bb checkPreReleaseVersionFeatureFlag ${RC_SCOPE}: $(checkPreReleaseVersionFeatureFlag ${RC_SCOPE})
+     echo antz bb checkPreReleaseVersionFeatureFlag ${DEV_SCOPE}: $(checkPreReleaseVersionFeatureFlag ${DEV_SCOPE})
     if [[ "$(checkPreReleaseVersionFeatureFlag ${RC_SCOPE})" == "true" ]] && [[ ! "${RC_V_RULE_VFILE_ENABLED}" == "true" ]]; then
         echo antz11 nextVersion=$nextVersion
         nextVersion=$(incrementPreReleaseVersion "$lastRCVersion" "$RC_V_IDENTIFIER")
