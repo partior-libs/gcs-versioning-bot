@@ -128,22 +128,25 @@ function incrementPreReleaseVersion() {
         echo $lastRelVersion-$preIdentifider.1
         return 0
     fi
+    echo antz1 inputVersion=$inputVersion >&2
     currentSemanticVersion=$(echo $inputVersion | grep -Po "^\d+\.\d+\.\d+-$preIdentifider")
     if [[ $? -ne 0 ]]; then
-        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to increase prerelease version. Invalid inputVersion format: $inputVersion"
-        echo "[ERROR_MSG] $currentSemanticVersion"
+        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to increase prerelease version. Invalid inputVersion format: $inputVersion" >&2
+        echo "[ERROR_MSG] $currentSemanticVersion" >&2
         exit 1
     fi
+    echo antz1 currentSemanticVersion=$currentSemanticVersion >&2
     ## Clean up identifier
     currentSemanticVersion=$(echo $currentSemanticVersion | sed "s/-$preIdentifider//g")
-
+    echo antz2 currentSemanticVersion=$currentSemanticVersion >&2
     local currentPrereleaseNumber=$(echo $inputVersion | awk -F"-$preIdentifider." '{print $2}')
+     echo antz2 currentPrereleaseNumber=$currentPrereleaseNumber >&2
     ## Ensure it's digit
     if [[ ! "$currentPrereleaseNumber" =~ ^[0-9]+$ ]]; then
         currentPrereleaseNumber=0
     fi
     local nextPreReleaseNumber=$(( $currentPrereleaseNumber + 1 ))
-
+    echo antz2 nextPreReleaseNumber=$nextPreReleaseNumber >&2
     if [[ ! "$inputVersion" == *"-"* ]]; then
         if [[ "$lastRelVersion" = "" ]]; then
             currentSemanticVersion=$(incrementReleaseVersion $currentSemanticVersion ${PATCH_POSITION})
@@ -160,11 +163,15 @@ function incrementPreReleaseVersion() {
             currentSemanticVersion=$(incrementReleaseVersion $lastRelVersion ${PATCH_POSITION})
             nextPreReleaseNumber=1
         elif [[ "$needIncreaseVersion" == "false" ]]; then
-            nextPreReleaseNumber=$(( $(echo $inputVersion | awk -F"-$preIdentifider." '{print $2}') + 1 ))
+        echo antz3 inputVersion=$inputVersion >&2
+            nextPreReleaseNumber=$(( $(echo $inputVersion | awk -F"-$preIdentifider." '{print $2}') + 1))
+            echo antz3 nextPreReleaseNumber=$nextPreReleaseNumber >&2
         fi      
     fi
     local finalPrereleaseVersion=$currentSemanticVersion-$preIdentifider.$nextPreReleaseNumber
+    echo antz3 getPreleaseVersionFromPostTagsCountIncrement "$finalPrereleaseVersion" "$ARTIFACT_LAST_RC_VERSION_FILE" "$preIdentifider" >&2
     finalPrereleaseVersion=$(getPreleaseVersionFromPostTagsCountIncrement $finalPrereleaseVersion $ARTIFACT_LAST_RC_VERSION_FILE $preIdentifider)
+    echo antz3 getPreleaseVersionFromPostTagsCountIncrement "$finalPrereleaseVersion" "$ARTIFACT_LAST_DEV_VERSION_FILE" "$preIdentifider" >&2
     finalPrereleaseVersion=$(getPreleaseVersionFromPostTagsCountIncrement $finalPrereleaseVersion $ARTIFACT_LAST_DEV_VERSION_FILE $preIdentifider)
     echo $finalPrereleaseVersion
 }
@@ -214,7 +221,7 @@ function getPreleaseVersionFromPostTagsCountIncrement() {
     local finalPrereleaseNumber=$currentPrereleaseNumber
     if [[ "$currentSemanticVersion" == "$lastFileVersion" ]]; then
         if [[ $currentPrereleaseNumber -gt $lastVersionPrereleaseNumber ]]; then
-            finalPrereleaseNumber=$((currentPrereleaseNumber+1))
+            finalPrereleaseNumber=$((currentPrereleaseNumber))
         elif [[ $lastVersionPrereleaseNumber -gt $currentPrereleaseNumber ]]; then
             finalPrereleaseNumber=$((lastVersionPrereleaseNumber+1))
         else
@@ -857,7 +864,6 @@ if [[ ! -z "$hotfixBaseVersion" ]]; then
     nextVersion=${hotfixBaseVersion}-hf.$nextHfNum
 
 else
-    echo [antz] getNeededIncrementReleaseVersion "$lastDevVersion" "$lastRCVersion" "$lastRelVersion"
     nextVersion=$(getNeededIncrementReleaseVersion "$lastDevVersion" "$lastRCVersion" "$lastRelVersion")
     currentInitialVersion=$nextVersion
     echo [INFO] Before incremented: $nextVersion

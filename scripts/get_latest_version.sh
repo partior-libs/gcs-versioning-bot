@@ -15,7 +15,7 @@ fi
 
 ## ANTZ TEMPORARY
 # source ./test-files/mock-base-variables.sh
-
+#source run2.sh
 artifactoryBaseUrl=$1
 artifactoryTargetRepo=$2
 artifactoryTargetDevRepo=$3
@@ -89,7 +89,7 @@ function storeLatestVersionIntoFile() {
     local inputList=$1
     local identifierType=$2
     local targetSaveFile=$3
-
+    echo "[DEBUG] inputList=$inputList, identifierType=$identifierType, targetSaveFile=$targetSaveFile"
     if [[ ! -f "$inputList" ]]; then
         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Artifact list file not found: [$inputList]"
         exit 1
@@ -178,11 +178,10 @@ function getArtifactLastVersion() {
     if [[ ! -z "$excludeVersionName" ]];
     then
         echo "[DEBUG] Clean up with exclusion"
-        cat $versionListFile | grep -v "$excludeVersionName" > $versionListFile.2
+        cat $versionListFile | sort -u | grep -v "$excludeVersionName" > $versionListFile.2
         mv $versionListFile.2 $versionListFile
-        echo "[DEBUG] List after cleaned up with exclusion"
+        echo "[DEBUG] List after cleaned up with exclusion2"
         cat $versionListFile
-
     fi
 
 }
