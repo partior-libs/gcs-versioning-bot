@@ -14,7 +14,7 @@ else
 fi
 ## ANTZ TEMPORARY
 # source ./test-files/mock-base-variables.sh
-
+#source run2.sh
 artifactName="$1"
 currentBranch=$(echo $2 | cut -d'/' -f1)
 currentLabel="$3"
@@ -59,7 +59,9 @@ function versionCompareLessOrEqual() {
 function needToIncrementRelVersion() {
     local inputCurrentVersion=$1
     local inputRelVersion=$2
-    if [[  "$inputRelVersion" == "$(echo $inputCurrentVersion | cut -d'-' -f1)" ]]; then
+    if [[ "$inputCurrentVersion" == "NIL" ]]; then
+        echo "false"
+    elif [[  "$inputRelVersion" == "$(echo $inputCurrentVersion | cut -d'-' -f1)" ]]; then
         echo "true"
     elif [[ "$inputCurrentVersion" == "`echo -e "$inputCurrentVersion\n$inputRelVersion" | sort -V | head -n1`" ]]; then
         echo "true"
@@ -76,12 +78,12 @@ function getNeededIncrementReleaseVersion() {
 
     local devIncrease=$(needToIncrementRelVersion "$devVersion" "$relVersion")
     local newRelVersion=$relVersion
-    if [[ "$devIncrease" == "false" ]]; then
+    if [[ "$devIncrease" == "false" && "$devVersion" != "NIL" ]]; then
         newRelVersion=$(echo $devVersion | cut -d"-" -f1)
         touch $CORE_VERSION_UPDATED_FILE
     fi
     local rcIncrease=$(needToIncrementRelVersion "$rcVersion" "$newRelVersion")
-    if [[ "$rcIncrease" == "false" ]]; then
+    if [[ "$rcIncrease" == "false" && "$rcVersion" != "NIL" ]]; then
         newRelVersion=$(echo $rcVersion | cut -d"-" -f1)
         touch $CORE_VERSION_UPDATED_FILE
     fi
@@ -839,7 +841,7 @@ if [[ "$isDebug" == "true" ]]; then
     debugReleaseVersionVariables PATCH
 fi
 
-currentInitialVersion=""
+currentInitialVersion=""    
 if [[ ! -z "$hotfixBaseVersion" ]]; then
     baseCurrentVersion="$lastBaseVersion"
     if [[ -z "$lastBaseVersion" ]]; then
@@ -855,13 +857,15 @@ if [[ ! -z "$hotfixBaseVersion" ]]; then
     nextVersion=${hotfixBaseVersion}-hf.$nextHfNum
 
 else
+    echo [antz] getNeededIncrementReleaseVersion "$lastDevVersion" "$lastRCVersion" "$lastRelVersion"
     nextVersion=$(getNeededIncrementReleaseVersion "$lastDevVersion" "$lastRCVersion" "$lastRelVersion")
     currentInitialVersion=$nextVersion
     echo [INFO] Before incremented: $nextVersion
+
     ## Process incrementation on MAJOR, MINOR and PATCH
     if [[ "$isInitialVersion" == "true" ]]; then
         echo "[INFO] This is initial version. So no core release incrementation needed: $nextVersion"
-    else if [[ "$(checkReleaseVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "${MAJOR_V_RULE_VFILE_ENABLED}" == "true" ]]; then
+    elif [[ "$(checkReleaseVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "${MAJOR_V_RULE_VFILE_ENABLED}" == "true" ]]; then
         # echo [DEBUG] currentRCSemanticVersion=$nextVersion
         touch $CORE_VERSION_UPDATED_FILE
         vConfigMsgTags=${MAJOR_SCOPE}_V_CONFIG_MSGTAGS
@@ -927,7 +931,7 @@ else
         fi
         echo [INFO] After core version file incremented: [$nextVersion]
     fi
-    
+
     # Store in a file to be used in pre-release increment consideration later
     echo $nextVersion > $ARTIFACT_UPDATED_REL_VERSION_FILE
 
@@ -965,7 +969,6 @@ else
         nextVersion=$(incrementPreReleaseVersionByFile "$lastDevVersion" "$DEV_V_IDENTIFIER" "${DEV_SCOPE}")
     fi
     echo [INFO] After prerelease version incremented with input from version file: [$nextVersion]
-
 
     degaussBuildVersionVariables "$BUILD_SCOPE"
     ## Debug section
@@ -1021,6 +1024,5 @@ fi
 
 echo "[INFO] nextVersion = $nextVersion"
 echo $nextVersion > $ARTIFACT_NEXT_VERSION_FILE
-
 
 

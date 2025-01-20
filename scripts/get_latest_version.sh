@@ -38,6 +38,7 @@ prependVersionLabel=${19}
 excludeVersionName=${20:-latest}
 hotfixBaseVersion="${21}"
 
+JFROGEXE=jf
 
 echo "[INFO] Branch name: $sourceBranchName"
 echo "[INFO] Artifactory username: $artifactoryUsername"
@@ -212,7 +213,7 @@ function getDockerLatestVersionFromArtifactory() {
         ## Check which credential to use
         local execQuery="curl -k -s -u $artifactoryUsername:$artifactoryPassword"
         if [[ ! -z "$jfrogToken" ]]; then
-            execQuery="jfrog rt curl -k -s"
+            execQuery="$JFROGEXE rt curl -k -s"
             queryPath="-w 'status_code:[%{http_code}]' \
                 -XGET \
                 '/api/docker/${currentDockerRepo}/v2/${artifactoryDockerTargetArtifactName}/tags/list' -o $tmpOutputFile"
@@ -307,7 +308,7 @@ EOF
     ## Check which credential to use
     local execQuery="curl -k -s -u $artifactoryUsername:$artifactoryPassword"
     if [[ ! -z "$jfrogToken" ]]; then
-        execQuery="jfrog rt curl -k -s"
+        execQuery="$JFROGEXE rt curl -k -s"
         queryPath="-w 'status_code:[%{http_code}]' \
             -X POST \
             '/api/search/aql' -H 'Content-Type: text/plain' -d @$aqlQueryPayloadFile -o $versionOutputFile.tmp"
