@@ -908,29 +908,29 @@ else
     echo [INFO] After core version incremented: $nextVersion
 
     ## Process incrementation on MAJOR, MINOR and PATCH via version file (manual). Skip if is initial version
-    if [[ "$isInitialVersion" == "true" ]]; then
-        echo "[INFO] This is initial version. So no core version file incrementation needed: $nextVersion"
-    else
-        nextVersion=$(processWithReleaseVersionFile ${nextVersion} ${MAJOR_POSITION} ${MAJOR_SCOPE})
-        if [[ $? -ne 0 ]]; then
-            echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed processing incrementation on MAJOR, MINOR and PATCH via version file on MAJOR VERSION."
-            echo "[ERROR_MSG] $nextVersion"
-            exit 1
-        fi
-        nextVersion=$(processWithReleaseVersionFile ${nextVersion} ${MINOR_POSITION} ${MINOR_SCOPE})
-        if [[ $? -ne 0 ]]; then
-            echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed processing incrementation on MAJOR, MINOR and PATCH via version file on MINOR VERSION."
-            echo "[ERROR_MSG] $nextVersion"
-            exit 1
-        fi
-        nextVersion=$(processWithReleaseVersionFile ${nextVersion} ${PATCH_POSITION} ${PATCH_SCOPE})
-        if [[ $? -ne 0 ]]; then
-            echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed processing incrementation on MAJOR, MINOR and PATCH via version file on PATCH VERSION."
-            echo "[ERROR_MSG] $nextVersion"
-            exit 1
-        fi
-        echo [INFO] After core version file incremented: [$nextVersion]
+    # if [[ "$isInitialVersion" == "true" ]]; then
+    #     echo "[INFO] This is initial version. So no core version file incrementation needed: $nextVersion"
+    # else
+    nextVersion=$(processWithReleaseVersionFile ${nextVersion} ${MAJOR_POSITION} ${MAJOR_SCOPE})
+    if [[ $? -ne 0 ]]; then
+        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed processing incrementation on MAJOR, MINOR and PATCH via version file on MAJOR VERSION."
+        echo "[ERROR_MSG] $nextVersion"
+        exit 1
     fi
+    nextVersion=$(processWithReleaseVersionFile ${nextVersion} ${MINOR_POSITION} ${MINOR_SCOPE})
+    if [[ $? -ne 0 ]]; then
+        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed processing incrementation on MAJOR, MINOR and PATCH via version file on MINOR VERSION."
+        echo "[ERROR_MSG] $nextVersion"
+        exit 1
+    fi
+    nextVersion=$(processWithReleaseVersionFile ${nextVersion} ${PATCH_POSITION} ${PATCH_SCOPE})
+    if [[ $? -ne 0 ]]; then
+        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed processing incrementation on MAJOR, MINOR and PATCH via version file on PATCH VERSION."
+        echo "[ERROR_MSG] $nextVersion"
+        exit 1
+    fi
+    echo [INFO] After core version file incremented: [$nextVersion]
+# fi
 
     # Store in a file to be used in pre-release increment consideration later
     echo $nextVersion > $ARTIFACT_UPDATED_REL_VERSION_FILE
