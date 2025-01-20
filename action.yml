@@ -231,27 +231,27 @@ runs:
 
     - name: Get the latest version
       run: |
-        echo [DEBUG] ${{ github.action_path }}/scripts/get_latest_version.sh "${{ inputs.artifactory-base-url }}" \
-          "${{ steps.yaml-config.outputs.artifact_packager_artifactory-repo }}" \
-          "${{ steps.yaml-config.outputs.artifact_packager_artifactory-dev-repo }}" \
-          "${{ steps.yaml-config.outputs.artifact_packager_artifactory-release-repo }}" \
-          "${{ steps.yaml-config.outputs.artifact_packager_group }}" \
-          "${{ steps.yaml-config.outputs.artifact-base-name }}" \
-          "${BUILD_GH_BRANCH_NAME}" \
-          "${{ steps.yaml-config.outputs.artifact-auto-versioning_initial-release-version }}" \
-          "${{ inputs.artifactory-username }}" \
-          "${{ inputs.artifactory-password }}" \
-          "${{ inputs.jfrog-token }}" \
-          "${{ inputs.jira-username }}" \
-          "${{ inputs.jira-password }}" \
-          "${{ inputs.jira-base-url }}" \
-          "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_project-keys }}" \
-          "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_enabled }}" \
-          "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_version-identifier }}" \
-          "${{ inputs.artifact-type }}" \
-          "${{ env.BUILD_GH_VERSION_PREPEND_LABEL }}" \
-          "${{ steps.exclusion-string.outputs.name }}" \
-          "${{ steps.hotfix-base.outputs.version }}"
+        echo [DEBUG] ${{ github.action_path }}/scripts/get_latest_version.sh "\"${{ inputs.artifactory-base-url }}\"" \
+          "\"${{ steps.yaml-config.outputs.artifact_packager_artifactory-repo }}\"" \
+          "\"${{ steps.yaml-config.outputs.artifact_packager_artifactory-dev-repo }}\"" \
+          "\"${{ steps.yaml-config.outputs.artifact_packager_artifactory-release-repo }}\"" \
+          "\"${{ steps.yaml-config.outputs.artifact_packager_group }}\"" \
+          "\"${{ steps.yaml-config.outputs.artifact-base-name }}\"" \
+          "\"${BUILD_GH_BRANCH_NAME}\"" \
+          "\"${{ steps.yaml-config.outputs.artifact-auto-versioning_initial-release-version }}\"" \
+          "\"${{ inputs.artifactory-username }}\"" \
+          "\"${{ inputs.artifactory-password }}\"" \
+          "\"${{ inputs.jfrog-token }}\"" \
+          "\"${{ inputs.jira-username }}\"" \
+          "\"${{ inputs.jira-password }}\"" \
+          "\"${{ inputs.jira-base-url }}\"" \
+          "\"${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_project-keys }}\"" \
+          "\"${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_enabled }}\"" \
+          "\"${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_version-identifier }}\"" \
+          "\"${{ inputs.artifact-type }}\"" \
+          "\"${{ env.BUILD_GH_VERSION_PREPEND_LABEL }}\"" \
+          "\"${{ steps.exclusion-string.outputs.name }}\"" \
+          "\"${{ steps.hotfix-base.outputs.version }}\""
 
         ${{ github.action_path }}/scripts/get_latest_version.sh "${{ inputs.artifactory-base-url }}" \
           "${{ steps.yaml-config.outputs.artifact_packager_artifactory-repo }}" \
