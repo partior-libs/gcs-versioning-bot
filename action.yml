@@ -253,7 +253,7 @@ runs:
           "${{ steps.exclusion-string.outputs.name }}" \
           "${{ steps.hotfix-base.outputs.version }}"
 
-       ${{ github.action_path }}/scripts/get_latest_version.sh "${{ inputs.artifactory-base-url }}" \
+        ${{ github.action_path }}/scripts/get_latest_version.sh "${{ inputs.artifactory-base-url }}" \
           "${{ steps.yaml-config.outputs.artifact_packager_artifactory-repo }}" \
           "${{ steps.yaml-config.outputs.artifact_packager_artifactory-dev-repo }}" \
           "${{ steps.yaml-config.outputs.artifact_packager_artifactory-release-repo }}" \
