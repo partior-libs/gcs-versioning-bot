@@ -33,6 +33,12 @@ lastRCVersion=$(cat $ARTIFACT_LAST_RC_VERSION_FILE | cut -d"+" -f1)
 lastRelVersion=$(cat $ARTIFACT_LAST_REL_VERSION_FILE | cut -d"+" -f1)
 lastBaseVersion=$(cat $ARTIFACT_LAST_BASE_VERSION_FILE | cut -d"+" -f1)
 
+## Check if it's initial version
+isInitialVersion=false
+if [[ -f "$FLAG_FILE_IS_INITIAL_VERSION" ]]; then
+    isInitialVersion=$(cat $FLAG_FILE_IS_INITIAL_VERSION)
+fi
+
 echo "[INFO] Start generating package version..."
 echo "[INFO] Artifact Name: $artifactName"
 echo "[INFO] Source branch: $currentBranch"
@@ -41,6 +47,7 @@ echo "[INFO] Last RC version in Artifactory: $lastRCVersion"
 echo "[INFO] Last Release version in Artifactory: $lastRelVersion"
 echo "[INFO] Last Base version in Artifactory: $lastBaseVersion"
 echo "[INFO] Current Base: $hotfixBaseVersion"
+echo "[INFO] Is initial version?: $isInitialVersion"
 
 
 ## Ensure dev and rel version are in sync
@@ -825,6 +832,7 @@ if [[ "$isDebug" == "true" ]]; then
     debugReleaseVersionVariables PATCH
 fi
 
+currentInitialVersion=""
 if [[ ! -z "$hotfixBaseVersion" ]]; then
     baseCurrentVersion="$lastBaseVersion"
     if [[ -z "$lastBaseVersion" ]]; then
@@ -841,9 +849,12 @@ if [[ ! -z "$hotfixBaseVersion" ]]; then
 
 else
     nextVersion=$(getNeededIncrementReleaseVersion "$lastDevVersion" "$lastRCVersion" "$lastRelVersion")
+    currentInitialVersion=$nextVersion
     echo [INFO] Before incremented: $nextVersion
     ## Process incrementation on MAJOR, MINOR and PATCH
-    if [[ "$(checkReleaseVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "${MAJOR_V_RULE_VFILE_ENABLED}" == "true" ]]; then
+    if [[ "$isInitialVersion" == "true" ]]; then
+        echo "[INFO] This is initial version. So no core release incrementation needed: $nextVersion"
+    else if [[ "$(checkReleaseVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "${MAJOR_V_RULE_VFILE_ENABLED}" == "true" ]]; then
         # echo [DEBUG] currentRCSemanticVersion=$nextVersion
         touch $CORE_VERSION_UPDATED_FILE
         vConfigMsgTags=${MAJOR_SCOPE}_V_CONFIG_MSGTAGS
@@ -885,26 +896,31 @@ else
     fi
     echo [INFO] After core version incremented: $nextVersion
 
-    ## Process incrementation on MAJOR, MINOR and PATCH via version file (manual)
-    nextVersion=$(processWithReleaseVersionFile ${nextVersion} ${MAJOR_POSITION} ${MAJOR_SCOPE})
-    if [[ $? -ne 0 ]]; then
-        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed processing incrementation on MAJOR, MINOR and PATCH via version file on MAJOR VERSION."
-        echo "[ERROR_MSG] $nextVersion"
-        exit 1
+    ## Process incrementation on MAJOR, MINOR and PATCH via version file (manual). Skip if is initial version
+    if [[ "$isInitialVersion" == "true" ]]; then
+        echo "[INFO] This is initial version. So no core version file incrementation needed: $nextVersion"
+    else
+        nextVersion=$(processWithReleaseVersionFile ${nextVersion} ${MAJOR_POSITION} ${MAJOR_SCOPE})
+        if [[ $? -ne 0 ]]; then
+            echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed processing incrementation on MAJOR, MINOR and PATCH via version file on MAJOR VERSION."
+            echo "[ERROR_MSG] $nextVersion"
+            exit 1
+        fi
+        nextVersion=$(processWithReleaseVersionFile ${nextVersion} ${MINOR_POSITION} ${MINOR_SCOPE})
+        if [[ $? -ne 0 ]]; then
+            echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed processing incrementation on MAJOR, MINOR and PATCH via version file on MINOR VERSION."
+            echo "[ERROR_MSG] $nextVersion"
+            exit 1
+        fi
+        nextVersion=$(processWithReleaseVersionFile ${nextVersion} ${PATCH_POSITION} ${PATCH_SCOPE})
+        if [[ $? -ne 0 ]]; then
+            echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed processing incrementation on MAJOR, MINOR and PATCH via version file on PATCH VERSION."
+            echo "[ERROR_MSG] $nextVersion"
+            exit 1
+        fi
+        echo [INFO] After core version file incremented: [$nextVersion]
     fi
-    nextVersion=$(processWithReleaseVersionFile ${nextVersion} ${MINOR_POSITION} ${MINOR_SCOPE})
-    if [[ $? -ne 0 ]]; then
-        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed processing incrementation on MAJOR, MINOR and PATCH via version file on MINOR VERSION."
-        echo "[ERROR_MSG] $nextVersion"
-        exit 1
-    fi
-    nextVersion=$(processWithReleaseVersionFile ${nextVersion} ${PATCH_POSITION} ${PATCH_SCOPE})
-    if [[ $? -ne 0 ]]; then
-        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed processing incrementation on MAJOR, MINOR and PATCH via version file on PATCH VERSION."
-        echo "[ERROR_MSG] $nextVersion"
-        exit 1
-    fi
-    echo [INFO] After core version file incremented: [$nextVersion]
+    
     # Store in a file to be used in pre-release increment consideration later
     echo $nextVersion > $ARTIFACT_UPDATED_REL_VERSION_FILE
 
@@ -967,12 +983,12 @@ else
         echo [INFO] After appending build version: $nextVersion
     fi
 
-    ## If due to any circumstances the increment on nextVersion doesnt happen, it's likely due to unhandled versioning format. In that situation, try to force the patch increment by 1
-    if [[ "$nextVersion" == "$lastRelVersion" ]]; then
-        echo [DEBUG] nextVersion and lastRelVersion are still identical [$nextVersion]. Force increment patch version...
-        nextVersion=$(incrementReleaseVersion $nextVersion ${PATCH_POSITION})
-        echo [DEBUG] PATCH INCREMENTED $nextVersion
-    fi
+    # ## If due to any circumstances the increment on nextVersion doesnt happen, it's likely due to unhandled versioning format. In that situation, try to force the patch increment by 1
+    # if [[ "$nextVersion" == "$lastRelVersion" ]]; then
+    #     echo [DEBUG] nextVersion and lastRelVersion are still identical [$nextVersion]. Force increment patch version...
+    #     nextVersion=$(incrementReleaseVersion $nextVersion ${PATCH_POSITION})
+    #     echo [DEBUG] PATCH INCREMENTED $nextVersion
+    # fi
 fi
 ## Replace the version in file if enabled
 if [[ "$(checkReplacementFeatureFlag ${REPLACEMENT_SCOPE})" == "true" ]] && [[ "$REPLACE_V_RULE_FILETOKEN_ENABLED" == "true" ]]; then

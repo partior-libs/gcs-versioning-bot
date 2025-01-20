@@ -119,6 +119,7 @@ function storeLatestVersionIntoFile() {
                 tmpPreRelVersion=${tmpRelMajorMinorVersion}.${tmpNewRelPatchVersion}
             else
                 tmpPreRelVersion=$initialVersion
+                echo "true" > "$FLAG_FILE_IS_INITIAL_VERSION"
             fi
             
         fi
@@ -251,9 +252,10 @@ function getDockerLatestVersionFromArtifactory() {
 
     ## Reformating final output for next stage processing
     if [[ "$foundValidVersion" == "false" ]]; then
-        local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.0"
+        local resetVersion="$initialVersion"
         echo "[INFO] Unable to find last version. Resetting to: $resetVersion"
         echo "\"version\" : \"$resetVersion\"" > $versionOutputFile
+        echo "true" > "$FLAG_FILE_IS_INITIAL_VERSION"
     else
         ## Store all versions in the same format as artifactory list
         local versions=$(cat $versionOutputFile | grep -v "^$")
@@ -360,9 +362,10 @@ EOF
             
         done
     else
-        local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.0"
+        local resetVersion="$initialVersion"
         echo "[INFO] Unable to find last version. Resetting to: $resetVersion"
         echo "\"version\" : \"$resetVersion\"" > $versionOutputFile
+        echo "true" > "$FLAG_FILE_IS_INITIAL_VERSION"
     fi
 
     echo "[INFO] Trimming redundant lines..."
@@ -416,10 +419,11 @@ function getLatestVersionFromJira() {
         echo "[INFO] Response status $responseStatus"
         local versionsLength=$(jq '. | length' < $versionOutputFile)
         if (($versionsLength == 0 )); then
-            local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.0"
+            local resetVersion="$initialVersion"
 
             echo "[INFO] Unable to find last version. Resetting to: $resetVersion"
             echo "\"version\" : \"$resetVersion\"" > $versionOutputFile
+            echo "true" > "$FLAG_FILE_IS_INITIAL_VERSION"
         else
             ## Store all versions in the same format as artifactory list
             versions=$( jq -r --arg identifierType "$identifierType_" '.[] | select(.archived==false) | select(.name|startswith($identifierType)) | .name' < $versionOutputFile)
@@ -455,7 +459,7 @@ function filterVersionListWithPrependVersion() {
     if [[ ! -z "$inputPrependVersionLabel" ]]; then
         echo "[INFO] Filtering version list with version prepend label: $inputPrependVersionLabel"
         if [[ $(cat $versionOutputFile | grep -E "(^|\"|\s)$inputPrependVersionLabel-\<[0-9]+\.[0-9]+\.[0-9]+\>" | wc -l) -eq 0 ]]; then
-            local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.0"
+            local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.1"
             echo "[INFO] No version found after filtered. Resetting to: $resetVersion"
             echo "\"version\" : \"$resetVersion\"" > $versionOutputFile
             if [[ ! -z "$isDockerOutput" ]]; then
@@ -498,6 +502,8 @@ function checkInitialReleaseVersion() {
 checkInitialReleaseVersion "$initialVersion"
 versionListFile=versionlist.tmp
 
+## Init
+rm -f "$FLAG_FILE_IS_INITIAL_VERSION"
 #Create empty file first
 touch $ARTIFACT_LAST_DEV_VERSION_FILE
 touch $ARTIFACT_LAST_RC_VERSION_FILE
