@@ -122,6 +122,7 @@ function incrementPreReleaseVersion() {
     fi
     ## Return vanilla if not found
     if [[ "$inputVersion" == "NIL" ]]; then
+        echo "[DEBUG] Pre-release version not found. Resetting to [$lastRelVersion-$preIdentifider.1]" >&2
         echo $lastRelVersion-$preIdentifider.1
         return 0
     fi
