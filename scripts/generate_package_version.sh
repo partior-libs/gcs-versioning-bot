@@ -59,7 +59,7 @@ function versionCompareLessOrEqual() {
 function needToIncrementRelVersion() {
     local inputCurrentVersion=$1
     local inputRelVersion=$2
-    if [[ "$inputCurrentVersion" == "NIL" ]]; then
+    if [[ "$inputCurrentVersion" != "NIL" && "$inputRelVersion" == "NIL" ]]; then
         echo "false"
     elif [[  "$inputRelVersion" == "$(echo $inputCurrentVersion | cut -d'-' -f1)" ]]; then
         echo "true"
@@ -78,15 +78,19 @@ function getNeededIncrementReleaseVersion() {
 
     local devIncrease=$(needToIncrementRelVersion "$devVersion" "$relVersion")
     local newRelVersion=$relVersion
+    echo antz1z devVersion=$devVersion, rcVersion=$rcVersion >&2
     if [[ "$devIncrease" == "false" && "$devVersion" != "NIL" ]]; then
         newRelVersion=$(echo $devVersion | cut -d"-" -f1)
+        echo antz1z devVersion=$devVersion, newRelVersion=$newRelVersion >&2
         touch $CORE_VERSION_UPDATED_FILE
     fi
     local rcIncrease=$(needToIncrementRelVersion "$rcVersion" "$newRelVersion")
     if [[ "$rcIncrease" == "false" && "$rcVersion" != "NIL" ]]; then
         newRelVersion=$(echo $rcVersion | cut -d"-" -f1)
+        echo antz1z rcVersion=$devVersion, newRelVersion=$newRelVersion >&2
         touch $CORE_VERSION_UPDATED_FILE
     fi
+    echo antz1z newRelVersion=$newRelVersion >&2
     ## Store the updated rel version in file for next incrementation consideration
     echo $newRelVersion > $ARTIFACT_UPDATED_REL_VERSION_FILE
     echo $newRelVersion
@@ -891,7 +895,7 @@ else
         vConfigMsgTags=${MINOR_SCOPE}_V_CONFIG_MSGTAGS
         ghCurrentMsgTag=${MINOR_SCOPE}_GH_CURRENT_MSGTAG
         ## If there's commit message
-        if [[ $(checkListIsSubstringInFileContent "${!vConfigMsgTags}" "${!ghCurrentMsgTag}") == "true" ]]; then
+        if [[ $(checkListIsSubstringInFileContent "${!vConfigMsgTags}" "${!ghCurrentMsgTag}") == "true" && "${!vConfigMsgTags}" != "false" ]]; then
             nextVersion=$(incrementReleaseVersion $lastRelVersion ${MINOR_POSITION} $(getIncrementalCount "${!vConfigMsgTags}" "${!ghCurrentMsgTag}"))
         else
             nextVersion=$(incrementReleaseVersion $nextVersion ${MINOR_POSITION})
@@ -904,11 +908,17 @@ else
         vConfigMsgTags=${PATCH_SCOPE}_V_CONFIG_MSGTAGS
         ghCurrentMsgTag=${PATCH_SCOPE}_GH_CURRENT_MSGTAG
         ## If there's commit message
-        if [[ $(checkListIsSubstringInFileContent "${!vConfigMsgTags}" "${!ghCurrentMsgTag}") == "true" ]]; then
+        echo antz checkListIsSubstringInFileContent "${!vConfigMsgTags}" "${!ghCurrentMsgTag}"
+        if [[ $(checkListIsSubstringInFileContent "${!vConfigMsgTags}" "${!ghCurrentMsgTag}") == "true" && "${!vConfigMsgTags}" != "false" ]]; then
+            echo [antz] after1a incremented: $nextVersion
             nextVersion=$(incrementReleaseVersion $lastRelVersion ${PATCH_POSITION} $(getIncrementalCount "${!vConfigMsgTags}" "${!ghCurrentMsgTag}"))
+            echo [antz] after1b incremented: $nextVersion
         else
+        echo [antz] after1 incremented: $nextVersion
             nextVersion=$(incrementReleaseVersion $nextVersion ${PATCH_POSITION})
+            echo [antz] after2 incremented: $nextVersion
         fi
+        echo [antz] after incremented: $nextVersion
         echo [DEBUG] PATCH INCREMENTED $nextVersion
     fi
     echo [INFO] After core version incremented: $nextVersion

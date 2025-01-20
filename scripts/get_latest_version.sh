@@ -89,15 +89,17 @@ function storeLatestVersionIntoFile() {
     local inputList=$1
     local identifierType=$2
     local targetSaveFile=$3
-    echo "[DEBUG] inputList=$inputList, identifierType=$identifierType, targetSaveFile=$targetSaveFile"
+    echo "[DEBUG] inputList=$(cat $inputList), identifierType=$identifierType, targetSaveFile=$targetSaveFile"
     if [[ ! -f "$inputList" ]]; then
         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Artifact list file not found: [$inputList]"
         exit 1
     fi
     if [[ "$identifierType" == "$REL_SCOPE" ]]; then
         echo $(cat $inputList | grep -E "version" | grep -v -E "\-" | cut -d"\"" -f4 | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -rV | head -1) > $targetSaveFile
+        echo antz1 $(cat $targetSaveFile)
     else
         echo $(cat $inputList | grep -E "version" | grep -E "\-$identifierType\." | cut -d"\"" -f4 | sort -rV | head -1) > $targetSaveFile
+        echo antz2 $(cat $targetSaveFile)
     fi
 
     # If still empty, create dummy
