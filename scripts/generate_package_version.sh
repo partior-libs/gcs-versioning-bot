@@ -113,6 +113,18 @@ function incrementPreReleaseVersion() {
     local preIdentifider=$2
 
     local currentSemanticVersion=''
+
+    ## If not pre-release, then increment the core version too
+    local lastRelVersion=$(cat $ARTIFACT_LAST_REL_VERSION_FILE)
+    # If present, use the updated release version
+    if [[ -f $ARTIFACT_UPDATED_REL_VERSION_FILE ]]; then
+        lastRelVersion=$(cat $ARTIFACT_UPDATED_REL_VERSION_FILE)
+    fi
+    ## Return vanilla if not found
+    if [[ "$inputVersion" == "NIL" ]]; then
+        echo $lastRelVersion-$preIdentifider.1
+        return 0
+    fi
     currentSemanticVersion=$(echo $inputVersion | grep -Po "^\d+\.\d+\.\d+-$preIdentifider")
     if [[ $? -ne 0 ]]; then
         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to increase prerelease version. Invalid inputVersion format: $inputVersion"
@@ -128,12 +140,6 @@ function incrementPreReleaseVersion() {
         currentPrereleaseNumber=0
     fi
     local nextPreReleaseNumber=$(( $currentPrereleaseNumber + 1 ))
-    ## If not pre-release, then increment the core version too
-    local lastRelVersion=$(cat $ARTIFACT_LAST_REL_VERSION_FILE)
-    # If present, use the updated release version
-    if [[ -f $ARTIFACT_UPDATED_REL_VERSION_FILE ]]; then
-        lastRelVersion=$(cat $ARTIFACT_UPDATED_REL_VERSION_FILE)
-    fi
 
     if [[ ! "$inputVersion" == *"-"* ]]; then
         if [[ "$lastRelVersion" = "" ]]; then

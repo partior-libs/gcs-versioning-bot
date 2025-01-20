@@ -98,46 +98,52 @@ function storeLatestVersionIntoFile() {
     else
         echo $(cat $inputList | grep -E "version" | grep -E "\-$identifierType\." | cut -d"\"" -f4 | sort -rV | head -1) > $targetSaveFile
     fi
-    ## If still empty, reset value
+
+    # If still empty, create dummy
     local updatedContent=$(cat $targetSaveFile | head -1 | xargs)
     if [[ -z "$updatedContent" ]]; then
-        echo "[INFO] Resetting $targetSaveFile..."
-        local tmpPreRelVersion=$initialVersion
-        ## Pick the release version from pre-release files if already generated.
-        if [[ -f "$ARTIFACT_LAST_RC_VERSION_FILE" ]] && [[ "$ARTIFACT_LAST_RC_VERSION_FILE" != "$targetSaveFile" ]]; then
-            tmpPreRelVersion=$(cat $ARTIFACT_LAST_RC_VERSION_FILE | cut -d"-" -f1)
-        elif [[ -f "$ARTIFACT_LAST_DEV_VERSION_FILE" ]] && [[ "$ARTIFACT_LAST_DEV_VERSION_FILE" != "$targetSaveFile" ]]; then
-            tmpPreRelVersion=$(cat $ARTIFACT_LAST_DEV_VERSION_FILE | cut -d"-" -f1)
-        fi
-        ## Adjust the version if returned version is invalid
-        if [[ -z "$tmpPreRelVersion" ]]; then
-            if [[ -f "$ARTIFACT_LAST_REL_VERSION_FILE" ]] && [[ ! -z $(cat $ARTIFACT_LAST_REL_VERSION_FILE) ]]; then
-                tmpPreRelVersion=$(cat $ARTIFACT_LAST_REL_VERSION_FILE | xargs)
-                local tmpRelMajorMinorVersion=$(echo $tmpPreRelVersion | cut -d"." -f1-2)
-                local tmpRelPatchVersion=$(echo $tmpPreRelVersion | cut -d"." -f3)
-                local tmpNewRelPatchVersion=$(( tmpRelPatchVersion + 1))
-                tmpPreRelVersion=${tmpRelMajorMinorVersion}.${tmpNewRelPatchVersion}
-            else
-                tmpPreRelVersion=$initialVersion
-                echo "true" > "$FLAG_FILE_IS_INITIAL_VERSION"
-            fi
-            
-        fi
-        ## Decrement the patch version if pre-release patch version is greater than 0
-        local tmpRelMajorMinorVersion=$(echo $tmpPreRelVersion | cut -d"." -f1-2)
-        local tmpRelPatchVersion=$(echo $tmpPreRelVersion | cut -d"." -f3)
-        local tmpRelVersion=${tmpRelMajorMinorVersion}.0
-        if [[ $(( tmpRelPatchVersion - 1 )) -gt 0 ]]; then
-            tmpRelVersion=${tmpRelMajorMinorVersion}.$(( tmpRelPatchVersion - 1))
-        fi
-
-        if [[ "$identifierType" == "$REL_SCOPE" ]]; then
-            echo "$tmpRelVersion" > $targetSaveFile
-        else
-            echo "$tmpPreRelVersion-$identifierType.0" > $targetSaveFile
-        fi 
-
+        echo "NIL" > $targetSaveFile
     fi
+    ## If still empty, reset value
+    # local updatedContent=$(cat $targetSaveFile | head -1 | xargs)
+    # if [[ -z "$updatedContent" ]]; then
+    #     echo "[INFO] Resetting $targetSaveFile..."
+    #     local tmpPreRelVersion=$initialVersion
+    #     ## Pick the release version from pre-release files if already generated.
+    #     if [[ -f "$ARTIFACT_LAST_RC_VERSION_FILE" ]] && [[ "$ARTIFACT_LAST_RC_VERSION_FILE" != "$targetSaveFile" ]]; then
+    #         tmpPreRelVersion=$(cat $ARTIFACT_LAST_RC_VERSION_FILE | cut -d"-" -f1)
+    #     elif [[ -f "$ARTIFACT_LAST_DEV_VERSION_FILE" ]] && [[ "$ARTIFACT_LAST_DEV_VERSION_FILE" != "$targetSaveFile" ]]; then
+    #         tmpPreRelVersion=$(cat $ARTIFACT_LAST_DEV_VERSION_FILE | cut -d"-" -f1)
+    #     fi
+    #     ## Adjust the version if returned version is invalid
+    #     if [[ -z "$tmpPreRelVersion" ]]; then
+    #         if [[ -f "$ARTIFACT_LAST_REL_VERSION_FILE" ]] && [[ ! -z $(cat $ARTIFACT_LAST_REL_VERSION_FILE) ]]; then
+    #             tmpPreRelVersion=$(cat $ARTIFACT_LAST_REL_VERSION_FILE | xargs)
+    #             local tmpRelMajorMinorVersion=$(echo $tmpPreRelVersion | cut -d"." -f1-2)
+    #             local tmpRelPatchVersion=$(echo $tmpPreRelVersion | cut -d"." -f3)
+    #             local tmpNewRelPatchVersion=$(( tmpRelPatchVersion + 1))
+    #             tmpPreRelVersion=${tmpRelMajorMinorVersion}.${tmpNewRelPatchVersion}
+    #         else
+    #             tmpPreRelVersion=$initialVersion
+    #             echo "true" > "$FLAG_FILE_IS_INITIAL_VERSION"
+    #         fi
+            
+    #     fi
+    #     ## Decrement the patch version if pre-release patch version is greater than 0
+    #     local tmpRelMajorMinorVersion=$(echo $tmpPreRelVersion | cut -d"." -f1-2)
+    #     local tmpRelPatchVersion=$(echo $tmpPreRelVersion | cut -d"." -f3)
+    #     local tmpRelVersion=${tmpRelMajorMinorVersion}.0
+    #     if [[ $(( tmpRelPatchVersion - 1 )) -gt 0 ]]; then
+    #         tmpRelVersion=${tmpRelMajorMinorVersion}.$(( tmpRelPatchVersion - 1))
+    #     fi
+
+    #     if [[ "$identifierType" == "$REL_SCOPE" ]]; then
+    #         echo "$tmpRelVersion" > $targetSaveFile
+    #     else
+    #         echo "$tmpPreRelVersion-$identifierType.0" > $targetSaveFile
+    #     fi 
+
+    # fi
 }
 
 function getArtifactLastVersion() {
