@@ -758,6 +758,21 @@ function getIncrementalCount() {
 
 }
 
+## Check if contain non release incrementation (rc, dev, bld, etc)
+function isPreReleaseIncrementation() {
+    local preReleaseFlag='false'
+    if [[ "$(checkPreReleaseVersionFeatureFlag ${RC_SCOPE})" == "true" ]] && [[ ! "${RC_V_RULE_VFILE_ENABLED}" == "true" ]]; then
+        preReleaseFlag='true'
+
+    elif [[ "$(checkPreReleaseVersionFeatureFlag ${DEV_SCOPE})" == "true" ]] && [[ ! "${DEV_V_RULE_VFILE_ENABLED}" == "true" ]]; then
+        preReleaseFlag='true'
+    elif [[ "$(checkBuildVersionFeatureFlag ${BUILD_SCOPE})" == "true" ]]; then
+        preReleaseFlag='true'
+    fi
+
+    echo "$preReleaseFlag"
+}
+
 ## For debugging purpose
 function debugReleaseVersionVariables() {
     local versionScope=$1
@@ -887,6 +902,8 @@ else
         ## If there's commit message
         if [[ $(checkListIsSubstringInFileContent "${!vConfigMsgTags}" "${!ghCurrentMsgTag}") == "true" ]]; then
             nextVersion=$(incrementReleaseVersion $lastRelVersion ${MAJOR_POSITION} $(getIncrementalCount "${!vConfigMsgTags}" "${!ghCurrentMsgTag}"))
+        elif [[ "$(isPreReleaseIncrementation)" == 'true' ]]; then
+            echo [DEBUG] Not incrementing PATCH because isPreReleaseIncrementation=true
         else
             nextVersion=$(incrementReleaseVersion $nextVersion ${MAJOR_POSITION})
         fi
@@ -901,6 +918,8 @@ else
         ## If there's commit message
         if [[ $(checkListIsSubstringInFileContent "${!vConfigMsgTags}" "${!ghCurrentMsgTag}") == "true" && "${!vConfigMsgTags}" != "false" ]]; then
             nextVersion=$(incrementReleaseVersion $lastRelVersion ${MINOR_POSITION} $(getIncrementalCount "${!vConfigMsgTags}" "${!ghCurrentMsgTag}"))
+        elif [[ "$(isPreReleaseIncrementation)" == 'true' ]]; then
+            echo [DEBUG] Not incrementing PATCH because isPreReleaseIncrementation=true
         else
             nextVersion=$(incrementReleaseVersion $nextVersion ${MINOR_POSITION})
         fi
@@ -917,10 +936,12 @@ else
             echo [antz] after1a incremented: $nextVersion
             nextVersion=$(incrementReleaseVersion $lastRelVersion ${PATCH_POSITION} $(getIncrementalCount "${!vConfigMsgTags}" "${!ghCurrentMsgTag}"))
             echo [antz] after1b incremented: $nextVersion
+        elif [[ "$(isPreReleaseIncrementation)" == 'true' ]]; then
+            echo [DEBUG] Not incrementing PATCH because isPreReleaseIncrementation=true
         else
-        echo [antz] after1 incremented: $nextVersion
+            echo [antz] after1 incremented: $nextVersion
             nextVersion=$(incrementReleaseVersion $nextVersion ${PATCH_POSITION})
-            echo [antz] after2 incremented: $nextVersion
+            echo [antz] after2 isPreReleaseIncrementation=$(isPreReleaseIncrementation) incremented: $nextVersion
         fi
         echo [antz] after incremented: $nextVersion
         echo [DEBUG] PATCH INCREMENTED $nextVersion
