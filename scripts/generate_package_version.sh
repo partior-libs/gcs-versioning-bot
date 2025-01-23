@@ -20,7 +20,7 @@ currentBranch=$(echo $2 | cut -d'/' -f1)
 currentLabel="$3"
 currentTag="$4"
 currentMsgTag="$5"
-hotfixBaseVersion="$6"
+{rebaseReleaseVersion}="$6"
 isDebug="$7"
 
 # Reset global state
@@ -46,7 +46,7 @@ echo "[INFO] Last Dev version in Artifactory: $lastDevVersion"
 echo "[INFO] Last RC version in Artifactory: $lastRCVersion"
 echo "[INFO] Last Release version in Artifactory: $lastRelVersion"
 echo "[INFO] Last Base version in Artifactory: $lastBaseVersion"
-echo "[INFO] Current Base: $hotfixBaseVersion"
+echo "[INFO] Current Base: ${rebaseReleaseVersion}"
 echo "[INFO] Is initial version?: $isInitialVersion"
 
 
@@ -872,19 +872,19 @@ if [[ "$isDebug" == "true" ]]; then
 fi
 
 currentInitialVersion=""    
-if [[ ! -z "$hotfixBaseVersion" ]]; then
+if [[ ! -z "${rebaseReleaseVersion}" ]]; then
     baseCurrentVersion="$lastBaseVersion"
     if [[ -z "$lastBaseVersion" ]]; then
-        baseCurrentVersion="$hotfixBaseVersion-hf.0"
+        baseCurrentVersion="${rebaseReleaseVersion}-$REBASE_V_IDENTIFIER.0"
     fi
-    hfNum=$(echo "$baseCurrentVersion" | awk -F"-hf." '{print $2}')
-    nextHfNum=$((hfNum + 1))
+    currentRebasePatchNum=$(echo "$baseCurrentVersion" | awk -F"-$REBASE_V_IDENTIFIER." '{print $2}')
+    nextRebasePatchNum=$((currentRebasePatchNum + 1))
     if [[ $? -ne 0 ]]; then
         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed incrementation on hf version."
-        echo "[DEBUG] baseCurrentVersion=$baseCurrentVersion, hfNum=$hfNum"
+        echo "[DEBUG] baseCurrentVersion=$baseCurrentVersion, currentRebasePatchNum=$currentRebasePatchNum"
         exit 1
     fi
-    nextVersion=${hotfixBaseVersion}-hf.$nextHfNum
+    nextVersion=${{rebaseReleaseVersion}}-$REBASE_V_IDENTIFIER.$nextRebasePatchNum
 
 else
     nextVersion=$(getNeededIncrementReleaseVersion "$lastDevVersion" "$lastRCVersion" "$lastRelVersion")

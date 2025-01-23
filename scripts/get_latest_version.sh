@@ -15,7 +15,7 @@ fi
 
 ## ANTZ TEMPORARY
 # source ./test-files/mock-base-variables.sh
-#source run2.sh
+source run2.sh
 artifactoryBaseUrl=$1
 artifactoryTargetRepo=$2
 artifactoryTargetDevRepo=$3
@@ -36,7 +36,7 @@ jiraVersionIdentifier=${17}
 artifactType=${18:-default}
 prependVersionLabel=${19}
 excludeVersionName=${20:-latest}
-hotfixBaseVersion="${21}"
+rebaseReleaseVersion="${21}"
 
 JFROGEXE=jf
 
@@ -56,7 +56,7 @@ echo "[INFO] Jira Version Identifier: $jiraVersionIdentifier"
 echo "[INFO] Artifact Type: $artifactType"
 echo "[INFO] Prepend Version: $prependVersionLabel"
 echo "[INFO] Exclude Version: $excludeVersionName"
-echo "[INFO] Hotfix Base Version: $hotfixBaseVersion"
+echo "[INFO] Patch from release baseline: $rebaseReleaseVersion"
 
 
 
@@ -74,7 +74,7 @@ function storeLatestBaseVersionIntoFile() {
         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Artifact list file not found: [$inputList]"
         exit 1
     fi
-    echo "[INFO] Store the latest hotfix from base [$targetBaseVersion]..."
+    echo "[INFO] Store the latest rebased patch from release baseline [$targetBaseVersion]..."
     if (cat $inputList | grep -qE "$targetBaseVersion-$identifierType\."); then
         echo "[INFO] Found existing..."
         echo $(cat $inputList | grep -E "version" | grep -E "$targetBaseVersion-$identifierType\." | cut -d"\"" -f4 | sort -rV | head -1) > $targetSaveFile
@@ -355,7 +355,7 @@ EOF
                 #echo "[DEBUG] Path basename [$artifactPathBasename] is not the same as artifact name [$artifactoryTargetArtifactName]. Proceed to extract version from basename..."
                 ## Verify base is a version
                 #if [[ "$artifactPathBasename" =~ [0-9]+\.[0-9]+\.[0-9]+ ]]; then
-                if (echo "$artifactPathBasename" | grep -qE '([0-9]+\.){2}[0-9]+((-|\+)[0-9a-zA-Z]+\.[0-9]+)*$'); then ## ensure only recognized format is stored
+                if (echo "$artifactPathBasename" | grep -qE '([0-9]+\.){2}[0-9]+((-|\+)[0-9a-zA-Z]+\.[0-9]+(\+[0-9a-zA-Z]+\.[0-9\.]+)*$)'); then ## ensure only recognized format is stored
                     if (! grep -q "\"$artifactPathBasename\"" "$versionOutputFile"); then  ## store only unique
                         echo "\"version\": \"$artifactPathBasename\"" >> "$versionOutputFile"
                     fi
@@ -392,7 +392,7 @@ function extractAndStoreVersionFromArtifactName() {
     local artifactVersion=$(echo "$foundArtifactFile" | sed "s/$artifactoryTargetArtifactName-//g")
     artifactVersion=${artifactVersion%.*}       # Remove the last "." and everything after it
     artifactVersion=$(echo "$artifactVersion" | sed "s/-linux_amd64//g" | sed "s/-darwin_arm64//g")  # Remove any arch or OS related
-    if (echo "$artifactVersion" | grep -qE '([0-9]+\.){2}[0-9]+((-|\+)[0-9a-zA-Z]+\.[0-9]+)*$'); then ## ensure only recognized format is stored
+    if (echo "$artifactVersion" | grep -qE '([0-9]+\.){2}[0-9]+((-|\+)[0-9a-zA-Z]+\.[0-9]+(\+[0-9a-zA-Z]+\.[0-9\.]+)*$)'); then ## ensure only recognized format is stored
         if (! grep -q "\"$artifactVersion\"" "$versionOutputFile"); then  ## store only unique
             echo "\"version\": \"$artifactVersion\"" >> "$versionOutputFile"
         fi
@@ -522,7 +522,7 @@ getArtifactLastVersion "$versionListFile" "$jiraProjectKeyList"
 ## Store respective version type into file
 storeLatestVersionIntoFile "$versionListFile" "$DEV_V_IDENTIFIER" "$ARTIFACT_LAST_DEV_VERSION_FILE"
 storeLatestVersionIntoFile "$versionListFile" "$RC_V_IDENTIFIER" "$ARTIFACT_LAST_RC_VERSION_FILE"
-storeLatestBaseVersionIntoFile "$versionListFile" "$BASE_V_IDENTIFIER" "$ARTIFACT_LAST_BASE_VERSION_FILE" "$hotfixBaseVersion"
+storeLatestBaseVersionIntoFile "$versionListFile" "$BASE_V_IDENTIFIER" "$ARTIFACT_LAST_BASE_VERSION_FILE" "$rebaseReleaseVersion"
 storeLatestVersionIntoFile "$versionListFile" "$REL_SCOPE" "$ARTIFACT_LAST_REL_VERSION_FILE"
 
 cat $versionListFile

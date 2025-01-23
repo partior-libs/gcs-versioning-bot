@@ -33,7 +33,7 @@ inputs:
     description: 'Override branch type name. Use only for testing purpose'
     required: false
     default: ''
-  hotfix-base-branch:  
+  rebase-branch-override:  
     description: 'Override branch type name. Use only for testing purpose'
     required: false
     default: ''
@@ -121,9 +121,9 @@ runs:
         if [[ ! -z "${{ inputs.branch-name }}" ]]; then
           branchName=${{ inputs.branch-name }}
         fi
-        if [[ ! -z "${{ inputs.hotfix-base-branch }}" ]]; then
-          branchName=$(echo "${{ inputs.hotfix-base-branch }}" | cut -d"/" -f1)
-          branchReference=$(echo "${{ inputs.hotfix-base-branch }}" | cut -d"/" -f2)
+        if [[ ! -z "${{ inputs.rebase-branch-branch }}" ]]; then
+          branchName=$(echo "${{ inputs.rebase-branch-branch }}" | cut -d"/" -f1)
+          branchReference=$(echo "${{ inputs.rebase-branch-branch }}" | cut -d"/" -f2)
         fi
 
         echo BUILD_GH_BRANCH_NAME=${branchName} >> $GITHUB_ENV
@@ -132,20 +132,6 @@ runs:
         echo BUILD_GH_PR_TARGET_BRANCH=${prTargetBranch} >> $GITHUB_ENV
         echo BUILD_GH_COMMIT_MESSAGE_FILE=$BUILD_GH_COMMIT_MESSAGE_FILE >> $GITHUB_ENV
         echo "[DEBUG] Commit message: $(cat $BUILD_GH_COMMIT_MESSAGE_FILE)"
-      shell: bash
-
-    - name: Setup hotfix base branch
-      id: hotfix-base
-      run: |
-        enabled=false
-        baseReference=""
-        if [[ "${BUILD_GH_BRANCH_NAME}" == "hotfix-base" ]]; then
-          enabled=true
-          baseReference="${BUILD_GH_BRANCH_REFERENCE}"
-        fi
-        echo "BUILD_GH_HOTFIX_BASE_ENABLED=${enabled}" | tee -a >> $GITHUB_ENV
-        echo "enabled=${enabled}" | tee -a >> $GITHUB_OUTPUT
-        echo "version=${baseReference}" | tee -a >> $GITHUB_OUTPUT
       shell: bash
 
     - name: Import importer files
@@ -166,6 +152,18 @@ runs:
         sed -i "s/::set-output name=\(.*\)::\(.*\)$/\"\1=\2\" >> \$GITHUB_OUTPUT/g" $versioningRuleImporterFile
         source $branchPackagerRuleImporterFile
         source $versioningRuleImporterFile
+      shell: bash
+
+    - name: Setup rebase branch
+      if: steps.yaml-config.outputs.artifact-auto-versioning_rebase-version_enabled == 'true' && steps.yaml-config.outputs.artifact-auto-versioning_rebase-version_rules_branches_enabled == 'true'
+      id: rebase-branch
+      env:
+        TARGET_REBASE_BRANCHES: ${{ steps.yaml-config.outputs.artifact-auto-versioning_rebase-version_rules_branches_target }}
+      run: |
+        source ${{ github.action_path }}/scripts/bot-libs.sh
+
+        digestRebaseBranchSetup "BUILD_GH_BRANCH_NAME" "${BUILD_GH_BRANCH_REFERENCE}" "${REBASE_V_CONFIG_BRANCHES}"
+
       shell: bash
 
     - name: Get version exclusion string
@@ -198,13 +196,12 @@ runs:
       shell: bash
 
     - name: Verify config prerequisite
-      if: steps.hotfix-base.outputs.enabled != 'true'
       run: |
         ${{ github.action_path }}/scripts/verify_prerequisite.sh "${BUILD_GH_BRANCH_NAME}"
       shell: bash
 
     - name: Get version prepend label
-      if: steps.yaml-config.outputs.artifact-auto-versioning_prepend-version_enabled == 'true' && steps.yaml-config.outputs.artifact-auto-versioning_prepend-version_rules_file_enabled == 'true' && steps.hotfix-base.outputs.enabled != 'true'
+      if: steps.yaml-config.outputs.artifact-auto-versioning_prepend-version_enabled == 'true' && steps.yaml-config.outputs.artifact-auto-versioning_prepend-version_rules_file_enabled == 'true' && steps.yaml-config.outputs.artifact-auto-versioning_rebase-version_enabled != 'true'
       run: |
         echo "[INFO] Retrieving version append label..."
         versionLabelFile="${{ steps.yaml-config.outputs.artifact-auto-versioning_prepend-version_rules_file_target }}"
@@ -251,7 +248,7 @@ runs:
           "\"${{ inputs.artifact-type }}\"" \
           "\"${{ env.BUILD_GH_VERSION_PREPEND_LABEL }}\"" \
           "\"${{ steps.exclusion-string.outputs.name }}\"" \
-          "\"${{ steps.hotfix-base.outputs.version }}\""
+          "\"${{ steps.rebase-branch.outputs.version }}\""
 
         ${{ github.action_path }}/scripts/get_latest_version.sh "${{ inputs.artifactory-base-url }}" \
           "${{ steps.yaml-config.outputs.artifact_packager_artifactory-repo }}" \
@@ -273,7 +270,7 @@ runs:
           "${{ inputs.artifact-type }}" \
           "${{ env.BUILD_GH_VERSION_PREPEND_LABEL }}" \
           "${{ steps.exclusion-string.outputs.name }}" \
-          "${{ steps.hotfix-base.outputs.version }}"
+          "${{ steps.rebase-branch.outputs.version }}"
       shell: bash
 
     - name: Generate next available version
@@ -285,7 +282,7 @@ runs:
           "${BUILD_GH_LABEL_FILE}" \
           "${BUILD_GH_TAG_FILE}" \
           "${BUILD_GH_COMMIT_MESSAGE_FILE}" \
-          "${{ steps.hotfix-base.outputs.version }}" \
+          "${{ steps.rebase-branch.outputs.version }}" \
           "${{ inputs.debug }}"
         exitCode=$?
 
@@ -323,7 +320,7 @@ runs:
                   "${BUILD_GH_LABEL_FILE}" \
                   "${BUILD_GH_TAG_FILE}" \
                   "${BUILD_GH_COMMIT_MESSAGE_FILE}" \
-                  "${{ steps.hotfix-base.outputs.version }}" \
+                  "${{ steps.rebase-branch.outputs.version }}" \
                   "${{ inputs.debug }}"
             fi
         else
