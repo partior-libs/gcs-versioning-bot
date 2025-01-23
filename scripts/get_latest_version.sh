@@ -56,7 +56,7 @@ echo "[INFO] Jira Version Identifier: $jiraVersionIdentifier"
 echo "[INFO] Artifact Type: $artifactType"
 echo "[INFO] Prepend Version: $prependVersionLabel"
 echo "[INFO] Exclude Version: $excludeVersionName"
-echo "[INFO] Patch from release baseline: $rebaseReleaseVersion"
+echo "[INFO] Rebase from release version: $rebaseReleaseVersion"
 
 
 
@@ -84,7 +84,7 @@ function storeLatestBaseVersionIntoFile() {
         fi
 
     fi
-    echo "[INFO] Store the latest rebased patch from release baseline [$targetBaseVersion]..."
+    echo "[INFO] Store the latest rebased patch from release baseline [$targetBaseVersion] with identifier [$identifierType]..."
     if (cat $inputList | grep -qE "$targetBaseVersion-$identifierType\."); then
         echo "[INFO] Found existing..."
         echo $(cat $inputList | grep -E "version" | grep -E "$targetBaseVersion-$identifierType\." | cut -d"\"" -f4 | sort -rV | head -1) > $targetSaveFile
