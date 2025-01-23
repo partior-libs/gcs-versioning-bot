@@ -20,7 +20,7 @@ currentBranch=$(echo $2 | cut -d'/' -f1)
 currentLabel="$3"
 currentTag="$4"
 currentMsgTag="$5"
-{rebaseReleaseVersion}="$6"
+rebaseReleaseVersion="$6"
 isDebug="$7"
 
 # Reset global state
