@@ -532,7 +532,7 @@ getArtifactLastVersion "$versionListFile" "$jiraProjectKeyList"
 ## Store respective version type into file
 storeLatestVersionIntoFile "$versionListFile" "$DEV_V_IDENTIFIER" "$ARTIFACT_LAST_DEV_VERSION_FILE"
 storeLatestVersionIntoFile "$versionListFile" "$RC_V_IDENTIFIER" "$ARTIFACT_LAST_RC_VERSION_FILE"
-storeLatestBaseVersionIntoFile "$versionListFile" "$BASE_V_IDENTIFIER" "$ARTIFACT_LAST_BASE_VERSION_FILE" "$rebaseReleaseVersion"
+storeLatestBaseVersionIntoFile "$versionListFile" "$REBASE_V_IDENTIFIER" "$ARTIFACT_LAST_BASE_VERSION_FILE" "$rebaseReleaseVersion"
 storeLatestVersionIntoFile "$versionListFile" "$REL_SCOPE" "$ARTIFACT_LAST_REL_VERSION_FILE"
 
 cat $versionListFile
