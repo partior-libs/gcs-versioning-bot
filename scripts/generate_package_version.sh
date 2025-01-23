@@ -46,7 +46,7 @@ echo "[INFO] Last Dev version in Artifactory: $lastDevVersion"
 echo "[INFO] Last RC version in Artifactory: $lastRCVersion"
 echo "[INFO] Last Release version in Artifactory: $lastRelVersion"
 echo "[INFO] Last Base version in Artifactory: $lastBaseVersion"
-echo "[INFO] Current Base: ${rebaseReleaseVersion}"
+echo "[INFO] Target rebase release version: ${rebaseReleaseVersion}"
 echo "[INFO] Is initial version?: $isInitialVersion"
 
 
