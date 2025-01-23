@@ -80,6 +80,8 @@ function storeLatestBaseVersionIntoFile() {
             echo "[INFO] Found target baseline: [$targetBaseVersion]"
         else
             echo "[ERROR] $BASH_SOURCE (line:$LINENO): Rebase validation enabled. Unable to find target baseline: [$targetBaseVersion]"
+            echo "[DEBUG] Versions:"
+            cat $inputList
             exit 1
         fi
 
