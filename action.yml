@@ -192,7 +192,7 @@ runs:
         echo "[INFO] Setting up rebase branch..."
         source ${{ github.action_path }}/scripts/bot-libs.sh
 
-        digestRebaseBranchSetup "BUILD_GH_BRANCH_NAME" "${BUILD_GH_BRANCH_REFERENCE}" "${REBASE_V_CONFIG_BRANCHES}"
+        digestRebaseBranchSetup "${BUILD_GH_BRANCH_NAME}" "${BUILD_GH_BRANCH_REFERENCE}" "${REBASE_V_CONFIG_BRANCHES}"
 
       shell: bash
 
