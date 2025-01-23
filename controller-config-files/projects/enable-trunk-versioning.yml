@@ -7,6 +7,9 @@ smc:
       rebase-version:
         enabled: true
         identifier: hf
+        validation:
+          fail-nonexistent:
+            enabled: true
         rules:
           branches: 
             target: hotfix-base,rebase

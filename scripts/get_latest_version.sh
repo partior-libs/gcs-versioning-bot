@@ -74,6 +74,16 @@ function storeLatestBaseVersionIntoFile() {
         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Artifact list file not found: [$inputList]"
         exit 1
     fi
+    if [[ "$REBASE_V_VALIDATION_FAIL_NONEXISTENT_ENABLED" == 'true' ]]; then
+        echo "[INFO] Rebase validation enabled. Checking..."
+        if (cat $inputList | grep -qE "$targetBaseVersion$"); then
+            echo "[INFO] Found target baseline: [$targetBaseVersion]"
+        else
+            echo "[ERROR] $BASH_SOURCE (line:$LINENO): Rebase validation enabled. Unable to find target baseline: [$targetBaseVersion]"
+            exit 1
+        fi
+
+    fi
     echo "[INFO] Store the latest rebased patch from release baseline [$targetBaseVersion]..."
     if (cat $inputList | grep -qE "$targetBaseVersion-$identifierType\."); then
         echo "[INFO] Found existing..."
