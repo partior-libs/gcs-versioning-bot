@@ -154,18 +154,6 @@ runs:
         source $versioningRuleImporterFile
       shell: bash
 
-    - name: Setup rebase branch
-      if: steps.yaml-config.outputs.artifact-auto-versioning_rebase-version_enabled == 'true' && steps.yaml-config.outputs.artifact-auto-versioning_rebase-version_rules_branches_enabled == 'true'
-      id: rebase-branch
-      env:
-        TARGET_REBASE_BRANCHES: ${{ steps.yaml-config.outputs.artifact-auto-versioning_rebase-version_rules_branches_target }}
-      run: |
-        source ${{ github.action_path }}/scripts/bot-libs.sh
-
-        digestRebaseBranchSetup "BUILD_GH_BRANCH_NAME" "${BUILD_GH_BRANCH_REFERENCE}" "${REBASE_V_CONFIG_BRANCHES}"
-
-      shell: bash
-
     - name: Get version exclusion string
       id: exclusion-string
       run: |
@@ -194,6 +182,20 @@ runs:
           cat $BUILD_GH_COMMIT_MESSAGE_FILE
         fi
       shell: bash
+
+    - name: Setup rebase branch
+      if: steps.yaml-config.outputs.artifact-auto-versioning_rebase-version_enabled == 'true' && steps.yaml-config.outputs.artifact-auto-versioning_rebase-version_rules_branches_enabled == 'true'
+      id: rebase-branch
+      env:
+        TARGET_REBASE_BRANCHES: ${{ steps.yaml-config.outputs.artifact-auto-versioning_rebase-version_rules_branches_target }}
+      run: |
+        echo "[INFO] Setting up rebase branch..."
+        source ${{ github.action_path }}/scripts/bot-libs.sh
+
+        digestRebaseBranchSetup "BUILD_GH_BRANCH_NAME" "${BUILD_GH_BRANCH_REFERENCE}" "${REBASE_V_CONFIG_BRANCHES}"
+
+      shell: bash
+
 
     - name: Verify config prerequisite
       run: |
