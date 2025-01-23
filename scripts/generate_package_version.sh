@@ -884,7 +884,7 @@ if [[ ! -z "${rebaseReleaseVersion}" ]]; then
         echo "[DEBUG] baseCurrentVersion=$baseCurrentVersion, currentRebasePatchNum=$currentRebasePatchNum"
         exit 1
     fi
-    nextVersion=${{rebaseReleaseVersion}}-$REBASE_V_IDENTIFIER.$nextRebasePatchNum
+    nextVersion=${rebaseReleaseVersion}-$REBASE_V_IDENTIFIER.$nextRebasePatchNum
 
 else
     nextVersion=$(getNeededIncrementReleaseVersion "$lastDevVersion" "$lastRCVersion" "$lastRelVersion")

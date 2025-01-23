@@ -15,7 +15,7 @@ fi
 
 ## ANTZ TEMPORARY
 # source ./test-files/mock-base-variables.sh
-source run2.sh
+#source run2.sh
 artifactoryBaseUrl=$1
 artifactoryTargetRepo=$2
 artifactoryTargetDevRepo=$3
