@@ -250,7 +250,8 @@ runs:
           "\"${{ inputs.artifact-type }}\"" \
           "\"${{ env.BUILD_GH_VERSION_PREPEND_LABEL }}\"" \
           "\"${{ steps.exclusion-string.outputs.name }}\"" \
-          "\"${{ steps.rebase-branch.outputs.version }}\""
+          "\"${{ steps.rebase-branch.outputs.version }}\"" \
+          "versionFile.tmp"
 
         ${{ github.action_path }}/scripts/get_latest_version.sh "${{ inputs.artifactory-base-url }}" \
           "${{ steps.yaml-config.outputs.artifact_packager_artifactory-repo }}" \
@@ -272,7 +273,8 @@ runs:
           "${{ inputs.artifact-type }}" \
           "${{ env.BUILD_GH_VERSION_PREPEND_LABEL }}" \
           "${{ steps.exclusion-string.outputs.name }}" \
-          "${{ steps.rebase-branch.outputs.version }}"
+          "${{ steps.rebase-branch.outputs.version }}" \
+          "versionFile.tmp"
       shell: bash
 
     - name: Generate next available version
@@ -285,6 +287,7 @@ runs:
           "${BUILD_GH_TAG_FILE}" \
           "${BUILD_GH_COMMIT_MESSAGE_FILE}" \
           "${{ steps.rebase-branch.outputs.version }}" \
+          "versionFile.tmp" \
           "${{ inputs.debug }}"
         exitCode=$?
 
@@ -323,6 +326,7 @@ runs:
                   "${BUILD_GH_TAG_FILE}" \
                   "${BUILD_GH_COMMIT_MESSAGE_FILE}" \
                   "${{ steps.rebase-branch.outputs.version }}" \
+                  "versionFile.tmp" \
                   "${{ inputs.debug }}"
             fi
         else

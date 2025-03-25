@@ -1,9 +1,0 @@
-{
-  "results" : [ {
-    "version" : "0.0.3-dev.1",
-    "integration" : false
-  }, {
-    "version" : "0.0.2-dev.1",
-    "integration" : false
-  } ]
-}

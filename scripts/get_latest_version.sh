@@ -15,7 +15,7 @@ fi
 
 ## ANTZ TEMPORARY
 # source ./test-files/mock-base-variables.sh
-#source run2.sh
+# source run2.sh
 artifactoryBaseUrl=$1
 artifactoryTargetRepo=$2
 artifactoryTargetDevRepo=$3
@@ -37,7 +37,9 @@ artifactType=${18:-default}
 prependVersionLabel=${19}
 excludeVersionName=${20:-latest}
 rebaseReleaseVersion="${21}"
+versionListFile="${22:-versionlist.tmp}"
 
+rm -f $versionListFile
 JFROGEXE=jf
 
 echo "[INFO] Branch name: $sourceBranchName"
@@ -57,8 +59,40 @@ echo "[INFO] Artifact Type: $artifactType"
 echo "[INFO] Prepend Version: $prependVersionLabel"
 echo "[INFO] Exclude Version: $excludeVersionName"
 echo "[INFO] Rebase from release version: $rebaseReleaseVersion"
+echo "[INFO] Version list file: $versionListFile"
 
 
+function getVFileValue() {
+
+    local rulesEnabled="$1"
+    local rulesVFileEnabled="$2"
+    local rulesVFileName="$3"
+    local rulesVFileKey="$4"
+
+    local foundValue="$VBOT_NIL"    
+    if [[ "$rulesEnabled" == "true" ]] && [[ "$rulesVFileEnabled" == "true" ]]; then
+        if [[ -f "$rulesVFileName" ]]; then
+            foundValue=$(cat "$rulesVFileName" | grep -E "^rulesVFileKey=" | cut -d"=" -f2 | cut -d"#" -f1)
+        fi
+    fi
+    echo $foundValue
+}
+
+function storeFileVersionIntoFile() {
+    local inputList="$1"
+    local targetSaveFile="$2"
+
+    if [[ ! -f "$inputList" ]]; then
+        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Artifact list file not found: [$inputList]"
+        exit 1
+    fi
+
+    local majorVersion=$(getVFileValue "$MAJOR_V_RULES_ENABLED" "$MAJOR_V_RULE_VFILE_ENABLED" "$MAJOR_V_CONFIG_VFILE_NAME" "$MAJOR_V_CONFIG_VFILE_KEY")
+    local minorVersion=$(getVFileValue "$MINOR_V_RULES_ENABLED" "$MINOR_V_RULE_VFILE_ENABLED" "$MINOR_V_CONFIG_VFILE_NAME" "$MINOR_V_CONFIG_VFILE_KEY")
+    local patchVersion=$(getVFileValue "$PATCH_V_RULES_ENABLED" "$PATCH_V_RULE_VFILE_ENABLED" "$PATCH_V_CONFIG_VFILE_NAME" "$PATCH_V_CONFIG_VFILE_KEY")
+
+
+}
 
 function storeLatestBaseVersionIntoFile() {
     local inputList="$1"
@@ -520,7 +554,6 @@ function checkInitialReleaseVersion() {
 }
 
 checkInitialReleaseVersion "$initialVersion"
-versionListFile=versionlist.tmp
 
 ## Init
 rm -f "$FLAG_FILE_IS_INITIAL_VERSION"
@@ -538,4 +571,3 @@ storeLatestBaseVersionIntoFile "$versionListFile" "$REBASE_V_IDENTIFIER" "$ARTIF
 storeLatestVersionIntoFile "$versionListFile" "$REL_SCOPE" "$ARTIFACT_LAST_REL_VERSION_FILE"
 
 cat $versionListFile
-rm -f $versionListFile

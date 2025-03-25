@@ -14,14 +14,15 @@ else
 fi
 ## ANTZ TEMPORARY
 # source ./test-files/mock-base-variables.sh
-#source run2.sh
+# source run2.sh
 artifactName="$1"
 currentBranch=$(echo $2 | cut -d'/' -f1)
 currentLabel="$3"
 currentTag="$4"
 currentMsgTag="$5"
 rebaseReleaseVersion="$6"
-isDebug="$7"
+versionListFile="$7"
+isDebug="$8"
 
 # Reset global state
 CORE_VERSION_UPDATED_FILE=core.updated
@@ -59,7 +60,7 @@ function versionCompareLessOrEqual() {
 function needToIncrementRelVersion() {
     local inputCurrentVersion=$1
     local inputRelVersion=$2
-    if [[ "$inputCurrentVersion" != "NIL" && "$inputRelVersion" == "NIL" ]]; then
+    if [[ "$inputCurrentVersion" != "$VBOT_NIL" && "$inputRelVersion" == "$VBOT_NIL" ]]; then
         echo "false"
     elif [[  "$inputRelVersion" == "$(echo $inputCurrentVersion | cut -d'-' -f1)" ]]; then
         echo "true"
@@ -79,13 +80,13 @@ function getNeededIncrementReleaseVersion() {
     local devIncrease=$(needToIncrementRelVersion "$devVersion" "$relVersion")
     local newRelVersion=$relVersion
     echo antz1z devVersion=$devVersion, rcVersion=$rcVersion >&2
-    if [[ "$devIncrease" == "false" && "$devVersion" != "NIL" ]]; then
+    if [[ "$devIncrease" == "false" && "$devVersion" != "$VBOT_NIL" ]]; then
         newRelVersion=$(echo $devVersion | cut -d"-" -f1)
         echo antz1z devVersion=$devVersion, newRelVersion=$newRelVersion >&2
         touch $CORE_VERSION_UPDATED_FILE
     fi
     local rcIncrease=$(needToIncrementRelVersion "$rcVersion" "$newRelVersion")
-    if [[ "$rcIncrease" == "false" && "$rcVersion" != "NIL" ]]; then
+    if [[ "$rcIncrease" == "false" && "$rcVersion" != "$VBOT_NIL" ]]; then
         newRelVersion=$(echo $rcVersion | cut -d"-" -f1)
         echo antz1z rcVersion=$devVersion, newRelVersion=$newRelVersion >&2
         touch $CORE_VERSION_UPDATED_FILE
@@ -127,7 +128,7 @@ function incrementPreReleaseVersion() {
         lastRelVersion=$(cat $ARTIFACT_UPDATED_REL_VERSION_FILE)
     fi
     ## Return vanilla if not found
-    if [[ "$inputVersion" == "NIL" ]]; then
+    if [[ "$inputVersion" == "$VBOT_NIL" ]]; then
         echo "[DEBUG] Pre-release version not found. Resetting to [$lastRelVersion-$preIdentifider.1]" >&2
         echo $lastRelVersion-$preIdentifider.1
         return 0
@@ -565,13 +566,13 @@ function checkReleaseVersionFeatureFlag() {
     local vConfigMsgTags=${versionScope}_V_CONFIG_MSGTAGS
     local ghCurrentMsgTag=${versionScope}_GH_CURRENT_MSGTAG
 
-    echo "[antz1] $VERSIONING_BOT_ENABLED" >&2
-    echo "[antz2] ${!vRulesEnabled}" >&2
-    echo "[antz3] $VERSIONING_BOT_ENABLED" >&2
-    echo "[antz4]" $(checkIsSubstring "${!vConfigBranches}" "${!ghCurrentBranch}") >&2
-    echo "[antz5]" $(checkListIsSubstringInFileContent "${!vConfigLabels}" "${!ghCurrentLabel}") >&2
-    echo "[antz6]" $(checkListIsSubstringInFileContent "${!vConfigTags}" ${!ghCurrentTag}) >&2
-    echo "[antz7]" $(checkListIsSubstringInFileContent "${!vConfigMsgTags}" "${!ghCurrentMsgTag}") >&2
+    # echo "[antz1] $VERSIONING_BOT_ENABLED" >&2
+    # echo "[antz2] ${!vRulesEnabled}" >&2
+    # echo "[antz3] $VERSIONING_BOT_ENABLED" >&2
+    # echo "[antz4]" $(checkIsSubstring "${!vConfigBranches}" "${!ghCurrentBranch}") >&2
+    # echo "[antz5]" $(checkListIsSubstringInFileContent "${!vConfigLabels}" "${!ghCurrentLabel}") >&2
+    # echo "[antz6]" $(checkListIsSubstringInFileContent "${!vConfigTags}" ${!ghCurrentTag}) >&2
+    # echo "[antz7]" $(checkListIsSubstringInFileContent "${!vConfigMsgTags}" "${!ghCurrentMsgTag}") >&2
 
     if [[ "$VERSIONING_BOT_ENABLED" == "true" ]] && [[ "${!vRulesEnabled}" == "true" ]] && [[ $(checkIsSubstring "${!vConfigBranches}" "${!ghCurrentBranch}") == "true" ]] && [[ $(checkListIsSubstringInFileContent "${!vConfigLabels}" "${!ghCurrentLabel}") == "true" ]] && [[ $(checkListIsSubstringInFileContent "${!vConfigTags}" "${!ghCurrentTag}") == "true" ]] && [[ $(checkListIsSubstringInFileContent "${!vConfigMsgTags}" "${!ghCurrentMsgTag}") == "true" ]]; then
         echo "true"
@@ -591,13 +592,13 @@ function checkPreReleaseVersionFeatureFlag() {
     local ghCurrentTag=${versionScope}_GH_CURRENT_TAG
 
     ##if [[ "$VERSIONING_BOT_ENABLED" == "true" ]] && [[ "${!vRulesEnabled}" == "true" ]] &&  [[ $(checkIsSubstring "${!vConfigBranches}" "${!ghCurrentBranch}") == "true" ]] && [[ $(checkListIsSubstringInFileContent "${!vConfigTags}" "${!ghCurrentTag}") == "true" ]] && [[ ! "$(checkReleaseVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "$(checkReleaseVersionFeatureFlag ${MINOR_SCOPE})" == "true" ]] && [[ ! "$(checkReleaseVersionFeatureFlag ${PATCH_SCOPE})" == "true" ]]; then
-    echo [antz22] "VERSIONING_BOT_ENABLED=$VERSIONING_BOT_ENABLED", "vRulesEnabled=${!vRulesEnabled}", checkIsSubstring=$(checkIsSubstring "${!vConfigBranches}" "${!ghCurrentBranch}"), checkListIsSubstringInFileContent=$(checkListIsSubstringInFileContent "${!vConfigTags}" "${!ghCurrentTag}"), checkReleaseVersionFeatureFlag="$(checkReleaseVersionFeatureFlag ${PATCH_SCOPE})" >&2
+   ## echo [antz22] "VERSIONING_BOT_ENABLED=$VERSIONING_BOT_ENABLED", "vRulesEnabled=${!vRulesEnabled}", checkIsSubstring=$(checkIsSubstring "${!vConfigBranches}" "${!ghCurrentBranch}"), checkListIsSubstringInFileContent=$(checkListIsSubstringInFileContent "${!vConfigTags}" "${!ghCurrentTag}"), checkReleaseVersionFeatureFlag="$(checkReleaseVersionFeatureFlag ${PATCH_SCOPE})" >&2
     ##if [[ "$VERSIONING_BOT_ENABLED" == "true" ]] && [[ "${!vRulesEnabled}" == "true" ]] &&  [[ $(checkIsSubstring "${!vConfigBranches}" "${!ghCurrentBranch}") == "true" ]] && [[ $(checkListIsSubstringInFileContent "${!vConfigTags}" "${!ghCurrentTag}") == "true" ]] && [[ "$(checkReleaseVersionFeatureFlag ${PATCH_SCOPE})" == "true" ]]; then
     if [[ "$VERSIONING_BOT_ENABLED" == "true" ]] && [[ "${!vRulesEnabled}" == "true" ]] &&  [[ $(checkIsSubstring "${!vConfigBranches}" "${!ghCurrentBranch}") == "true" ]] && [[ $(checkListIsSubstringInFileContent "${!vConfigTags}" "${!ghCurrentTag}") == "true"  ]]; then
-        echo [antzzz] true >&2
+       ## echo [antzzz] true >&2
         echo "true"
     else
-        echo [antzzz] false >&2
+       ## echo [antzzz] false >&2
         echo "false"
     fi
 }
@@ -631,13 +632,15 @@ function checkReplacementFeatureFlag() {
 
 ## Engine to increment Release Version with external file value
 function processWithReleaseVersionFile() {
-    local inputVersion=$1
-    local versionPos=$2
-    local versionScope=$3
+    local inputVersion="$1"
+    local versionPos="$2"
+    local versionScope="$3"
+    local versionListFile="$4"
 
     echo "[DEBUG] $BASH_SOURCE (line:$LINENO): inputVersion=$inputVersion" >&2
     echo "[DEBUG] $BASH_SOURCE (line:$LINENO): versionPos=$versionPos" >&2
     echo "[DEBUG] $BASH_SOURCE (line:$LINENO): versionScope=$versionScope" >&2
+    echo "[DEBUG] $BASH_SOURCE (line:$LINENO): versionListFile=$versionListFile" >&2
 
     local versionFileRuleEnabled=${versionScope}_V_RULE_VFILE_ENABLED
     local currentIncrementedVersion="$inputVersion"
@@ -649,8 +652,82 @@ function processWithReleaseVersionFile() {
             echo "[ERROR_MSG] $currentIncrementedVersion" >&2
             return 1
         fi
+        if [[ "$versionScope" == "$MINOR_SCOPE" ]] || [[ "$versionScope" == "$PATCH_SCOPE" ]]; then
+            if [[ ! -f "$versionListFile" ]]; then
+                echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate versionListFile [$versionListFile]" >&2
+                return 1
+            fi
+            local tmpPos=$(( versionPos + 1 ))
+            local tmpInputVersion=$(echo $currentIncrementedVersion | cut -d"." -f1-"$tmpPos")
+            echo antz11 tmpInputVersion=$tmpInputVersion >&2
+            local foundVersion=$(cat "$versionListFile" | grep -E "\"$tmpInputVersion(\.|+|-|$|\"|_)*" | sort -rV | head -n1 | cut -d"\"" -f4)
+            echo antz11111111111 foundVersion=$foundVersion >&2
+            ## if empty, need to reset
+            if [[ -z "$foundVersion" ]]; then
+                currentIncrementedVersion="$tmpInputVersion"$(resetCoreRelease "$versionPos")
+                echo antz111 currentIncrementedVersion=$currentIncrementedVersion >&2
+            elif (echo $foundVersion | grep -qE "^[0-9]+\.[0-9]+\.[0-9]+$"); then 
+                echo antz nee $(echo $foundVersion | grep -E "^[0-9]+\.[0-9]+\.[0-9]+$")  >&2
+                local releasedVersionOnly=$(echo $foundVersion | grep -E "^[0-9]+\.[0-9]+\.[0-9]+$")
+                currentIncrementedVersion=$(incrementCoreReleaseByPos "$versionPos" "$foundVersion")
+                echo antz112 currentIncrementedVersion=$currentIncrementedVersion >&2
+            fi
+
+        fi
     fi
     echo $currentIncrementedVersion
+}
+
+function newfunc() {
+    local inputVersion=$1
+    local versionPos=$2
+    local versionScope=$3
+       
+    local vConfigVersionFile=${versionScope}_V_CONFIG_VFILE_NAME
+    local vConfigVersionFileKey=${versionScope}_V_CONFIG_VFILE_KEY
+    if [[ ! -f ${!vConfigVersionFile} ]]; then
+        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate version file: [${!vConfigVersionFile}]"
+        return 1
+    fi
+    local tmpVersion=$(cat ./${!vConfigVersionFile} | grep -E "^${!vConfigVersionFileKey}" 2>/dev/null | cut -d"=" -f2)
+    
+    if [[ -z "$tmpVersion" ]]; then
+        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to retrieve version value using key [${!vConfigVersionFileKey}] in version file: [${!vConfigVersionFile}]"
+        return 1
+    fi
+    local versionArray=''
+    IFS='. ' read -r -a versionArray <<< "$inputVersion"
+    versionArray[$versionPos]=$tmpVersion
+    echo $(local IFS=. ; echo "${versionArray[*]}")
+}
+
+function incrementCoreReleaseByPos {
+    local versionPos="$1"
+    local inputVersion="$2"
+
+    local majorPosVersion=$(echo $inputVersion | cut -d"." -f1)
+    local minorPosVersion=$(echo $inputVersion | cut -d"." -f2)
+    local patchPosVersion=$(echo $inputVersion | cut -d"." -f3)
+    local currentNeededPosVersion=0
+    local nextNeededPosVersion=0
+    if [[ $versionPos -eq 0 ]]; then
+        currentNeededPosVersion=$minorPosVersion
+        nextNeededPosVersion=$(( currentNeededPosVersion + 1))
+        echo "$majorPosVersion.$nextNeededPosVersion.0"
+    elif [[ $versionPos -eq 1 ]]; then
+        currentNeededPosVersion=$patchPosVersion
+        nextNeededPosVersion=$(( currentNeededPosVersion + 1))
+        echo "$majorPosVersion.$minorPosVersion.$nextNeededPosVersion"
+    fi
+}
+
+function resetCoreRelease {
+    local versionPos="$1"
+    if [[ $versionPos -eq 0 ]]; then
+        echo ".0.0"
+    elif [[ $versionPos -eq 1 ]]; then
+        echo ".0"
+    fi
 }
 
 ## Function to replace defined token with input version
@@ -952,19 +1029,19 @@ else
     # if [[ "$isInitialVersion" == "true" ]]; then
     #     echo "[INFO] This is initial version. So no core version file incrementation needed: $nextVersion"
     # else
-    nextVersion=$(processWithReleaseVersionFile ${nextVersion} ${MAJOR_POSITION} ${MAJOR_SCOPE})
+    nextVersion=$(processWithReleaseVersionFile "${nextVersion}" "${MAJOR_POSITION}" "${MAJOR_SCOPE}" "${versionListFile}")
     if [[ $? -ne 0 ]]; then
         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed processing incrementation on MAJOR, MINOR and PATCH via version file on MAJOR VERSION."
         echo "[ERROR_MSG] $nextVersion"
         exit 1
     fi
-    nextVersion=$(processWithReleaseVersionFile ${nextVersion} ${MINOR_POSITION} ${MINOR_SCOPE})
+    nextVersion=$(processWithReleaseVersionFile "${nextVersion}" "${MINOR_POSITION}" "${MINOR_SCOPE}" "${versionListFile}")
     if [[ $? -ne 0 ]]; then
         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed processing incrementation on MAJOR, MINOR and PATCH via version file on MINOR VERSION."
         echo "[ERROR_MSG] $nextVersion"
         exit 1
     fi
-    nextVersion=$(processWithReleaseVersionFile ${nextVersion} ${PATCH_POSITION} ${PATCH_SCOPE})
+    nextVersion=$(processWithReleaseVersionFile "${nextVersion}" "${PATCH_POSITION}" "${PATCH_SCOPE}" "${versionListFile}")
     if [[ $? -ne 0 ]]; then
         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed processing incrementation on MAJOR, MINOR and PATCH via version file on PATCH VERSION."
         echo "[ERROR_MSG] $nextVersion"
