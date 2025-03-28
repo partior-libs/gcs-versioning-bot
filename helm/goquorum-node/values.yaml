@@ -1,0 +1,204 @@
+############################
+# Generic Parameters
+############################
+
+# local / azure / aws / gcp
+provider: gcp
+
+global:
+  dataPath: /etc/quorum/qdata
+  pluginPath: /etc/plugins # for plugins configuration
+  vaultPath: /etc/vault
+  tlsPath: /etc/certs # for certs and keys used by security plugin for RPC TLS
+
+# To include imagePullSecrets when using images from partior.jfrog.com
+# imagePullSecrets: 
+#   - name: regcred
+
+node:
+  flags:
+    dynamicDns: false
+    privacy: true   #enable or disable private transaction Manager
+    isValidatorNode: false
+    privacyEnhancement: false
+
+  quorum:
+    image:
+      repository: quorumengineering/quorum
+      tag: 22.4.1
+    resources:
+      cpuLimit: "300m"
+      cpuRequest: "300m"
+      memLimit: "2G"
+      memRequest: "1G"
+    storage:
+      sizeLimit: "20Gi"
+      pvcSizeLimit: "20Gi"
+    replicaCount: 1
+    loadBalancerIP:
+      int:
+    key: ""
+    pod0:
+      loadBalancerIP:
+        int: 
+        p2p: 
+      nodekey: 
+      enode: 
+      nodekeyAddress: ""
+    pod1:
+      loadBalancerIP:
+        int: 
+        p2p: 
+      nodekey: 
+      enode: 
+      nodekeyAddress: ""
+    pod2:
+      loadBalancerIP:
+        int: 
+        p2p: 
+      nodekey: 
+      enode: 
+      nodekeyAddress: ""
+    networkId: 2000
+    maxpeers: 100
+    account: 
+      unlock: 0
+      password: "/data/quorum/password.txt"
+    log:
+      verbosity: 5
+      emitcheckpoints: true
+    miner:
+      threads: 0
+      blockPeriod: 1
+      gastarget: "100000000000"
+      gaslimit: "90000000000"
+    p2p:
+      enabled: true
+      addr: "0.0.0.0"
+      port: 30303
+    rpc:
+      enabled: true
+      addr: "0.0.0.0"
+      port: 8545
+      corsdomain: "*"
+      vHosts: "*"
+      api: "admin,eth,debug,miner,net,txpool,personal,web3,istanbul,quorumExtension,plugin@account"
+      gascap: 0   #Sets a cap on gas that can be used in eth_call/estimateGas (0=infinite)
+    ws:
+      enabled: true
+      addr: "0.0.0.0"
+      port: 8546
+      api: "admin,eth,debug,miner,net,txpool,personal,web3,istanbul,quorumExtension"
+      origins: "*"
+    graphql:
+      enabled: true
+      addr: "0.0.0.0"
+      port: 8547
+      corsdomain: "*"
+      vHosts: "*"
+    metrics:
+      enabled: true
+      pprofaddr: "0.0.0.0"
+      pprofport: 9545
+      memprofilerate: 524288
+      blockprofilerate: 0
+    txpool:
+      accountslots: 5000
+      accountqueue: 5000
+      globalslots: 20000
+      globalqueue: 20000
+    ethereum:
+      gcmode: full
+      syncmode: full
+    cache:
+      value: 4096
+      database: 50
+    privatetriecache:
+      enable: false
+    ptm:
+      timeout: 20
+      dialtimeout: 10
+      http:
+        writebuffersize: 4096
+        readbuffersize: 4096
+    qmKeyhashicorpVault:
+      enabled: false
+      url: http://35.247.172.222:8200/
+      accountAddress: 9556e4023a4b99b0d8daedcc89a8cf3f7f46f327
+      appRoleRoleId: quorum
+      appRoleSecretId: 3386f634-95a7-c0a2-b98f-e89534c168fb
+      secretEngineName: quorum
+      secretName: example/member8
+      secretVersion: 1
+    securityPlugin:
+      enabled: false
+      # If security plugin is enabled, must provide cachain and key
+      cert:
+      key:
+    serviceAccount:
+      create: true
+      # If create serviceAccount is false, must provide name of service account or default SA will be used
+      name: #node-goquorum-node-quorum-sa
+    storageClass:
+      create: true
+      ## If name is undefined (the default) or set to null, no storageClassName spec is
+      ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+      ##   GKE, AWS & OpenStack)
+      name: #quorum-storageclass
+      
+  tessera:
+    image:
+      repository: quorumengineering/tessera
+      tag: 22.1.0
+    resources:
+      cpuLimit: "300m"
+      cpuRequest: "300m"
+      memLimit: "1G"
+      memRequest: "500m"
+    storage:
+      sizeLimit: "20Gi"
+      pvcSizeLimit: "20Gi"
+    replicaCount: 1
+    loadBalancerIP:
+      int:
+      p2p:
+    db:
+      username: sa
+      password: 
+      url: jdbc:h2:/etc/quorum/qdata/tm/db;MODE=Oracle;TRACE_LEVEL_SYSTEM_OUT=0
+    tmkey: ""
+    tmpub: ""
+    password: ""
+    port: 9001
+    tpport: 9080
+    q2tport: 9081
+    p2p:
+      partyInfoInterval: 20000
+      enclaveKeySyncInterval: 2000
+      syncInterval: 60000
+      resendWaitTime: 7200000
+    logLevel:
+      default: DEBUG
+      partyInfoResource: DEBUG
+    tmKeyhashicorpVault:
+      enabled: false
+      url: http://35.247.172.222:8200
+      appRoleRoleId: 1a12e3c8-61f7-11e2-7346-7caeda200e1e
+      appRoleSecretId: afa946a0-cabf-77e5-0cee-f3f651f36a6e
+      tlsKeyStorePath:
+      tlsTrustStorePath:
+      secretEngineName: tessera
+      secretName: its/node07
+      secretVersion: 1
+      privateKeyId: privateKey
+      publicKeyId: publicKey
+    serviceAccount:
+      create: true
+      # If create serviceAccount is false, must provide name of service account or default SA will be used
+      name: #node-goquorum-node-tessera-sa
+    storageClass:
+      create: true
+      ## If name is undefined (the default) or set to null, no storageClassName spec is
+      ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+      ##   GKE, AWS & OpenStack)
+      name: #tessera-storageclass
