@@ -14,7 +14,8 @@ else
 fi
 ## ANTZ TEMPORARY
 # source ./test-files/mock-base-variables.sh
-# source run2.sh
+source run2.sh
+echo MAJOR_GH_CURRENT_BRANCH=$MAJOR_GH_CURRENT_BRANCH
 artifactName="$1"
 currentBranch=$(echo $2 | cut -d'/' -f1)
 currentLabel="$3"
@@ -159,18 +160,27 @@ function incrementPreReleaseVersion() {
             currentSemanticVersion=$(incrementReleaseVersion $lastRelVersion ${PATCH_POSITION})
         fi
     else
+        echo ----------- needToIncrementRelVersion  "$inputVersion" "$lastRelVersion" >&2
         local needIncreaseVersion=$(needToIncrementRelVersion "$inputVersion" "$lastRelVersion")
-
-        if [[ -f $CORE_VERSION_UPDATED_FILE ]]; then
+        echo ---------------- needIncreaseVersion=$needIncreaseVersion >&2
+        if [[ "$FLAG_SPECIAL_NEED_INCREMENT" == "false" ]] || [[ "$needIncreaseVersion" == "false" ]]; then
+            echo antz herea1 >&2
+            echo antz3 inputVersion=$inputVersion >&2
+            nextPreReleaseNumber=$(( $(echo $inputVersion | awk -F"-$preIdentifider." '{print $2}') + 1))
+            echo antz3333333333 nextPreReleaseNumber=$nextPreReleaseNumber >&2
+        elif [[ -f $CORE_VERSION_UPDATED_FILE ]]; then
+            echo antz here1 >&2
             currentSemanticVersion=$lastRelVersion
             nextPreReleaseNumber=1
-        elif [[ "$needIncreaseVersion" == "true" ]]; then
+        elif [[ "$FLAG_SPECIAL_NEED_INCREMENT" == "true" ]] || [[ "$needIncreaseVersion" == "true" ]]; then
+            echo antz here2 >&2
             currentSemanticVersion=$(incrementReleaseVersion $lastRelVersion ${PATCH_POSITION})
             nextPreReleaseNumber=1
-        elif [[ "$needIncreaseVersion" == "false" ]]; then
-        echo antz3 inputVersion=$inputVersion >&2
-            nextPreReleaseNumber=$(( $(echo $inputVersion | awk -F"-$preIdentifider." '{print $2}') + 1))
-            echo antz3 nextPreReleaseNumber=$nextPreReleaseNumber >&2
+        # elif [[ "$needIncreaseVersion" == "false" ]]; then
+        #     echo antz here3 >&2
+        #     echo antz3 inputVersion=$inputVersion >&2
+        #     nextPreReleaseNumber=$(( $(echo $inputVersion | awk -F"-$preIdentifider." '{print $2}') + 1))
+        #     echo antz3 nextPreReleaseNumber=$nextPreReleaseNumber >&2
         fi      
     fi
     local finalPrereleaseVersion=$currentSemanticVersion-$preIdentifider.$nextPreReleaseNumber
@@ -442,14 +452,15 @@ function incrementReleaseVersionByFile() {
        
     local vConfigVersionFile=${versionScope}_V_CONFIG_VFILE_NAME
     local vConfigVersionFileKey=${versionScope}_V_CONFIG_VFILE_KEY
+    echo "-------------- [DEBUG]: Reading version file: [${!vConfigVersionFile}]" >&2
     if [[ ! -f ${!vConfigVersionFile} ]]; then
-        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate version file: [${!vConfigVersionFile}]"
+        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate version file: [${!vConfigVersionFile}]" >&2
         return 1
     fi
     local tmpVersion=$(cat ./${!vConfigVersionFile} | grep -E "^${!vConfigVersionFileKey}" 2>/dev/null | cut -d"=" -f2)
     
     if [[ -z "$tmpVersion" ]]; then
-        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to retrieve version value using key [${!vConfigVersionFileKey}] in version file: [${!vConfigVersionFile}]"
+        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to retrieve version value using key [${!vConfigVersionFileKey}] in version file: [${!vConfigVersionFile}]" >&2
         return 1
     fi
     local versionArray=''
@@ -652,6 +663,7 @@ function processWithReleaseVersionFile() {
             echo "[ERROR_MSG] $currentIncrementedVersion" >&2
             return 1
         fi
+                echo "-------------- [DEBUG]: versionScope: [${versionScope}]" >&2
         if [[ "$versionScope" == "$MINOR_SCOPE" ]] || [[ "$versionScope" == "$PATCH_SCOPE" ]]; then
             if [[ ! -f "$versionListFile" ]]; then
                 echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate versionListFile [$versionListFile]" >&2
@@ -664,17 +676,51 @@ function processWithReleaseVersionFile() {
             echo antz11111111111 foundVersion=$foundVersion >&2
             ## if empty, need to reset
             if [[ -z "$foundVersion" ]]; then
+                ## Reset the core version update if found
+                rm -f $CORE_VERSION_UPDATED_FILE
+                FLAG_SPECIAL_NEED_INCREMENT=false   
                 currentIncrementedVersion="$tmpInputVersion"$(resetCoreRelease "$versionPos")
-                echo antz111 currentIncrementedVersion=$currentIncrementedVersion >&2
-            elif (echo $foundVersion | grep -qE "^[0-9]+\.[0-9]+\.[0-9]+$"); then 
-                echo antz nee $(echo $foundVersion | grep -E "^[0-9]+\.[0-9]+\.[0-9]+$")  >&2
-                local releasedVersionOnly=$(echo $foundVersion | grep -E "^[0-9]+\.[0-9]+\.[0-9]+$")
-                currentIncrementedVersion=$(incrementCoreReleaseByPos "$versionPos" "$foundVersion")
-                echo antz112 currentIncrementedVersion=$currentIncrementedVersion >&2
+                echo ----------- antz111 currentIncrementedVersion=$currentIncrementedVersion >&2
+            elif (echo $foundVersion | grep -qE '([0-9]+\.){2}[0-9]+(((-|\+)[0-9a-zA-Z]+\.[0-9]+)*(\+[0-9a-zA-Z]+\.[0-9\.]+)*$)'); then 
+                
+                FLAG_SPECIAL_NEED_INCREMENT=false   
+                echo antz nee $(echo $foundVersion | grep -qE '([0-9]+\.){2}[0-9]+(((-|\+)[0-9a-zA-Z]+\.[0-9]+)*(\+[0-9a-zA-Z]+\.[0-9\.]+)*$)')  >&2
+                local releasedVersionOnly=""
+                           
+                if (echo $foundVersion | grep -qE "^[0-9]+\.[0-9]+\.[0-9]+$"); then
+                    releasedVersionOnly=$(echo $foundVersion | grep -E "^[0-9]+\.[0-9]+\.[0-9]+$")
+                    currentIncrementedVersion=$(incrementCoreReleaseByPos "$versionPos" "$foundVersion")
+                    echo antz112 currentIncrementedVersion=$currentIncrementedVersion >&2
+                else
+                    releasedVersionOnly=$(echo $foundVersion | grep -oE "^[0-9]+\.[0-9]+\.[0-9]+")
+                    # Do not need to increment because it's a pre-release version
+                    currentIncrementedVersion=$releasedVersionOnly
+                    echo antz1122 currentIncrementedVersion=$currentIncrementedVersion >&2
+                fi
+                ## Store the latest pre-release into files for post processing later
+                if (grep -qE "$releasedVersionOnly\-$RC_V_IDENTIFIER\." $versionListFile); then
+                    lastRCVersion=$(cat "$versionListFile" | grep -E "$releasedVersionOnly\-$RC_V_IDENTIFIER\." | sort -rV | head -n1 | cut -d"\"" -f4)
+                    echo $lastRCVersion > $ARTIFACT_LAST_RC_VERSION_FILE
+                    echo "[INFO] Reset last RC version to $lastRCVersion" >&2
+
+                fi
+                if (grep -qE "$releasedVersionOnly\-$DEV_V_IDENTIFIER\." $versionListFile); then
+                    lastDevVersion=$(cat "$versionListFile" | grep -E "$releasedVersionOnly\-$DEV_V_IDENTIFIER\." | sort -rV | head -n1 | cut -d"\"" -f4)
+                    echo $lastDevVersion > $ARTIFACT_LAST_DEV_VERSION_FILE
+                    echo "[INFO] Reset last DEV version to $lastDevVersion" >&2
+
+                fi
+                if (grep -qE "$releasedVersionOnly\-$REBASE_V_IDENTIFIER\." $versionListFile); then
+                    lastBaseVersion=$(cat "$versionListFile" | grep -E "$releasedVersionOnly\-$REBASE_V_IDENTIFIER\." | sort -rV | head -n1 | cut -d"\"" -f4)
+                    echo $lastBaseVersion > $ARTIFACT_LAST_REBASE_VERSION_FILE
+                    echo "[INFO] Reset last REBASE version to $lastBaseVersion" >&2
+                fi
+                
             fi
 
         fi
     fi
+    echo $currentIncrementedVersion > $ARTIFACT_LAST_REL_VERSION_FILE
     echo $currentIncrementedVersion
 }
 
@@ -1001,7 +1047,7 @@ else
             nextVersion=$(incrementReleaseVersion $nextVersion ${MINOR_POSITION})
         fi
         echo [DEBUG] MINOR INCREMENTED $nextVersion
-    elif [[ "$(checkReleaseVersionFeatureFlag ${PATCH_SCOPE})" == "true" ]] && [[ ! "${PATCH_V_RULE_VFILE_ENABLED}" == "true" ]]; then
+    elif [[ "$(checkReleaseVersionFeatureFlag ${PATCH_SCOPE})" == "true" ]] && [[ ! "${PATCH_V_RULE_VFILE_ENABLED}" == "true" ]] && [[ ! "${MAJOR_V_RULE_VFILE_ENABLED}" == "true" ]] && [[ ! "${MINOR_V_RULE_VFILE_ENABLED}" == "true" ]]; then
         # echo [DEBUG] currentRCSemanticVersion=$nextVersion
         touch $CORE_VERSION_UPDATED_FILE
         # nextVersion=$(incrementReleaseVersion $nextVersion ${PATCH_POSITION})
@@ -1029,24 +1075,38 @@ else
     # if [[ "$isInitialVersion" == "true" ]]; then
     #     echo "[INFO] This is initial version. So no core version file incrementation needed: $nextVersion"
     # else
+    echo --------- antz1 lastDevVersion=$lastDevVersion
     nextVersion=$(processWithReleaseVersionFile "${nextVersion}" "${MAJOR_POSITION}" "${MAJOR_SCOPE}" "${versionListFile}")
     if [[ $? -ne 0 ]]; then
         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed processing incrementation on MAJOR, MINOR and PATCH via version file on MAJOR VERSION."
         echo "[ERROR_MSG] $nextVersion"
         exit 1
     fi
+    echo --------- antz2 lastDevVersion=$lastDevVersion
     nextVersion=$(processWithReleaseVersionFile "${nextVersion}" "${MINOR_POSITION}" "${MINOR_SCOPE}" "${versionListFile}")
     if [[ $? -ne 0 ]]; then
         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed processing incrementation on MAJOR, MINOR and PATCH via version file on MINOR VERSION."
         echo "[ERROR_MSG] $nextVersion"
         exit 1
     fi
+    echo --------- antz3 lastDevVersion=$lastDevVersion
     nextVersion=$(processWithReleaseVersionFile "${nextVersion}" "${PATCH_POSITION}" "${PATCH_SCOPE}" "${versionListFile}")
     if [[ $? -ne 0 ]]; then
         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed processing incrementation on MAJOR, MINOR and PATCH via version file on PATCH VERSION."
         echo "[ERROR_MSG] $nextVersion"
         exit 1
     fi
+    echo --------- antz4 lastDevVersion=$lastDevVersion
+    # if ([[ "${MAJOR_V_RULE_VFILE_ENABLED}" == "true" ]] || [[ "${MINOR_V_RULE_VFILE_ENABLED}" == "true" ]]) && [[ ! "${PATCH_V_RULE_VFILE_ENABLED}" == "true" ]]; then
+    #     echo " "
+    # else
+    #     nextVersion=$(processWithReleaseVersionFile "${nextVersion}" "${PATCH_POSITION}" "${PATCH_SCOPE}" "${versionListFile}")
+    #     if [[ $? -ne 0 ]]; then
+    #         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed processing incrementation on MAJOR, MINOR and PATCH via version file on PATCH VERSION."
+    #         echo "[ERROR_MSG] $nextVersion"
+    #         exit 1
+    #     fi
+    # fi
     echo [INFO] After core version file incremented: [$nextVersion]
 # fi
 
@@ -1076,10 +1136,10 @@ else
     echo antz bb checkPreReleaseVersionFeatureFlag ${RC_SCOPE}: $(checkPreReleaseVersionFeatureFlag ${RC_SCOPE})
      echo antz bb checkPreReleaseVersionFeatureFlag ${DEV_SCOPE}: $(checkPreReleaseVersionFeatureFlag ${DEV_SCOPE})
     if [[ "$(checkPreReleaseVersionFeatureFlag ${RC_SCOPE})" == "true" ]] && [[ ! "${RC_V_RULE_VFILE_ENABLED}" == "true" ]]; then
-        echo antz11 nextVersion=$nextVersion
+        echo antz11a nextVersion=$nextVersion
         nextVersion=$(incrementPreReleaseVersion "$lastRCVersion" "$RC_V_IDENTIFIER")
     elif [[ "$(checkPreReleaseVersionFeatureFlag ${DEV_SCOPE})" == "true" ]] && [[ ! "${DEV_V_RULE_VFILE_ENABLED}" == "true" ]]; then
-        echo antz11 nextVersion=$nextVersion
+        echo antz11b nextVersion=$nextVersion
         nextVersion=$(incrementPreReleaseVersion "$lastDevVersion" "$DEV_V_IDENTIFIER")
     fi
     echo antz112 nextVersion=$nextVersion
