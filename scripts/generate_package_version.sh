@@ -14,7 +14,7 @@ else
 fi
 ## ANTZ TEMPORARY
 # source ./test-files/mock-base-variables.sh
-#source run2.sh
+# source run2.sh
 
 artifactName="$1"
 currentBranch=$(echo $2 | cut -d'/' -f1)
@@ -1180,7 +1180,7 @@ fi
 #     replaceVersionForYamlFile "$nextVersion" "$REPLACE_V_CONFIG_YAMLPATH_FILE" "$REPLACE_V_CONFIG_YAMLPATH_QUERYPATH"
 #     echo "[INFO] Version updated successfully in YAML file: $REPLACE_V_CONFIG_YAMLPATH_FILE"
 # fi
-
+echo
 echo "[INFO] nextVersion = $nextVersion"
 echo $nextVersion > $ARTIFACT_NEXT_VERSION_FILE
 

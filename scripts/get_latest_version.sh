@@ -142,10 +142,10 @@ function storeLatestVersionIntoFile() {
     fi
     if [[ "$identifierType" == "$REL_SCOPE" ]]; then
         echo $(cat $inputList | grep -E "version" | grep -v -E "\-" | cut -d"\"" -f4 | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -rV | head -1) > $targetSaveFile
-        echo antz1 $(cat $targetSaveFile)
+        # echo antz1 $(cat $targetSaveFile)
     else
         echo $(cat $inputList | grep -E "version" | grep -E "\-$identifierType\." | cut -d"\"" -f4 | sort -rV | head -1) > $targetSaveFile
-        echo antz2 $(cat $targetSaveFile)
+        # echo antz2 $(cat $targetSaveFile)
     fi
 
     # If still empty, create dummy
