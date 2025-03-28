@@ -14,7 +14,7 @@ else
 fi
 ## ANTZ TEMPORARY
 # source ./test-files/mock-base-variables.sh
-#source run2.sh
+source run2.sh
 
 artifactName="$1"
 currentBranch=$(echo $2 | cut -d'/' -f1)
@@ -26,8 +26,12 @@ versionListFile="$7"
 isDebug="$8"
 
 # Reset global state
-CORE_VERSION_UPDATED_FILE=core.updated
 rm -f $CORE_VERSION_UPDATED_FILE
+rm -f $TRUNK_CORE_NEED_INCREMENT_FILE
+echo "$VBOT_NIL" > $TRUNK_CORE_NEED_INCREMENT_FILE
+
+## Set the current branch
+export currentBranch="$currentBranch"
 
 ## Trim away the build info
 lastDevVersion=$(cat $ARTIFACT_LAST_DEV_VERSION_FILE | cut -d"+" -f1)
@@ -121,7 +125,7 @@ function incrementPreReleaseVersion() {
     local preIdentifider=$2
 
     local currentSemanticVersion=''
-
+    local trunkCoreIncrement="$(cat $TRUNK_CORE_NEED_INCREMENT_FILE)"
     ## If not pre-release, then increment the core version too
     local lastRelVersion=$(cat $ARTIFACT_LAST_REL_VERSION_FILE)
     # If present, use the updated release version
@@ -163,24 +167,24 @@ function incrementPreReleaseVersion() {
         echo ----------- needToIncrementRelVersion  "$inputVersion" "$lastRelVersion" >&2
         local needIncreaseVersion=$(needToIncrementRelVersion "$inputVersion" "$lastRelVersion")
         echo ---------------- needIncreaseVersion=$needIncreaseVersion >&2
-        if [[ "$FLAG_SPECIAL_NEED_INCREMENT" == "false" ]] || [[ "$needIncreaseVersion" == "false" ]]; then
-            echo antz herea1 >&2
-            echo antz3 inputVersion=$inputVersion >&2
-            nextPreReleaseNumber=$(( $(echo $inputVersion | awk -F"-$preIdentifider." '{print $2}') + 1))
-            echo antz3333333333 nextPreReleaseNumber=$nextPreReleaseNumber >&2
+        echo ---------------- trunkCoreIncrement=$trunkCoreIncrement >&2
+        if [[ "$trunkCoreIncrement" == "false" ]]; then
+            echo antz here1a >&2
+            currentSemanticVersion=$lastRelVersion
+            nextPreReleaseNumber=1
         elif [[ -f $CORE_VERSION_UPDATED_FILE ]]; then
             echo antz here1 >&2
             currentSemanticVersion=$lastRelVersion
             nextPreReleaseNumber=1
-        elif [[ "$FLAG_SPECIAL_NEED_INCREMENT" == "true" ]] || [[ "$needIncreaseVersion" == "true" ]]; then
-            echo antz here2 >&2
+        elif [[ "$trunkCoreIncrement" == "true" ]] || [[ "$needIncreaseVersion" == "true" ]]; then
+            echo antz here222 >&2
             currentSemanticVersion=$(incrementReleaseVersion $lastRelVersion ${PATCH_POSITION})
             nextPreReleaseNumber=1
-        # elif [[ "$needIncreaseVersion" == "false" ]]; then
-        #     echo antz here3 >&2
-        #     echo antz3 inputVersion=$inputVersion >&2
-        #     nextPreReleaseNumber=$(( $(echo $inputVersion | awk -F"-$preIdentifider." '{print $2}') + 1))
-        #     echo antz3 nextPreReleaseNumber=$nextPreReleaseNumber >&2
+        elif [[ "$needIncreaseVersion" == "false" ]]; then
+            echo antz here3 >&2
+            echo antz3 inputVersion=$inputVersion >&2
+            nextPreReleaseNumber=$(( $(echo $inputVersion | awk -F"-$preIdentifider." '{print $2}') + 1))
+            echo antz3 nextPreReleaseNumber=$nextPreReleaseNumber >&2
         fi      
     fi
     local finalPrereleaseVersion=$currentSemanticVersion-$preIdentifider.$nextPreReleaseNumber
@@ -678,12 +682,11 @@ function processWithReleaseVersionFile() {
             if [[ -z "$foundVersion" ]]; then
                 ## Reset the core version update if found
                 rm -f $CORE_VERSION_UPDATED_FILE
-                FLAG_SPECIAL_NEED_INCREMENT=false   
+                echo "false" > $TRUNK_CORE_NEED_INCREMENT_FILE
                 currentIncrementedVersion="$tmpInputVersion"$(resetCoreRelease "$versionPos")
                 echo ----------- antz111 currentIncrementedVersion=$currentIncrementedVersion >&2
             elif (echo $foundVersion | grep -qE '([0-9]+\.){2}[0-9]+(((-|\+)[0-9a-zA-Z]+\.[0-9]+)*(\+[0-9a-zA-Z]+\.[0-9\.]+)*$)'); then 
-                
-                FLAG_SPECIAL_NEED_INCREMENT=false   
+                echo "true" > $TRUNK_CORE_NEED_INCREMENT_FILE
                 echo antz nee $(echo $foundVersion | grep -qE '([0-9]+\.){2}[0-9]+(((-|\+)[0-9a-zA-Z]+\.[0-9]+)*(\+[0-9a-zA-Z]+\.[0-9\.]+)*$)')  >&2
                 local releasedVersionOnly=""
                            
@@ -720,7 +723,8 @@ function processWithReleaseVersionFile() {
 
         fi
     fi
-    echo $currentIncrementedVersion > $ARTIFACT_LAST_REL_VERSION_FILE
+    echo before update $currentIncrementedVersion  >&2
+    echo $currentIncrementedVersion > $ARTIFACT_UPDATED_REL_VERSION_FILE
     echo $currentIncrementedVersion
 }
 
