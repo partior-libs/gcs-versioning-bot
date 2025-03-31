@@ -14,7 +14,7 @@ else
 fi
 ## ANTZ TEMPORARY
 # source ./test-files/mock-base-variables.sh
-# source run2.sh
+source run2.sh
 
 artifactName="$1"
 currentBranch=$(echo $2 | cut -d'/' -f1)

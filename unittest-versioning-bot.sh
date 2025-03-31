@@ -5,6 +5,8 @@ source run2.sh
 inputFile1="${ARTIFACT_LAST_DEV_VERSION_FILE}"
 inputFile2="${ARTIFACT_LAST_RC_VERSION_FILE}"
 inputFile3="${ARTIFACT_LAST_REL_VERSION_FILE}"
+inputFile4="${ARTIFACT_LAST_BASE_VERSION_FILE}"
+
 actualOutputFile="${ARTIFACT_NEXT_VERSION_FILE}"
 scriptPath="./scripts/generate_package_version.sh"
 logFile="test_log.txt"
@@ -25,12 +27,10 @@ function initializeLog() {
 }
 
 # # Function to restore the original contents of the input files
-# function restoreOriginalFiles() {
-#     logMessage "INFO" "Restoring original files"
-#     echo "1.1.1" > "$inputFile1"
-#     echo "2.1.2-abc.1" > "$inputFile2"
-#     echo "2.1.2-xyz.2" > "$inputFile3"
-# }
+function restoreOriginalFiles() {
+    logMessage "INFO" "Restoring original helm files"
+    sed -i "s/^version: .*/version: @@VERSION_BOT_TOKEN@@/" "helm/goquorum-node/Chart.yaml"
+}
 
 # Function to modify input files for the test case
 function modifyFilesForTestCase() {
@@ -38,6 +38,7 @@ function modifyFilesForTestCase() {
     local RcVersion="$2"
     local releaseVersion="$3"
     local appVersion="$4"
+    local sourceBranch="$5"
 
     local majorVersion
     local minorVersion
@@ -70,6 +71,25 @@ function modifyFilesForTestCase() {
         cat "${MINOR_V_CONFIG_VFILE_NAME}"
     fi
 
+    if [[ -z "${sourceBranch}" ]]; then
+        echo "[ERROR] Source Branch is empty. Please add the branch name into runTest!"
+        exit 1
+    else
+        if [[ "${sourceBranch}" =~ ^hotfix-base/* ]]; then
+            branchName=$(echo "$sourceBranch" | cut -d'/' -f1)
+            baseVersion=$(echo "$sourceBranch" | cut -d'/' -f2)
+            echo "branchName: $branchName"
+            echo "baseVersion: $baseVersion"
+            echo "$baseVersion" > "$inputFile4"
+            logMessage "INFO" "Last Base version $(cat $inputFile4)"
+
+            sed -i "s/^BUILD_GH_BRANCH_NAME=.*/BUILD_GH_BRANCH_NAME=$branchName/" "run2.sh"
+
+        else
+            echo "" > "$inputFile4"
+            sed -i "s/^BUILD_GH_BRANCH_NAME=.*/BUILD_GH_BRANCH_NAME=$sourceBranch/" "run2.sh"
+        fi 
+    fi
 }
 
 # Function to run the actual test
@@ -78,15 +98,17 @@ function runTest() {
     local devVersion="$2"
     local RcVersion="$3"
     local releaseVersion="$4"
-    local expectedOutput="$5"
-    local versionFileTmp="$6"
-    local appVersion="$7"
+    local baseVersion="${5:-}"
+    local expectedOutput="$6"
+    local versionFileTmp="$7"
+    local appVersion="$8"
+    local sourceBranch="$9"
 
     # Modify the input files for the test case
-    modifyFilesForTestCase "$devVersion" "$RcVersion" "$releaseVersion" "$appVersion"
+    modifyFilesForTestCase "$devVersion" "$RcVersion" "$releaseVersion" "$appVersion" "$sourceBranch"
 
     # Get the actual output from the script
-    bash "${scriptPath}" "goquorum-node" "feature" "${BUILD_GH_LABEL_FILE}" "${BUILD_GH_TAG_FILE}" "${BUILD_GH_COMMIT_MESSAGE_FILE}" "" "${versionFileTmp}" "true"
+    bash "${scriptPath}" "goquorum-node" "${sourceBranch}" "${BUILD_GH_LABEL_FILE}" "${BUILD_GH_TAG_FILE}" "${BUILD_GH_COMMIT_MESSAGE_FILE}" "${baseVersion}" "${versionFileTmp}" "true"
 
     local actualOutput=$(cat "$actualOutputFile")
     
@@ -102,7 +124,7 @@ function runTest() {
     fi
 
     # Restore the original files after the test
-    # restoreOriginalFiles
+    restoreOriginalFiles
 }
 
 # Function to run all tests
@@ -113,13 +135,25 @@ function runTests() {
     logMessage "INFO" "---------------------------------------------"
 
     # Test case 1
-    runTest "Test Case 1" "22.4.28-dev.2" "22.4.26-rc.3" "22.4.27" "22.5.0-dev.1" "testcase1/versionFile.tmp" "22.5"
+    # runTest "Test Case 1" "22.4.28-dev.2" "22.4.26-rc.3" "22.4.27" "" "22.5.0-dev.1" "testcase1/versionFile.tmp" "22.5" "feature"
 
     # Test case 2
-    runTest "Test Case 2" "22.5.0-dev.1" "22.4.26-rc.3" "22.4.27" "22.5.0-dev.2" "testcase2/versionFile.tmp" "22.5"
+    # runTest "Test Case 2" "22.5.0-dev.1" "22.4.26-rc.3" "22.4.27" "" "22.5.0-dev.2" "testcase2/versionFile.tmp" "22.5" "feature"
 
     # Test case 3
-    runTest "Test Case 3" "22.5.0-dev.2" "22.4.26-rc.3" "22.4.27" "22.4.28-dev.3" "testcase3/versionFile.tmp" "22.4"
+    # runTest "Test Case 3" "22.5.0-dev.2" "22.4.26-rc.3" "22.4.27" "" "22.4.28-dev.3" "testcase3/versionFile.tmp" "22.4" "feature"
+
+    # Test case 4
+    runTest "Test Case 4" "24.3.0-dev.2" "1.2.10-rc.2" "25.1.0" "24.3.0-hf.0" "24.3.0-hf.1" "testcase4/versionFile.tmp" "24.3" "hotfix-base/24.3.0"
+
+    # Test case 5
+    runTest "Test Case 5" "24.3.0-dev.2" "1.2.10-rc.2" "25.1.0" "" "25.1.1-dev.1" "testcase5/versionFile.tmp" "25.1" "feature"
+
+    # Test case 6
+    runTest "Test Case 6" "25.1.2-dev.1" "1.2.10-rc.2" "25.1.0" "" "25.1.2-dev.2" "testcase6/versionFile.tmp" "25.1" "feature"
+
+    # Test case 7
+    runTest "Test Case 7" "25.1.2-dev.2" "1.2.10-rc.2" "25.1.0" "" "24.3.0-dev.3" "testcase6/versionFile.tmp" "24.3" "feature"
 
     # Add more tests here as needed
     logMessage "INFO" "Test execution completed"
