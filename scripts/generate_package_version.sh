@@ -14,7 +14,7 @@ else
 fi
 ## ANTZ TEMPORARY
 # source ./test-files/mock-base-variables.sh
-# source run2.sh
+#source run2.sh
 
 artifactName="$1"
 currentBranch=$(echo $2 | cut -d'/' -f1)
@@ -135,7 +135,6 @@ function incrementPreReleaseVersion() {
         echo $lastRelVersion-$preIdentifider.1
         return 0
     fi
-
     currentSemanticVersion=$(echo $inputVersion | grep -Po "^\d+\.\d+\.\d+-$preIdentifider")
     if [[ $? -ne 0 ]]; then
         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to increase prerelease version. Invalid inputVersion format: $inputVersion" >&2
@@ -676,14 +675,14 @@ function processWithReleaseVersionFile() {
                 currentIncrementedVersion="$tmpInputVersion"$(resetCoreRelease "$versionPos")
                 if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): currentIncrementedVersion=$currentIncrementedVersion" >&2; fi
             elif (echo $foundVersion | grep -qE '([0-9]+\.){2}[0-9]+(((-|\+)[0-9a-zA-Z]+\.[0-9]+)*(\+[0-9a-zA-Z]+\.[0-9\.]+)*$)'); then 
-                echo "true" > $TRUNK_CORE_NEED_INCREMENT_FILE
                 local releasedVersionOnly=""
-         
                 if (echo $foundVersion | grep -qE "^[0-9]+\.[0-9]+\.[0-9]+$"); then
+                    echo "false" > $TRUNK_CORE_NEED_INCREMENT_FILE
                     releasedVersionOnly=$(echo $foundVersion | grep -E "^[0-9]+\.[0-9]+\.[0-9]+$")
                     currentIncrementedVersion=$(incrementCoreReleaseByPos "$versionPos" "$foundVersion")
                     if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): releasedVersionOnly=$releasedVersionOnly, currentIncrementedVersion=$currentIncrementedVersion" >&2; fi
                 else
+                    echo "true" > $TRUNK_CORE_NEED_INCREMENT_FILE
                     releasedVersionOnly=$(echo $foundVersion | grep -oE "^[0-9]+\.[0-9]+\.[0-9]+")
                     # Do not need to increment because it's a pre-release version
                     currentIncrementedVersion=$releasedVersionOnly
