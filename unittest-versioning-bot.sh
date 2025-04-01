@@ -39,6 +39,7 @@ function modifyFilesForTestCase() {
     local releaseVersion="$3"
     local appVersion="$4"
     local sourceBranch="$5"
+    local rebaseVersion="$6"
 
     local majorVersion
     local minorVersion
@@ -77,10 +78,9 @@ function modifyFilesForTestCase() {
     else
         if [[ "${sourceBranch}" =~ ^hotfix-base/* ]]; then
             branchName=$(echo "$sourceBranch" | cut -d'/' -f1)
-            baseVersion=$(echo "$sourceBranch" | cut -d'/' -f2)
             echo "branchName: $branchName"
-            echo "baseVersion: $baseVersion"
-            echo "$baseVersion" > "$inputFile4"
+            echo "rebaseVersion: $rebaseVersion"
+            echo "$rebaseVersion" > "$inputFile4"
             logMessage "INFO" "Last Base version $(cat $inputFile4)"
 
             sed -i "s/^BUILD_GH_BRANCH_NAME=.*/BUILD_GH_BRANCH_NAME=$branchName/" "run2.sh"
@@ -98,17 +98,25 @@ function runTest() {
     local devVersion="$2"
     local RcVersion="$3"
     local releaseVersion="$4"
-    local baseVersion="${5:-}"
+    local rebaseVersion="${5:-}"
     local expectedOutput="$6"
     local versionFileTmp="$7"
     local appVersion="$8"
     local sourceBranch="$9"
 
+    local lastBaseVersion
+
+    if [[ "${sourceBranch}" =~ ^hotfix-base/* ]]; then
+        lastBaseVersion=$(echo "$sourceBranch" | cut -d'/' -f2)
+    else
+        lastBaseVersion=""
+    fi
+
     # Modify the input files for the test case
-    modifyFilesForTestCase "$devVersion" "$RcVersion" "$releaseVersion" "$appVersion" "$sourceBranch"
+    modifyFilesForTestCase "$devVersion" "$RcVersion" "$releaseVersion" "$appVersion" "$sourceBranch" "$rebaseVersion"
 
     # Get the actual output from the script
-    bash "${scriptPath}" "goquorum-node" "${sourceBranch}" "${BUILD_GH_LABEL_FILE}" "${BUILD_GH_TAG_FILE}" "${BUILD_GH_COMMIT_MESSAGE_FILE}" "${baseVersion}" "${versionFileTmp}" "true"
+    bash "${scriptPath}" "goquorum-node" "${sourceBranch}" "${BUILD_GH_LABEL_FILE}" "${BUILD_GH_TAG_FILE}" "${BUILD_GH_COMMIT_MESSAGE_FILE}" "${lastBaseVersion}" "${versionFileTmp}" "true"
 
     local actualOutput=$(cat "$actualOutputFile")
     
@@ -143,17 +151,47 @@ function runTests() {
     # Test case 3
     # runTest "Test Case 3" "22.5.0-dev.2" "22.4.26-rc.3" "22.4.27" "" "22.4.28-dev.3" "testcase3/versionFile.tmp" "22.4" "feature"
 
-    # Test case 4
+    # Test case 4: Hotfix-base 24.3.0
     runTest "Test Case 4" "24.3.0-dev.2" "1.2.10-rc.2" "25.1.0" "24.3.0-hf.0" "24.3.0-hf.1" "testcase4/versionFile.tmp" "24.3" "hotfix-base/24.3.0"
 
-    # Test case 5
+    # # Test case 5: Feature/test-for-25.1
     runTest "Test Case 5" "24.3.0-dev.2" "1.2.10-rc.2" "25.1.0" "" "25.1.1-dev.1" "testcase5/versionFile.tmp" "25.1" "feature"
 
-    # Test case 6
+    # # Test case 6: Feature/test-for-25.1 with doing commit twice
     runTest "Test Case 6" "25.1.2-dev.1" "1.2.10-rc.2" "25.1.0" "" "25.1.2-dev.2" "testcase6/versionFile.tmp" "25.1" "feature"
 
-    # Test case 7
-    runTest "Test Case 7" "25.1.2-dev.2" "1.2.10-rc.2" "25.1.0" "" "24.3.0-dev.3" "testcase6/versionFile.tmp" "24.3" "feature"
+    # # Test case 7: Commit on feature/24.3.0 concurrently with feature/test-for-25.1
+    runTest "Test Case 7" "25.1.2-dev.2" "1.2.10-rc.2" "25.1.0" "" "24.3.0-dev.3" "testcase7/versionFile.tmp" "24.3" "feature"
+
+    # # Test case 8: Hotfix-base with doing commit again
+    runTest "Test Case 8" "24.3.0-dev.2" "1.2.10-rc.2" "25.1.0" "24.3.0-hf.1" "24.3.0-hf.2" "testcase8/versionFile.tmp" "24.3" "hotfix-base/24.3.0"
+
+    # Test case 9: Merge feature/test-for-25.1 to main
+    runTest "Test Case 9" "25.1.1-dev.2" "1.2.10-rc.2" "25.1.0" "" "25.1.1" "testcase9/versionFile.tmp" "25.1" "main"
+
+    # Test case 10: Create release/v25.2.0 and test on feature/test-for-R-25.2.0
+    runTest "Test Case 10" "25.1.1-dev.2" "1.2.10-rc.2" "25.1.1" "" "25.2.0-dev.1" "testcase10/versionFile.tmp" "25.2" "feature"
+
+    # Test case 11: feature/test-for-R-25.2.0 with doing commit twice
+    runTest "Test Case 11" "25.2.0-dev.1" "1.2.10-rc.2" "25.1.1" "" "25.2.0-dev.2" "testcase11/versionFile.tmp" "25.2" "feature"
+
+    # Test case 12: release/v25.2.0
+    runTest "Test Case 12" "25.2.0-dev.2" "1.2.10-rc.2" "25.1.1" "" "25.2.0-rc.1" "testcase12/versionFile.tmp" "25.2" "release"
+
+    # Test case 13: feature/test2-for-R-25.2.0
+    runTest "Test Case 13" "25.2.0-dev.2" "25.2.0-rc.1" "25.1.1" "" "25.2.0-dev.3" "testcase13/versionFile.tmp" "25.2" "feature"
+
+    # Test case 14: feature/test2-for-R-25.2.0 with doing twice
+    runTest "Test Case 14" "25.2.0-dev.3" "25.2.0-rc.1" "25.1.1" "" "25.2.0-dev.4" "testcase14/versionFile.tmp" "25.2" "feature"
+
+    # Test case 15: release/v25.2.0 with doing twice
+    runTest "Test Case 15" "25.2.0-dev.4" "25.2.0-rc.1" "25.1.1" "" "25.2.0-rc.2" "testcase15/versionFile.tmp" "25.2" "release"
+
+    # Test case 16: Merge feature/test-for-R-25.2.0 to release
+    runTest "Test Case 16" "25.2.0-dev.4" "25.2.0-rc.2" "25.1.1" "" "25.2.0-rc.3" "testcase16/versionFile.tmp" "25.2" "release"
+
+    # Test case 17: Merge hotfix-base to main
+    runTest "Test Case 17" "25.2.0-dev.4" "25.2.0-rc.3" "25.1.1" "" "25.1.2" "testcase17/versionFile.tmp" "25.1" "main"
 
     # Add more tests here as needed
     logMessage "INFO" "Test execution completed"
