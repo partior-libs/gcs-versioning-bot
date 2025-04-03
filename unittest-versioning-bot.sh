@@ -96,7 +96,7 @@ function modifyEnvFilesForTestCase() {
 
 # Function to run the actual test
 function runTest() {
-    local testName=$1
+    local testName="$1"
     local expectedOutput="$2"
     local versionFileTmp="$3"
     local sourceBranch="$4"
@@ -137,7 +137,7 @@ function runTests() {
     logMessage "INFO" "Starting test execution"
     logMessage "INFO" "---------------------------------------------"
 
-    for tcPath in "${scopeOfTestSuite}"; do
+    for tcPath in $scopeOfTestSuite; do
         echo "[INFO] Processing folder: $tcPath"
 
         testSpecPullPath="${tcPath}/${TEST_SPEC_FILE}"
@@ -180,58 +180,6 @@ function runTests() {
 
         runTest "${name}" "${expectedValue}" "${versionFileFullPath}" "${branchName}" "${mockedEnvFileFullPath}" "${targetBaseVersion}"
     done
-
-
-    # Test case 1
-    # runTest "Test Case 1" "22.4.28-dev.2" "22.4.26-rc.3" "22.4.27" "" "22.5.0-dev.1" "testcase1/versionFile.tmp" "22.5" "feature"
-
-    # Test case 2
-    # runTest "Test Case 2" "22.5.0-dev.1" "22.4.26-rc.3" "22.4.27" "" "22.5.0-dev.2" "testcase2/versionFile.tmp" "22.5" "feature"
-
-    # Test case 3
-    # runTest "Test Case 3" "22.5.0-dev.2" "22.4.26-rc.3" "22.4.27" "" "22.4.28-dev.3" "testcase3/versionFile.tmp" "22.4" "feature"
-
-    # # Test case 4: Hotfix-base 24.3.0
-    # runTest "Test Case 4" "24.3.0-dev.2" "1.2.10-rc.2" "25.1.0" "24.3.0-hf.0" "24.3.0-hf.1" "testcase4/versionFile.tmp" "24.3" "hotfix-base/24.3.0"
-
-    # # # Test case 5: Feature/test-for-25.1
-    # runTest "Test Case 5" "24.3.0-dev.2" "1.2.10-rc.2" "25.1.0" "" "25.1.1-dev.1" "testcase5/versionFile.tmp" "25.1" "feature"
-
-    # # # Test case 6: Feature/test-for-25.1 with doing commit twice
-    # runTest "Test Case 6" "25.1.2-dev.1" "1.2.10-rc.2" "25.1.0" "" "25.1.2-dev.2" "testcase6/versionFile.tmp" "25.1" "feature"
-
-    # # # Test case 7: Commit on feature/24.3.0 concurrently with feature/test-for-25.1
-    # runTest "Test Case 7" "25.1.2-dev.2" "1.2.10-rc.2" "25.1.0" "" "24.3.0-dev.3" "testcase7/versionFile.tmp" "24.3" "feature"
-
-    # # # Test case 8: Hotfix-base with doing commit again
-    # runTest "Test Case 8" "24.3.0-dev.2" "1.2.10-rc.2" "25.1.0" "24.3.0-hf.1" "24.3.0-hf.2" "testcase8/versionFile.tmp" "24.3" "hotfix-base/24.3.0"
-
-    # # Test case 9: Merge feature/test-for-25.1 to main
-    # runTest "Test Case 9" "25.1.1-dev.2" "1.2.10-rc.2" "25.1.0" "" "25.1.1" "testcase9/versionFile.tmp" "25.1" "main"
-
-    # # Test case 10: Create release/v25.2.0 and test on feature/test-for-R-25.2.0
-    # runTest "Test Case 10" "25.1.1-dev.2" "1.2.10-rc.2" "25.1.1" "" "25.2.0-dev.1" "testcase10/versionFile.tmp" "25.2" "feature"
-
-    # # Test case 11: feature/test-for-R-25.2.0 with doing commit twice
-    # runTest "Test Case 11" "25.2.0-dev.1" "1.2.10-rc.2" "25.1.1" "" "25.2.0-dev.2" "testcase11/versionFile.tmp" "25.2" "feature"
-
-    # # Test case 12: release/v25.2.0
-    # runTest "Test Case 12" "25.2.0-dev.2" "1.2.10-rc.2" "25.1.1" "" "25.2.0-rc.1" "testcase12/versionFile.tmp" "25.2" "release"
-
-    # # Test case 13: feature/test2-for-R-25.2.0
-    # runTest "Test Case 13" "25.2.0-dev.2" "25.2.0-rc.1" "25.1.1" "" "25.2.0-dev.3" "testcase13/versionFile.tmp" "25.2" "feature"
-
-    # # Test case 14: feature/test2-for-R-25.2.0 with doing twice
-    # runTest "Test Case 14" "25.2.0-dev.3" "25.2.0-rc.1" "25.1.1" "" "25.2.0-dev.4" "testcase14/versionFile.tmp" "25.2" "feature"
-
-    # # Test case 15: release/v25.2.0 with doing twice
-    # runTest "Test Case 15" "25.2.0-dev.4" "25.2.0-rc.1" "25.1.1" "" "25.2.0-rc.2" "testcase15/versionFile.tmp" "25.2" "release"
-
-    # # Test case 16: Merge feature/test-for-R-25.2.0 to release
-    # runTest "Test Case 16" "25.2.0-dev.4" "25.2.0-rc.2" "25.1.1" "" "25.2.0-rc.3" "testcase16/versionFile.tmp" "25.2" "release"
-
-    # # Test case 17: Merge hotfix-base to main
-    # runTest "Test Case 17" "25.2.0-dev.4" "25.2.0-rc.3" "25.1.1" "" "25.1.2" "testcase17/versionFile.tmp" "25.1" "main"
 
     # Add more tests here as needed
     logMessage "INFO" "Test execution completed"
