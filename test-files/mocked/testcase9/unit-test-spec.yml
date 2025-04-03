@@ -1,0 +1,24 @@
+# Unit test specification of configuration file to test versioning bot
+
+testInfo:
+  name: "Test Case 9"
+  description: "Merge feature/test-for-R-25.1 to main"
+
+input:
+  lastDevVersion: "25.1.1-dev.2"
+  lastRcVersion: "1.2.10-rc.2"
+  lastReleaseVersion: "25.1.0"
+  lastRebaseVersion: ""
+  targetBaseVersion: ""
+  branchName: "main"
+  appVersion: "25.1"
+
+file:
+  mockedEnvFile: "mock-base-variables.sh"
+  versionFileTmp: "versionFile.tmp"
+
+output:
+  expectedValue: "25.1.1"
+
+
+  

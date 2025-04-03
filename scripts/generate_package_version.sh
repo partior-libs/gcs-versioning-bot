@@ -14,7 +14,7 @@ else
 fi
 ## ANTZ TEMPORARY
 # source ./test-files/mock-base-variables.sh
-source run2.sh
+# source run2.sh
 
 artifactName="$1"
 currentBranch=$(echo $2 | cut -d'/' -f1)
@@ -24,6 +24,12 @@ currentMsgTag="$5"
 rebaseReleaseVersion="$6"
 versionListFile="$7"
 isDebug="$8"
+simulatedEnvFile="$9"
+
+if [[ -n "${simulatedEnvFile}" ]]; then
+    echo "[INFO] simulatedEnvFile: $simulatedEnvFile"
+    source "${simulatedEnvFile}"
+fi
 
 # Reset global state
 rm -f $CORE_VERSION_UPDATED_FILE

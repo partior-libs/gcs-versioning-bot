@@ -1,0 +1,24 @@
+# Unit test specification of configuration file to test versioning bot
+
+testInfo:
+  name: "Test Case 5"
+  description: "Create a feature/test-for-R-25.1 branch and do a commit"
+
+input:
+  lastDevVersion: "24.3.0-dev.2"
+  lastRcVersion: "1.2.10-rc.2"
+  lastReleaseVersion: "25.1.0"
+  lastRebaseVersion: ""
+  targetBaseVersion: ""
+  branchName: "feature"
+  appVersion: "25.1"
+
+file:
+  mockedEnvFile: "mock-base-variables.sh"
+  versionFileTmp: "versionFile.tmp"
+
+output:
+  expectedValue: "25.1.1-dev.1"
+
+
+  
