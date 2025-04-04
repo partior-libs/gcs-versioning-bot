@@ -1,17 +1,5 @@
 #!/bin/bash +e
 
-## Reading action's global setting
-if [[ ! -z $BASH_SOURCE ]]; then
-    ACTION_BASE_DIR=$(dirname $BASH_SOURCE)
-    source $(find $ACTION_BASE_DIR/.. -type f | grep general.ini)
-elif [[ $(find . -type f -name general.ini | wc -l) > 0 ]]; then
-    source $(find . -type f | grep general.ini)
-elif [[ $(find .. -type f -name general.ini | wc -l) > 0 ]]; then
-    source $(find .. -type f | grep general.ini)
-else
-    echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to find and source general.ini"
-    exit 1
-fi
 ## ANTZ TEMPORARY
 # source ./test-files/mock-base-variables.sh
 # source run2.sh
@@ -24,11 +12,21 @@ currentMsgTag="$5"
 rebaseReleaseVersion="$6"
 versionListFile="$7"
 isDebug="$8"
-simulatedEnvFile="$9"
+unitTestEnable="${9:-false}"
 
-if [[ -n "${simulatedEnvFile}" ]]; then
-    echo "[INFO] simulatedEnvFile: $simulatedEnvFile"
-    source "${simulatedEnvFile}"
+# Reading action's global setting
+if [[ ! "${unitTestEnable}" == "true" ]]; then
+    if [[ ! -z $BASH_SOURCE && "${unitTestEnable}" ]]; then
+        ACTION_BASE_DIR=$(dirname $BASH_SOURCE)
+        source $(find $ACTION_BASE_DIR/.. -type f | grep general.ini)
+    elif [[ $(find . -type f -name general.ini | wc -l) > 0 ]]; then
+        source $(find . -type f | grep general.ini)
+    elif [[ $(find .. -type f -name general.ini | wc -l) > 0 ]]; then
+        source $(find .. -type f | grep general.ini)
+    else
+        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to find and source general.ini"
+        exit 1
+    fi
 fi
 
 # Reset global state
@@ -307,7 +305,7 @@ function degaussCoreVersionVariables() {
     fi
     source ./$tmpVariable
     cat ./$tmpVariable
-    # rm -f $tmpVariable
+    rm -f $tmpVariable
 }
 
 ## Reset variables that's not used, to simplify requirement evaluation later
@@ -369,7 +367,7 @@ function degaussPreReleaseVersionVariables() {
         echo "export ${vCurrentVersionFile}=false" >> $tmpVariable
     fi
     source ./$tmpVariable
-    # rm -f $tmpVariable
+    rm -f $tmpVariable
 }
 
 ## Reset variables that's not used, to simplify requirement evaluation later

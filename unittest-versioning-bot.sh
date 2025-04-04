@@ -104,7 +104,7 @@ function runTest() {
     local lastBaseVersion="$6"
 
     # Get the actual output from the script
-    source "${SCRIPT_PATH}" "goquorum-node" "${sourceBranch}" "${BUILD_GH_LABEL_FILE}" "${BUILD_GH_TAG_FILE}" "${BUILD_GH_COMMIT_MESSAGE_FILE}" "${lastBaseVersion}" "${versionFileTmp}" "true"
+    source "${SCRIPT_PATH}" "goquorum-node" "${sourceBranch}" "${BUILD_GH_LABEL_FILE}" "${BUILD_GH_TAG_FILE}" "${BUILD_GH_COMMIT_MESSAGE_FILE}" "${lastBaseVersion}" "${versionFileTmp}" "true" "true"
 
     local actualOutput=$(cat "$ARTIFACT_NEXT_VERSION_FILE")
     
