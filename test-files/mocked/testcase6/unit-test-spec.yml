@@ -1,24 +1,25 @@
 # Unit test specification of configuration file to test versioning bot
 
-testInfo:
-  name: "Test Case 6"
-  description: "Do commit twice on feature/test-for-R-25.1 branch"
+test-spec:
+  info:
+    name: "Test Case 6"
+    description: "Do commit twice on feature/test-for-R-25.1 branch"
 
-input:
-  lastDevVersion: "25.1.2-dev.1"
-  lastRcVersion: "1.2.10-rc.2"
-  lastReleaseVersion: "25.1.0"
-  lastRebaseVersion: ""
-  targetBaseVersion: ""
-  branchName: "feature"
-  appVersion: "25.1"
+  input:
+    lastDevVersion: "25.1.2-dev.1"
+    lastRcVersion: "1.2.10-rc.2"
+    lastReleaseVersion: "25.1.0"
+    lastRebaseVersion: ""
+    targetBaseVersion: ""
+    branchName: "feature"
+    appVersion: "25.1"
 
-file:
-  mockedEnvFile: "mock-base-variables.sh"
-  versionFileTmp: "versionFile.tmp"
+  file:
+    mockedEnvFile: "mock-base-variables.sh"
+    versionFileTmp: "versionFile.tmp"
 
-output:
-  expectedValue: "25.1.2-dev.2"
+  output:
+    expectedValue: "25.1.2-dev.2"
 
 
   

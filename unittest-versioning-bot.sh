@@ -104,7 +104,7 @@ function runTest() {
     local lastBaseVersion="$6"
 
     # Get the actual output from the script
-    bash "${SCRIPT_PATH}" "goquorum-node" "${sourceBranch}" "${BUILD_GH_LABEL_FILE}" "${BUILD_GH_TAG_FILE}" "${BUILD_GH_COMMIT_MESSAGE_FILE}" "${lastBaseVersion}" "${versionFileTmp}" "true" "${mockedEnvFile}"
+    source "${SCRIPT_PATH}" "goquorum-node" "${sourceBranch}" "${BUILD_GH_LABEL_FILE}" "${BUILD_GH_TAG_FILE}" "${BUILD_GH_COMMIT_MESSAGE_FILE}" "${lastBaseVersion}" "${versionFileTmp}" "true"
 
     local actualOutput=$(cat "$ARTIFACT_NEXT_VERSION_FILE")
     
@@ -142,18 +142,18 @@ function runTests() {
 
         testSpecPullPath="${tcPath}/${TEST_SPEC_FILE}"
 
-        name=$(yq e '.testInfo.name' $testSpecPullPath)
-        description=$(yq e '.testInfo.description' $testSpecPullPath)
-        lastDevVersion=$(yq e '.input.lastDevVersion' $testSpecPullPath)
-        lastRcVersion=$(yq e '.input.lastRcVersion' $testSpecPullPath)
-        lastReleaseVersion=$(yq e '.input.lastReleaseVersion' $testSpecPullPath)
-        lastRebaseVersion=$(yq e '.input.lastRebaseVersion' $testSpecPullPath)
-        targetBaseVersion=$(yq e '.input.targetBaseVersion' $testSpecPullPath)
-        branchName=$(yq e '.input.branchName' $testSpecPullPath)
-        appVersion=$(yq e '.input.appVersion' $testSpecPullPath)
-        mockedEnvFile=$(yq e '.file.mockedEnvFile' $testSpecPullPath)
-        versionFileTmp=$(yq e '.file.versionFileTmp' $testSpecPullPath)
-        expectedValue=$(yq e '.output.expectedValue' $testSpecPullPath)
+        name=$(yq e ".test-spec.info.name" $testSpecPullPath)
+        description=$(yq e ".test-spec.info.description" $testSpecPullPath)
+        lastDevVersion=$(yq e ".test-spec.input.lastDevVersion" $testSpecPullPath)
+        lastRcVersion=$(yq e ".test-spec.input.lastRcVersion" $testSpecPullPath)
+        lastReleaseVersion=$(yq e ".test-spec.input.lastReleaseVersion" $testSpecPullPath)
+        lastRebaseVersion=$(yq e ".test-spec.input.lastRebaseVersion" $testSpecPullPath)
+        targetBaseVersion=$(yq e ".test-spec.input.targetBaseVersion" $testSpecPullPath)
+        branchName=$(yq e ".test-spec.input.branchName" $testSpecPullPath)
+        appVersion=$(yq e ".test-spec.input.appVersion" $testSpecPullPath)
+        mockedEnvFile=$(yq e ".test-spec.file.mockedEnvFile" $testSpecPullPath)
+        versionFileTmp=$(yq e ".test-spec.file.versionFileTmp" $testSpecPullPath)
+        expectedValue=$(yq e ".test-spec.output.expectedValue" $testSpecPullPath)
 
         versionFileFullPath="${tcPath}/${versionFileTmp}"
         mockedEnvFileFullPath="${tcPath}/${mockedEnvFile}"
@@ -176,7 +176,8 @@ function runTests() {
         source "${mockedEnvFileFullPath}"
 
         # Modify the input files for the test case
-        modifyVersionFilesForTestCase "$lastDevVersion" "$lastRcVersion" "$lastReleaseVersion" "$appVersion" "$branchName" "$lastRebaseVersion" "$mockedEnvFileFullPath"
+        modifyVersionFilesForTestCase "${lastDevVersion}" "${lastRcVersion}" "${lastReleaseVersion}" "${appVersion}" "${branchName}" "${lastRebaseVersion}" "${mockedEnvFileFullPath}"
+        source "${mockedEnvFileFullPath}"
 
         runTest "${name}" "${expectedValue}" "${versionFileFullPath}" "${branchName}" "${mockedEnvFileFullPath}" "${targetBaseVersion}"
     done
@@ -203,15 +204,6 @@ if [[ $scope =~ ^[0-9]+$ ]]; then
 # Case 2: Run all testcases (e.g., testcase1, testcase2, ...)
 elif [ "$scope" == "all" ]; then
     runTests "${TEST_SUITE_PATH}/testcase*"
-
-# # Case 3: Run a range of testcases (e.g., testcase1-testcase5)
-# elif [[ $option =~ ^([0-9]+)-([0-9]+)$ ]]; then
-#     start=${BASH_REMATCH[1]}
-#     end=${BASH_REMATCH[2]}
-
-#     for ((i=start; i<=end; i++)); do
-#         run_testcase "testcase$i"
-#     done
 
 else
     echo "Invalid option. Usage: $0 [all | specific_testcase | range_of_testcases]"

@@ -1,24 +1,25 @@
 # Unit test specification of configuration file to test versioning bot
 
-testInfo:
-  name: "Test Case 10"
-  description: "Checkout feature/test-for-R-25.2.0 from a release/v25.2.0 branch and test on it"
+test-spec:
+  info:
+    name: "Test Case 10"
+    description: "Checkout feature/test-for-R-25.2.0 from a release/v25.2.0 branch and test on it"
 
-input:
-  lastDevVersion: "25.1.1-dev.2"
-  lastRcVersion: "1.2.10-rc.2"
-  lastReleaseVersion: "25.1.1"
-  lastRebaseVersion: ""
-  targetBaseVersion: ""
-  branchName: "feature"
-  appVersion: "25.2"
+  input:
+    lastDevVersion: "25.1.1-dev.2"
+    lastRcVersion: "1.2.10-rc.2"
+    lastReleaseVersion: "25.1.1"
+    lastRebaseVersion: ""
+    targetBaseVersion: ""
+    branchName: "feature"
+    appVersion: "25.2"
 
-file:
-  mockedEnvFile: "mock-base-variables.sh"
-  versionFileTmp: "versionFile.tmp"
+  file:
+    mockedEnvFile: "mock-base-variables.sh"
+    versionFileTmp: "versionFile.tmp"
 
-output:
-  expectedValue: "25.2.0-dev.1"
+  output:
+    expectedValue: "25.2.0-dev.1"
 
 
   
