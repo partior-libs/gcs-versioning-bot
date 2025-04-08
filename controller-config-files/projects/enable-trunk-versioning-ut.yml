@@ -1,0 +1,153 @@
+---
+helm:
+  ci:
+    artifact-base-name: goquorum-node
+    artifact-auto-versioning:
+      enabled: true
+      rebase-version:
+        enabled: true
+        identifier: hf
+        validation:
+          fail-nonexistent:
+            enabled: true
+        rules:
+          branches: 
+            target: hotfix-base,rebase
+            enabled: true
+      major-version:
+        enabled: true
+        rules:
+          branches: 
+            target: release,feature,main
+            enabled: true
+          labels: 
+            target: MAJOR-VERSION 
+            enabled: false
+          tag: 
+            target: MAJOR-VERSION 
+            enabled: false
+          message-tag: 
+            target: MAJOR-VERSION 
+            enabled: false
+          file:
+            enabled: true
+            target: ./app-version.cfg
+            key: MAJOR-VERSION
+      minor-version:
+        enabled: true
+        rules:
+          branches:
+            target: release,feature,main
+            enabled: true
+          tag: 
+            target: MINOR-VERSION 
+            enabled: false
+          message-tag: 
+            target: MINOR-VERSION 
+            enabled: false
+          labels: 
+            target: MINOR-VERSION  
+            enabled: false
+          file:
+            enabled: true
+            target: ./app-version.cfg
+            key: MINOR-VERSION
+      patch-version:
+        enabled: true
+        rules:
+          branches:
+            target: main
+            enabled: true
+          tag: 
+            target: PATCH-VERSION 
+            enabled: false
+          message-tag:
+            target: PATCH-VERSION
+            enabled: false
+          labels: 
+            target: PATCH-VERSION
+            enabled: false
+          file:
+            enabled: false
+            target: ./app-version.cfg
+            key: PATCH-VERSION
+      release-candidate-version:
+        enabled: true
+        identifier: rc
+        rules:
+          branches: 
+            target: release
+            enabled: true
+          tag: 
+            target: RC-VERSION
+            enabled: false
+          file:
+            enabled: false
+            target: ./app-version.cfg
+            key: RC-VERSION
+      development-version:
+        enabled: true
+        identifier: dev
+        rules:
+          branches: 
+            target: develop,feature
+            enabled: true
+          tag: 
+            target: DEV-VERSION
+            enabled: false
+          file:
+            enabled: false
+            target: ./app-version.cfg
+            key: DEV-VERSION
+      build-version:
+        enabled: false
+        identifier: bld
+        rules:
+          branches: 
+            target: develop,feature
+            enabled: true
+      replacement:
+        enabled: true
+        file-token: 
+          enabled: true
+          target: ./goquorum-node/Chart.yaml
+          token: '@@VERSION_BOT_TOKEN@@'
+        maven-pom: 
+          enabled: false
+          target: test-files/sample-pom-file.xml
+        yaml-update: 
+          enabled: false
+          target: ./goquorum-node/Chart.yaml
+          query-path: .version
+
+    branches:
+      default:
+        artifact:
+          packager:
+            group: partior
+            artifactory-username: svc-sandbox-rw
+            artifactory-repo: sandbox-helm-dev
+      main:
+        artifact:
+          packager:
+            group: partior
+      feature:
+        artifact:
+          packager:
+            group: partior
+      release:
+        artifact:
+          packager:
+            group: partior
+      hotfix:
+        artifact:
+          packager:
+            group: partior
+      bugfix:
+        artifact:
+          packager:
+            group: partior
+      develop:
+        artifact:
+          packager:
+            group: partior

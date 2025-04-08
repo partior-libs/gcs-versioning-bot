@@ -1,11 +1,12 @@
 #!/bin/bash
 TEST_SUITE_PATH="./test-files/mocked"
 TEST_SPEC_FILE="unit-test-spec.yml"
-APP_VERSION_FILE="app-version.cfg"
-HELM_FILE="goquorum-node/Chart.yaml"
-SCRIPT_PATH="./scripts/generate_package_version.sh"
+GENERATE_VERSION_SCRIPT_PATH="./scripts/generate_package_version.sh"
+YAML_IMPORTER_SCRIPT_PATH="./scripts/yaml-converter.sh"
 LOG_FILE="unit-test-report.txt"
-
+YAML_IMPORTER_FILE="yaml-importer-tmp"
+GENERAL_CONFIG="config/general.ini"
+CONTROLLER_CONFIG_FILE="controller-config-files/projects/enable-trunk-versioning-ut.yml"
 
 # Function to log messages
 function logMessage() {
@@ -30,10 +31,18 @@ function modifyVersionFilesForTestCase() {
     local appVersion="$4"
     local sourceBranch="$5"
     local rebaseVersion="$6"
-    local mockedEnvFile="$7"
 
     local majorVersion
     local minorVersion
+
+    echo "" > env.tmp
+
+    echo "BUILD_GH_BRANCH_NAME=feature" >> env.tmp
+    echo "MAJOR_GH_CURRENT_BRANCH=$BUILD_GH_BRANCH_NAME" >> env.tmp
+    echo "MINOR_GH_CURRENT_BRANCH=$BUILD_GH_BRANCH_NAME" >> env.tmp
+    echo "PATCH_GH_CURRENT_BRANCH=$BUILD_GH_BRANCH_NAME" >> env.tmp
+    echo "RC_GH_CURRENT_BRANCH=$BUILD_GH_BRANCH_NAME" >> env.tmp
+    echo "DEV_GH_CURRENT_BRANCH=$BUILD_GH_BRANCH_NAME" >> env.tmp
 
     logMessage "INFO" "Modifying input files for test case"
     echo "$devVersion" > "$ARTIFACT_LAST_DEV_VERSION_FILE"
@@ -68,30 +77,32 @@ function modifyVersionFilesForTestCase() {
             echo "rebaseVersion: $rebaseVersion"
             echo "$rebaseVersion" > "$ARTIFACT_LAST_BASE_VERSION_FILE"
             logMessage "INFO" "Last Base version $(cat $ARTIFACT_LAST_BASE_VERSION_FILE)"
-            sed -i "s/^BUILD_GH_BRANCH_NAME=.*/BUILD_GH_BRANCH_NAME=$branchName/" "${mockedEnvFile}"
+            sed -i "s/^BUILD_GH_BRANCH_NAME=.*/BUILD_GH_BRANCH_NAME=$branchName/" "env.tmp"
         else
             echo "" > "$ARTIFACT_LAST_BASE_VERSION_FILE"
-            sed -i "s/^BUILD_GH_BRANCH_NAME=.*/BUILD_GH_BRANCH_NAME=$sourceBranch/" "${mockedEnvFile}"
-        fi 
+            sed -i "s/^BUILD_GH_BRANCH_NAME=.*/BUILD_GH_BRANCH_NAME=$sourceBranch/" "env.tmp"
+        fi
+        source env.tmp
+        rm -f env.tmp
     fi
 }
 
 # Function to modify input envronment files for the test case
 function modifyEnvFilesForTestCase() {
-    local mockedEnvFile="$1"
+    local yamlImporterFile="$1"
     local testCasePath="$2"
-
-    echo "[INFO] mockedEnvFile: $mockedEnvFile"
+    
+    echo "[INFO] yamlImporterFile: $yamlImporterFile"
     echo "[INFO] testCasePath: $testCasePath"
 
-    sed -i "s#^MAJOR_V_CONFIG_VFILE_NAME=.*#MAJOR_V_CONFIG_VFILE_NAME=$testCasePath/$APP_VERSION_FILE#" "${mockedEnvFile}"
-    sed -i "s#^MINOR_V_CONFIG_VFILE_NAME=.*#MINOR_V_CONFIG_VFILE_NAME=$testCasePath/$APP_VERSION_FILE#" "${mockedEnvFile}"
-    sed -i "s#^PATCH_V_CONFIG_VFILE_NAME=.*#PATCH_V_CONFIG_VFILE_NAME=$testCasePath/$APP_VERSION_FILE#" "${mockedEnvFile}"
-    sed -i "s#^RC_V_CONFIG_VFILE_NAME=.*#RC_V_CONFIG_VFILE_NAME=$testCasePath/$APP_VERSION_FILE#" "${mockedEnvFile}"
-    sed -i "s#^DEV_V_CONFIG_VFILE_NAME=.*#DEV_V_CONFIG_VFILE_NAME=$testCasePath/$APP_VERSION_FILE#" "${mockedEnvFile}"
+    sed -i "s#^artifact_auto_versioning__major_version__rules__file__target=.*#artifact_auto_versioning__major_version__rules__file__target=$testCasePath/${artifact_auto_versioning__major_version__rules__file__target#./}#" "${yamlImporterFile}"
+    sed -i "s#^artifact_auto_versioning__minor_version__rules__file__target=.*#artifact_auto_versioning__minor_version__rules__file__target=$testCasePath/${artifact_auto_versioning__minor_version__rules__file__target#./}#" "${yamlImporterFile}"
+    sed -i "s#^artifact_auto_versioning__patch_version__rules__file__target=.*#artifact_auto_versioning__patch_version__rules__file__target=$testCasePath/${artifact_auto_versioning__patch_version__rules__file__target#./}#" "${yamlImporterFile}"
+    sed -i "s#^artifact_auto_versioning__release_candidate_version__rules__file__target=.*#artifact_auto_versioning__release_candidate_version__rules__file__target=$testCasePath/${artifact_auto_versioning__release_candidate_version__rules__file__target#./}#" "${yamlImporterFile}"
+    sed -i "s#^artifact_auto_versioning__development_version__rules__file__target=.*#artifact_auto_versioning__development_version__rules__file__target=$testCasePath/${artifact_auto_versioning__development_version__rules__file__target#./}#" "${yamlImporterFile}"
 
-    sed -i "s#^REPLACE_V_CONFIG_FILETOKEN_FILE=.*#REPLACE_V_CONFIG_FILETOKEN_FILE=$testCasePath/$HELM_FILE#" "${mockedEnvFile}"
-    sed -i "s#^REPLACE_V_CONFIG_YAMLPATH_FILE=.*#REPLACE_V_CONFIG_YAMLPATH_FILE=$testCasePath/$HELM_FILE#" "${mockedEnvFile}"
+    sed -i "s#^artifact_auto_versioning__replacement__file_token__target=.*#artifact_auto_versioning__replacement__file_token__target=$testCasePath/${artifact_auto_versioning__replacement__file_token__target#./}#" "${yamlImporterFile}"
+    sed -i "s#^artifact_auto_versioning__replacement__yaml_update__target=.*#artifact_auto_versioning__replacement__yaml_update__target=$testCasePath/${artifact_auto_versioning__replacement__yaml_update__target#./}#" "${yamlImporterFile}"
 }
 
 # Function to run the actual test
@@ -100,11 +111,10 @@ function runTest() {
     local expectedOutput="$2"
     local versionFileTmp="$3"
     local sourceBranch="$4"
-    local mockedEnvFile="$5"
-    local lastBaseVersion="$6"
+    local lastBaseVersion="$5"
 
     # Get the actual output from the script
-    source "${SCRIPT_PATH}" "goquorum-node" "${sourceBranch}" "${BUILD_GH_LABEL_FILE}" "${BUILD_GH_TAG_FILE}" "${BUILD_GH_COMMIT_MESSAGE_FILE}" "${lastBaseVersion}" "${versionFileTmp}" "true" "true"
+    source "${GENERATE_VERSION_SCRIPT_PATH}" "${artifact_base_name}" "${sourceBranch}" "${BUILD_GH_LABEL_FILE}" "${BUILD_GH_TAG_FILE}" "${BUILD_GH_COMMIT_MESSAGE_FILE}" "${lastBaseVersion}" "${versionFileTmp}" "true"
 
     local actualOutput=$(cat "$ARTIFACT_NEXT_VERSION_FILE")
     
@@ -122,11 +132,36 @@ function runTest() {
     logMessage "INFO" "---------------------------------------------"
 }
 
-# # Function to restore the original contents of the input files
+# Function to restore the original contents of the input files
 function restoreOriginalHelmFiles() {
     logMessage "INFO" "Restoring original helm files"
     sed -i "s/^version: .*/version: @@VERSION_BOT_TOKEN@@/" "${REPLACE_V_CONFIG_FILETOKEN_FILE}"
 }
+
+function startYamlImporter(){
+    importerFileName="$1"
+    configFiles="$2"
+
+    echo "importerFileName: $importerFileName"
+    if [[ ! -f $importerFileName ]]; then
+        touch $importerFileName
+        touch $importerFileName.2
+    else
+        echo "" > $importerFileName
+        echo "" > $importerFileName.2
+    fi
+
+    bash $YAML_IMPORTER_SCRIPT_PATH "${configFiles}" ".helm.ci" "${importerFileName}" ".helm.ci-default" false
+
+    # Remove lines containing '>> $GITHUB_OUTPUT' and 'echo'
+    echo "[INFO] Remove lines containing >> \$GITHUB_OUTPUT and 'echo'"
+    sed -i 's/>> $GITHUB_ENV//g' "$importerFileName"
+    sed -i '/>> $GITHUB_OUTPUT/d' "$importerFileName"
+    sed -i 's/echo //g' "$importerFileName"
+
+    source $importerFileName
+}
+
 # Function to run all tests
 function runTests() {
     local scopeOfTestSuite="$1"
@@ -151,12 +186,10 @@ function runTests() {
         targetBaseVersion=$(yq e ".test-spec.input.targetBaseVersion" $testSpecPullPath)
         branchName=$(yq e ".test-spec.input.branchName" $testSpecPullPath)
         appVersion=$(yq e ".test-spec.input.appVersion" $testSpecPullPath)
-        mockedEnvFile=$(yq e ".test-spec.file.mockedEnvFile" $testSpecPullPath)
         versionFileTmp=$(yq e ".test-spec.file.versionFileTmp" $testSpecPullPath)
         expectedValue=$(yq e ".test-spec.output.expectedValue" $testSpecPullPath)
 
         versionFileFullPath="${tcPath}/${versionFileTmp}"
-        mockedEnvFileFullPath="${tcPath}/${mockedEnvFile}"
 
         logMessage "INFO" "$name"
         logMessage "INFO" "Description: $description"
@@ -169,45 +202,53 @@ function runTests() {
         # echo "[INFO] branchName: $branchName"
         # echo "[INFO] appVersion: $appVersion"
         # echo "[INFO] versionFileTmp: $versionFileTmp"
-        # echo "[INFO] mockedEnvFile: $mockedEnvFile"
         # echo "[INFO] expectedValue: $expectedValue"
 
-        modifyEnvFilesForTestCase "${mockedEnvFileFullPath}" "${tcPath}"
-        source "${mockedEnvFileFullPath}"
+        startYamlImporter "${YAML_IMPORTER_FILE}" "${CONTROLLER_CONFIG_FILE}"
+
+        modifyEnvFilesForTestCase "${YAML_IMPORTER_FILE}" "${tcPath}"
+        source "${GENERAL_CONFIG}"
 
         # Modify the input files for the test case
-        modifyVersionFilesForTestCase "${lastDevVersion}" "${lastRcVersion}" "${lastReleaseVersion}" "${appVersion}" "${branchName}" "${lastRebaseVersion}" "${mockedEnvFileFullPath}"
-        source "${mockedEnvFileFullPath}"
+        modifyVersionFilesForTestCase "${lastDevVersion}" "${lastRcVersion}" "${lastReleaseVersion}" "${appVersion}" "${branchName}" "${lastRebaseVersion}"
 
-        runTest "${name}" "${expectedValue}" "${versionFileFullPath}" "${branchName}" "${mockedEnvFileFullPath}" "${targetBaseVersion}"
+        source "${YAML_IMPORTER_FILE}"
+        runTest "${name}" "${expectedValue}" "${versionFileFullPath}" "${branchName}" "${targetBaseVersion}"
     done
 
     # Add more tests here as needed
     logMessage "INFO" "Test execution completed"
 }
 
-initializeLog
+function unitTestRun(){
+    local scope=$1
+    initializeLog
 
-# Check if arguments are provided
-if [ $# -eq 0 ]; then
-    echo "Usage: $0 [all | specific_testcase | range_of_testcases]"
-    exit 1
-fi
+    # Check if arguments are provided
+    if [ $# -eq 0 ]; then
+        echo "Usage: $0 [all | specific_testcase | range_of_testcases]"
+        exit 1
+    fi
+
+    # Case 1: Run a specific testcase (e.g., testcase1, testcase2)
+    if [[ $scope =~ ^[0-9]+$ ]]; then
+        runTests "${TEST_SUITE_PATH}/testcase${scope}"
+
+    # Case 2: Run all testcases (e.g., testcase1, testcase2, ...)
+    elif [ "$scope" == "all" ]; then
+        runTests "${TEST_SUITE_PATH}/testcase*"
+
+    else
+        echo "Invalid option. Usage: $0 [all | specific_testcase | range_of_testcases]"
+        exit 1
+    fi
+}
 
 # Handle options
-scope=$1
+scope="$1"
 
-# Case 1: Run a specific testcase (e.g., testcase1, testcase2)
-if [[ $scope =~ ^[0-9]+$ ]]; then
-    runTests "${TEST_SUITE_PATH}/testcase${scope}"
+unitTestRun "${scope}"
 
-# Case 2: Run all testcases (e.g., testcase1, testcase2, ...)
-elif [ "$scope" == "all" ]; then
-    runTests "${TEST_SUITE_PATH}/testcase*"
 
-else
-    echo "Invalid option. Usage: $0 [all | specific_testcase | range_of_testcases]"
-    exit 1
-fi
 
 
