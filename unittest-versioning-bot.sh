@@ -87,8 +87,8 @@ function modifyVersionFilesForTestCase() {
     fi
 }
 
-# Function to modify input envronment files for the test case
-function modifyEnvFilesForTestCase() {
+# Function to modify input envronment variables for the test case
+function modifyEnvVarsForTestCase() {
     local yamlImporterFile="$1"
     local testCasePath="$2"
     
@@ -206,7 +206,7 @@ function runTests() {
 
         startYamlImporter "${YAML_IMPORTER_FILE}" "${CONTROLLER_CONFIG_FILE}"
 
-        modifyEnvFilesForTestCase "${YAML_IMPORTER_FILE}" "${tcPath}"
+        modifyEnvVarsForTestCase "${YAML_IMPORTER_FILE}" "${tcPath}"
         source "${GENERAL_CONFIG}"
 
         # Modify the input files for the test case
