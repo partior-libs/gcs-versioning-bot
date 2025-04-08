@@ -1,5 +1,5 @@
 #!/bin/bash
-TEST_SUITE_PATH="./test-files/mocked"
+TEST_SUITE_PATH="./test-files/enable-trunk-versioning"
 TEST_SPEC_FILE="unit-test-spec.yml"
 GENERATE_VERSION_SCRIPT_PATH="./scripts/generate_package_version.sh"
 YAML_IMPORTER_SCRIPT_PATH="./scripts/yaml-converter.sh"
