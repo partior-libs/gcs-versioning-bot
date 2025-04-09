@@ -1,12 +1,12 @@
 #!/bin/bash
-TEST_SUITE_PATH="./test-files/enable-trunk-versioning"
+TEST_SUITE_PATH="./test-files"
 TEST_SPEC_FILE="unit-test-spec.yml"
 GENERATE_VERSION_SCRIPT_PATH="./scripts/generate_package_version.sh"
 YAML_IMPORTER_SCRIPT_PATH="./scripts/yaml-converter.sh"
 LOG_FILE="unit-test-report.txt"
 YAML_IMPORTER_FILE="yaml-importer-tmp"
 GENERAL_CONFIG="config/general.ini"
-CONTROLLER_CONFIG_FILE="controller-config-files/projects/enable-trunk-versioning-ut.yml"
+BASE_CONTROLLER_CONFIG_DIR="controller-config-files/projects"
 
 # Function to log messages
 function logMessage() {
@@ -43,6 +43,8 @@ function modifyVersionFilesForTestCase() {
     echo "PATCH_GH_CURRENT_BRANCH=$BUILD_GH_BRANCH_NAME" >> env.tmp
     echo "RC_GH_CURRENT_BRANCH=$BUILD_GH_BRANCH_NAME" >> env.tmp
     echo "DEV_GH_CURRENT_BRANCH=$BUILD_GH_BRANCH_NAME" >> env.tmp
+    echo "GITHUB_RUN_NUMBER=103" >> env.tmp
+    echo "GITHUB_RUN_ATTEMPT=1" >> env.tmp
 
     logMessage "INFO" "Modifying input files for test case"
     echo "$devVersion" > "$ARTIFACT_LAST_DEV_VERSION_FILE"
@@ -151,7 +153,7 @@ function startYamlImporter(){
         echo "" > $importerFileName.2
     fi
 
-    bash $YAML_IMPORTER_SCRIPT_PATH "${configFiles}" ".helm.ci" "${importerFileName}" ".helm.ci-default" false
+    bash $YAML_IMPORTER_SCRIPT_PATH "${configFiles}" ".smc.ci" "${importerFileName}" ".smc.ci-default" false
 
     # Remove lines containing '>> $GITHUB_OUTPUT' and 'echo'
     echo "[INFO] Remove lines containing >> \$GITHUB_OUTPUT and 'echo'"
@@ -162,58 +164,80 @@ function startYamlImporter(){
     source $importerFileName
 }
 
+function findConfigFile() {
+    local scopeConfigFile="$1"
+    local baseDir="$2"
+
+    foundFile=$(find "${baseDir}" -type f -name "*${scopeConfigFile}*")
+
+    if [[ -z "$foundFile" ]]; then
+        echo "[ERROR] No config file found containing: ${scopeConfigFile}"
+        exit 1
+    fi
+    
+    echo "${foundFile}"
+}
+
 # Function to run all tests
 function runTests() {
-    local scopeOfTestSuite="$1"
+    local scopeOfConfigFiles="$1"
+    local scopeOfTestSuite="$2"
 
     echo "scopeOfTestSuite: $scopeOfTestSuite"
-    # runTest <Name> <Last Dev version> <Last RC version> <Last Release version> <Expected Value> <version temp file> <app-version>
+    echo "scopeOfConfigFiles: $scopeOfConfigFiles"
     
     logMessage "INFO" "Starting test execution"
     logMessage "INFO" "---------------------------------------------"
 
     for tcPath in $scopeOfTestSuite; do
-        echo "[INFO] Processing folder: $tcPath"
+        if [[ -d $tcPath ]]; then
+            echo "[INFO] Running test: $(basename $tcPath) from config: $scopeOfConfigFiles"
 
-        testSpecPullPath="${tcPath}/${TEST_SPEC_FILE}"
+            testSpecPullPath="${tcPath}/${TEST_SPEC_FILE}"
 
-        name=$(yq e ".test-spec.info.name" $testSpecPullPath)
-        description=$(yq e ".test-spec.info.description" $testSpecPullPath)
-        lastDevVersion=$(yq e ".test-spec.input.lastDevVersion" $testSpecPullPath)
-        lastRcVersion=$(yq e ".test-spec.input.lastRcVersion" $testSpecPullPath)
-        lastReleaseVersion=$(yq e ".test-spec.input.lastReleaseVersion" $testSpecPullPath)
-        lastRebaseVersion=$(yq e ".test-spec.input.lastRebaseVersion" $testSpecPullPath)
-        targetBaseVersion=$(yq e ".test-spec.input.targetBaseVersion" $testSpecPullPath)
-        branchName=$(yq e ".test-spec.input.branchName" $testSpecPullPath)
-        appVersion=$(yq e ".test-spec.input.appVersion" $testSpecPullPath)
-        versionFileTmp=$(yq e ".test-spec.file.versionFileTmp" $testSpecPullPath)
-        expectedValue=$(yq e ".test-spec.output.expectedValue" $testSpecPullPath)
+            name=$(yq e ".test-spec.info.name" $testSpecPullPath)
+            description=$(yq e ".test-spec.info.description" $testSpecPullPath)
+            lastDevVersion=$(yq e ".test-spec.input.lastDevVersion" $testSpecPullPath)
+            lastRcVersion=$(yq e ".test-spec.input.lastRcVersion" $testSpecPullPath)
+            lastReleaseVersion=$(yq e ".test-spec.input.lastReleaseVersion" $testSpecPullPath)
+            lastRebaseVersion=$(yq e ".test-spec.input.lastRebaseVersion" $testSpecPullPath)
+            targetBaseVersion=$(yq e ".test-spec.input.targetBaseVersion" $testSpecPullPath)
+            branchName=$(yq e ".test-spec.input.branchName" $testSpecPullPath)
+            appVersion=$(yq e ".test-spec.input.appVersion" $testSpecPullPath)
+            versionFileTmp=$(yq e ".test-spec.file.versionFileTmp" $testSpecPullPath)
+            expectedValue=$(yq e ".test-spec.output.expectedValue" $testSpecPullPath)
 
-        versionFileFullPath="${tcPath}/${versionFileTmp}"
+            versionFileFullPath="${tcPath}/${versionFileTmp}"
 
-        logMessage "INFO" "$name"
-        logMessage "INFO" "Description: $description"
+            logMessage "INFO" "$name"
+            logMessage "INFO" "Description: $description"
 
-        # echo "[INFO] lastDevVersion: $lastDevVersion"
-        # echo "[INFO] lastRcVersion: $lastRcVersion"
-        # echo "[INFO] lastReleaseVersion: $lastReleaseVersion"
-        # echo "[INFO] lastRebaseVersion: $lastRebaseVersion"
-        # echo "[INFO] targetBaseVersion: $targetBaseVersion"
-        # echo "[INFO] branchName: $branchName"
-        # echo "[INFO] appVersion: $appVersion"
-        # echo "[INFO] versionFileTmp: $versionFileTmp"
-        # echo "[INFO] expectedValue: $expectedValue"
+            echo "[INFO] lastDevVersion: $lastDevVersion"
+            echo "[INFO] lastRcVersion: $lastRcVersion"
+            echo "[INFO] lastReleaseVersion: $lastReleaseVersion"
+            echo "[INFO] lastRebaseVersion: $lastRebaseVersion"
+            echo "[INFO] targetBaseVersion: $targetBaseVersion"
+            echo "[INFO] branchName: $branchName"
+            echo "[INFO] appVersion: $appVersion"
+            echo "[INFO] versionFileTmp: $versionFileTmp"
+            echo "[INFO] expectedValue: $expectedValue"
 
-        startYamlImporter "${YAML_IMPORTER_FILE}" "${CONTROLLER_CONFIG_FILE}"
+            configFilePath=$(findConfigFile "${scopeOfConfigFiles}" "${BASE_CONTROLLER_CONFIG_DIR}")
+            echo "configFilePath: $configFilePath"
 
-        modifyEnvVarsForTestCase "${YAML_IMPORTER_FILE}" "${tcPath}"
-        source "${GENERAL_CONFIG}"
+            startYamlImporter "${YAML_IMPORTER_FILE}" "${configFilePath}"
 
-        # Modify the input files for the test case
-        modifyVersionFilesForTestCase "${lastDevVersion}" "${lastRcVersion}" "${lastReleaseVersion}" "${appVersion}" "${branchName}" "${lastRebaseVersion}"
+            modifyEnvVarsForTestCase "${YAML_IMPORTER_FILE}" "${tcPath}"
+            source "${GENERAL_CONFIG}"
 
-        source "${YAML_IMPORTER_FILE}"
-        runTest "${name}" "${expectedValue}" "${versionFileFullPath}" "${branchName}" "${targetBaseVersion}"
+            # Modify the input files for the test case
+            modifyVersionFilesForTestCase "${lastDevVersion}" "${lastRcVersion}" "${lastReleaseVersion}" "${appVersion}" "${branchName}" "${lastRebaseVersion}"
+
+            source "${YAML_IMPORTER_FILE}"
+            echo "BUILD_GH_RUN_NUMBER: $BUILD_GH_RUN_NUMBER"
+            echo "BUILD_GH_RUN_ATTEMPT: $BUILD_GH_RUN_ATTEMPT"
+            runTest "${name}" "${expectedValue}" "${versionFileFullPath}" "${branchName}" "${targetBaseVersion}"
+        fi
     done
 
     # Add more tests here as needed
@@ -221,7 +245,9 @@ function runTests() {
 }
 
 function unitTestRun(){
-    local scope=$1
+    local configFile="$1"
+    local scope="$2"
+
     initializeLog
 
     # Check if arguments are provided
@@ -230,14 +256,21 @@ function unitTestRun(){
         exit 1
     fi
 
-    # Case 1: Run a specific testcase (e.g., testcase1, testcase2)
-    if [[ $scope =~ ^[0-9]+$ ]]; then
-        runTests "${TEST_SUITE_PATH}/testcase${scope}"
+    # Case 1: Run one config file + a specific testcase (e.g., testcase1, testcase2)
+    if [[ $configFile != "all" && $scope =~ ^[0-9]+$ ]]; then
+        runTests "$configFile" "${TEST_SUITE_PATH}/${configFile}/testcase${scope}"
 
-    # Case 2: Run all testcases (e.g., testcase1, testcase2, ...)
-    elif [ "$scope" == "all" ]; then
-        runTests "${TEST_SUITE_PATH}/testcase*"
+    # Case 2: Run one config file + all testcases (e.g., testcase1, testcase2, ...)
+    elif [[ $configFile != "all" && $scope == "all" ]]; then
+        runTests "$configFile" "${TEST_SUITE_PATH}/${configFile}/testcase*"
 
+    # Case 3: Run all config files + their whole testcases (e.g., testcase1, testcase2, ...)
+    elif [[ $configFile == "all" && $scope == "all" ]]; then
+        for config in "$TEST_SUITE_PATH"/*; do
+            if [[ -d "$config" ]]; then
+                runTests "$(basename "$config")" "$config/testcase*"
+            fi
+        done
     else
         echo "Invalid option. Usage: $0 [all | specific_testcase | range_of_testcases]"
         exit 1
@@ -245,9 +278,10 @@ function unitTestRun(){
 }
 
 # Handle options
-scope="$1"
+configFile="$1"
+scope="$2"
 
-unitTestRun "${scope}"
+unitTestRun "${configFile}" "${scope}"
 
 
 
