@@ -7,6 +7,7 @@ LOG_FILE="unit-test-report.txt"
 YAML_IMPORTER_FILE="yaml-importer-tmp"
 GENERAL_CONFIG="config/general.ini"
 BASE_CONTROLLER_CONFIG_DIR="controller-config-files/projects"
+DEFAULT_CONTROLLER_CONFIG_FILE="controller-config-files/projects/default.yml"
 
 # Function to log messages
 function logMessage() {
@@ -114,9 +115,20 @@ function runTest() {
     local versionFileTmp="$3"
     local sourceBranch="$4"
     local lastBaseVersion="$5"
+    local testCasePath="$6"
+
+    local versionPrependLabel
+    if [[ "${artifact_auto_versioning__prepend_version__enabled}" == "true" ]]; then
+        versionPrependLabel=$(getVersionPrependLabel "${testCasePath}")
+        echo "BUILD_GH_VERSION_PREPEND_LABEL: ${BUILD_GH_VERSION_PREPEND_LABEL}"
+    fi
 
     # Get the actual output from the script
     source "${GENERATE_VERSION_SCRIPT_PATH}" "${artifact_base_name}" "${sourceBranch}" "${BUILD_GH_LABEL_FILE}" "${BUILD_GH_TAG_FILE}" "${BUILD_GH_COMMIT_MESSAGE_FILE}" "${lastBaseVersion}" "${versionFileTmp}" "true"
+
+    if [[ "${artifact_auto_versioning__prepend_version__enabled}" == "true" ]]; then
+        getFinalPrependedVersion "${versionPrependLabel}"
+    fi
 
     local actualOutput=$(cat "$ARTIFACT_NEXT_VERSION_FILE")
     
@@ -153,7 +165,17 @@ function startYamlImporter(){
         echo "" > $importerFileName.2
     fi
 
-    bash $YAML_IMPORTER_SCRIPT_PATH "${configFiles}" ".smc.ci" "${importerFileName}" ".smc.ci-default" false
+    bash $YAML_IMPORTER_SCRIPT_PATH "${DEFAULT_CONTROLLER_CONFIG_FILE}" ".smc.ci" "${importerFileName}" "" false
+
+    # Remove lines containing '>> $GITHUB_OUTPUT' and 'echo'
+    echo "[INFO] Remove lines containing >> \$GITHUB_OUTPUT and 'echo'"
+    sed -i 's/>> $GITHUB_ENV//g' "$importerFileName"
+    sed -i '/>> $GITHUB_OUTPUT/d' "$importerFileName"
+    sed -i 's/echo //g' "$importerFileName"
+
+    source $importerFileName
+
+    bash $YAML_IMPORTER_SCRIPT_PATH "${configFiles}" ".smc.ci" "${importerFileName}" "" false
 
     # Remove lines containing '>> $GITHUB_OUTPUT' and 'echo'
     echo "[INFO] Remove lines containing >> \$GITHUB_OUTPUT and 'echo'"
@@ -168,7 +190,7 @@ function findConfigFile() {
     local scopeConfigFile="$1"
     local baseDir="$2"
 
-    foundFile=$(find "${baseDir}" -type f -name "*${scopeConfigFile}*")
+    foundFile=$(find "${baseDir}" -type f \( -name "${scopeConfigFile}.yml" -o -name "${scopeConfigFile}.yaml" \))
 
     if [[ -z "$foundFile" ]]; then
         echo "[ERROR] No config file found containing: ${scopeConfigFile}"
@@ -176,6 +198,39 @@ function findConfigFile() {
     fi
     
     echo "${foundFile}"
+}
+
+function getVersionPrependLabel(){
+    local testCasePath="$1"
+
+    echo "[INFO] Retrieving version append label..." >&2
+    versionLabelFile="${testCasePath}/${artifact_auto_versioning__prepend_version__rules__file__target#./}"
+    versionLabelPropKey="${artifact_auto_versioning__prepend_version__rules__file__key}"
+    if [[ ! -f "$versionLabelFile" ]]; then
+        echo "[ERROR] Unable to locate version label file: $versionLabelFile" >&2
+        exit 1
+    fi
+    if [[ -z "$versionLabelPropKey" ]]; then
+        echo "[ERROR] Version label key is missing in controller. Please check the controller config and try again." >&2
+        exit 1
+    fi
+    echo "[INFO] Reading label from $versionLabelFile" >&2
+    versionPrependLabel=$(cat "$versionLabelFile" | grep -v "^#" | grep "$versionLabelPropKey" | cut -d"=" -f1 --complement)
+    if [[ -z "$versionPrependLabel" ]]; then
+        echo "[ERROR] Version label value for key [$versionLabelPropKey] is missing in config file: $versionLabelFile"
+        echo "[DEBUG] Content of version config:"
+        cat $versionLabelFile
+        exit 1
+    fi
+    echo "[INFO] Version prepend label: $versionPrependLabel" >&2
+    echo "${versionPrependLabel}"
+}
+
+function getFinalPrependedVersion(){
+    local prependVersionLabel="$1"
+
+    echo "$(./scripts/read_new_version.sh $prependVersionLabel)" > "${ARTIFACT_NEXT_VERSION_FILE}"
+    echo "[INFO] nextVersion after prepending: $(cat $ARTIFACT_NEXT_VERSION_FILE)"
 }
 
 # Function to run all tests
@@ -191,7 +246,7 @@ function runTests() {
 
     for tcPath in $scopeOfTestSuite; do
         if [[ -d $tcPath ]]; then
-            echo "[INFO] Running test: $(basename $tcPath) from config: $scopeOfConfigFiles"
+            logMessage "INFO" "Running the test from config: $scopeOfConfigFiles"
 
             testSpecPullPath="${tcPath}/${TEST_SPEC_FILE}"
 
@@ -236,7 +291,7 @@ function runTests() {
             source "${YAML_IMPORTER_FILE}"
             echo "BUILD_GH_RUN_NUMBER: $BUILD_GH_RUN_NUMBER"
             echo "BUILD_GH_RUN_ATTEMPT: $BUILD_GH_RUN_ATTEMPT"
-            runTest "${name}" "${expectedValue}" "${versionFileFullPath}" "${branchName}" "${targetBaseVersion}"
+            runTest "${name}" "${expectedValue}" "${versionFileFullPath}" "${branchName}" "${targetBaseVersion}" "${tcPath}"
         fi
     done
 
