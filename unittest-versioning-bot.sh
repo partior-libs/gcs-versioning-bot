@@ -106,6 +106,7 @@ function modifyEnvVarsForTestCase() {
 
     sed -i "s#^artifact_auto_versioning__replacement__file_token__target=.*#artifact_auto_versioning__replacement__file_token__target=$testCasePath/${artifact_auto_versioning__replacement__file_token__target#./}#" "${yamlImporterFile}"
     sed -i "s#^artifact_auto_versioning__replacement__yaml_update__target=.*#artifact_auto_versioning__replacement__yaml_update__target=$testCasePath/${artifact_auto_versioning__replacement__yaml_update__target#./}#" "${yamlImporterFile}"
+    sed -i "s#^artifact_auto_versioning__replacement__maven_pom__target=.*#artifact_auto_versioning__replacement__maven_pom__target=$testCasePath/${artifact_auto_versioning__replacement__maven_pom__target#./}#" "${yamlImporterFile}"
 }
 
 # Function to run the actual test
@@ -130,26 +131,102 @@ function runTest() {
         getFinalPrependedVersion "${versionPrependLabel}"
     fi
 
+    verifyOutput "${expectedOutput}"
+
+    # Restore the original files after the test
+    if [[ "${REPLACE_V_RULES_ENABLED}" == "true" ]]; then
+        restoreReplacementFiles
+    fi
+    logMessage "INFO" "---------------------------------------------"
+}
+
+function verifyOutput(){
+    local expectedOutput="$1"
     local actualOutput=$(cat "$ARTIFACT_NEXT_VERSION_FILE")
-    
+    local testPassed="false"
+
     # Compare the actual output with the expected output
     if [ "$actualOutput" == "$expectedOutput" ]; then
+        testPassed=true
+    fi
+
+    # Additional rule if flag is enabled
+    if [[ "$REPLACE_V_RULES_ENABLED" == "true" ]]; then
+        if [[ "${REPLACE_V_RULE_YAMLPATH_ENABLED}" == "true" ]]; then
+            if [[ -f "${REPLACE_V_CONFIG_YAMLPATH_FILE}" ]]; then
+                if grep -qF "$expectedOutput" "${REPLACE_V_CONFIG_YAMLPATH_FILE}"; then
+                    logMessage "INFO" "The replacement file has been updated with the new version: $expectedOutput" 
+                    testPassed=true
+                fi
+            else
+                logMessage "ERROR" "The replacement file does not exist"
+                testPassed="false"
+            fi
+        fi
+
+        if [[ "${REPLACE_V_RULE_FILETOKEN_ENABLED}" == "true" ]]; then
+            if [[ -f "${REPLACE_V_CONFIG_FILETOKEN_FILE}" ]]; then
+                if grep -qF "$expectedOutput" "${REPLACE_V_CONFIG_FILETOKEN_FILE}"; then
+                    logMessage "INFO" "The replacement file has been updated with the new version: $expectedOutput" 
+                    testPassed=true
+                fi
+            else
+                logMessage "ERROR" "The replacement file does not exist"
+                testPassed="false"
+            fi
+        fi
+
+        if [[ "${REPLACE_V_RULE_MAVEN_ENABLED}" == "true" ]]; then
+            if [[ -f "${REPLACE_V_CONFIG_MAVEN_POMFILE}" ]]; then
+                if grep -qF "$expectedOutput" "${REPLACE_V_CONFIG_MAVEN_POMFILE}"; then
+                    logMessage "INFO" "The replacement file has been updated with the new version: $expectedOutput" 
+                    testPassed=true
+                fi
+            else
+                logMessage "ERROR" "The replacement file does not exist"
+                testPassed="false"
+            fi
+        fi
+    fi
+
+    # Print result
+    if [ "$testPassed" == "true" ]; then
         logMessage "SUCCESS" "$testName PASSED. As Expected: '$expectedOutput'"
         echo "$testName PASSED"
     else
         logMessage "ERROR" "$testName FAILED. Expected: '$expectedOutput', but Actual: '$actualOutput'"
         echo "$testName FAILED"
     fi
-
-    # Restore the original files after the test
-    restoreOriginalHelmFiles
-    logMessage "INFO" "---------------------------------------------"
 }
 
 # Function to restore the original contents of the input files
-function restoreOriginalHelmFiles() {
-    logMessage "INFO" "Restoring original helm files"
-    sed -i "s/^version: .*/version: @@VERSION_BOT_TOKEN@@/" "${REPLACE_V_CONFIG_FILETOKEN_FILE}"
+function restoreReplacementFiles() {
+    if [[ "${REPLACE_V_RULE_YAMLPATH_ENABLED}" == "true" ]]; then
+        if [[ -f "${REPLACE_V_CONFIG_YAMLPATH_FILE}" ]]; then
+            logMessage "INFO" "Restoring the YAML file to its original state" 
+            sed -i "s/^version: .*/version: @@VERSION_BOT_TOKEN@@/" "${REPLACE_V_CONFIG_YAMLPATH_FILE}"
+        else
+            logMessage "ERROR" "The YAML file does not exist"
+        fi
+    fi
+
+    if [[ "${REPLACE_V_RULE_FILETOKEN_ENABLED}" == "true" ]]; then
+        if [[ -f "${REPLACE_V_CONFIG_FILETOKEN_FILE}" ]]; then
+            logMessage "INFO" "Restoring the file token to its original state"
+            sed -i -E 's#<version>.*</version>#<version>@@VERSION_BOT_TOKEN@@</version>#' "${REPLACE_V_CONFIG_FILETOKEN_FILE}"
+        else
+            logMessage "ERROR" "The file token does not exist"
+        fi
+    fi
+
+    if [[ "${REPLACE_V_RULE_MAVEN_ENABLED}" == "true" ]]; then
+        if [[ -f "${REPLACE_V_CONFIG_MAVEN_POMFILE}" ]]; then
+            logMessage "INFO" "Restoring the maven pom file to its original state"
+            sed -i -E 's#<version>.*</version>#<version>12</version>#' "${REPLACE_V_CONFIG_MAVEN_POMFILE}"
+        else
+            logMessage "ERROR" "The maven pom file does not exist"
+        fi
+    fi
 }
 
 function startYamlImporter(){
