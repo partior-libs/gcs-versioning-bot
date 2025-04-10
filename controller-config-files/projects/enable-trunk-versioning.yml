@@ -18,7 +18,7 @@ smc:
         enabled: true
         rules:
           branches: 
-            target: release
+            target: release,feature,main
             enabled: true
           labels: 
             target: MAJOR-VERSION 
@@ -28,45 +28,45 @@ smc:
             enabled: false
           message-tag: 
             target: MAJOR-VERSION 
-            enabled: true
-          file:
             enabled: false
+          file:
+            enabled: true
             target: ./app-version.cfg
             key: MAJOR-VERSION
       minor-version:
         enabled: true
         rules:
           branches: 
-            target: release
+            target: release,feature,main
             enabled: true
           tag: 
             target: MINOR-VERSION 
             enabled: false
           message-tag: 
             target: MINOR-VERSION 
-            enabled: true
+            enabled: false
           labels: 
             target: MINOR-VERSION  
             enabled: false
           file:
-            enabled: false
+            enabled: true
             target: ./app-version.cfg
             key: MINOR-VERSION
       patch-version:
-        enabled: false
+        enabled: true
         rules:
           branches: 
-            target: release,main
+            target: main
             enabled: true
           tag: 
             target: PATCH-VERSION 
-            enabled: true
+            enabled: false
           message-tag: 
             target: PATCH-VERSION 
-            enabled: true
+            enabled: false
           labels: 
             target: PATCH-VERSION
-            enabled: true
+            enabled: false
           file:
             enabled: false
             target: ./app-version.cfg
@@ -100,21 +100,21 @@ smc:
             target: ./app-version.cfg
             key: DEV-VERSION
       build-version:
-        enabled: true
+        enabled: false
         identifier: bld
         rules:
           branches: 
             target: develop,feature
             enabled: true
       replacement:
-        enabled: false
+        enabled: true
         file-token: 
           enabled: false
-          target: test-files/sample-version-file.xml
+          target: ./sample-version-file.xml
           token: '@@VERSION_BOT_TOKEN@@'
         maven-pom: 
           enabled: false
-          target: test-files/sample-pom-file.xml
+          target: ./sample-pom-file.xml
 
     branches:
       default:
