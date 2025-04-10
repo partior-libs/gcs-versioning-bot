@@ -18,12 +18,6 @@ function logMessage() {
     echo "$timestamp [$logLevel] $message" >> "$LOG_FILE"
 }
 
-# Function to initialize the log file
-function initializeLog() {
-    echo "Starting test run at $(date '+%Y-%m-%d %H:%M:%S')" > "$LOG_FILE"
-    logMessage "INFO" "Log file initialized"
-}
-
 # Function to modify input version files for the test case
 function modifyVersionFilesForTestCase() {
     local devVersion="$1"
@@ -376,11 +370,12 @@ function runTests() {
     logMessage "INFO" "Test execution completed"
 }
 
-function unitTestRun(){
+function mainTestRunner(){
     local configFile="$1"
     local scope="$2"
 
-    initializeLog
+    echo "Starting test run at $(date '+%Y-%m-%d %H:%M:%S')" > "$LOG_FILE"
+    logMessage "INFO" "Log file initialized"
 
     # Check if arguments are provided
     if [ $# -eq 0 ]; then
@@ -413,7 +408,7 @@ function unitTestRun(){
 configFile="$1"
 scope="$2"
 
-unitTestRun "${configFile}" "${scope}"
+mainTestRunner "${configFile}" "${scope}"
 
 
 

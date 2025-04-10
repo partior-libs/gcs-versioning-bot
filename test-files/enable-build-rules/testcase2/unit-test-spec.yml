@@ -3,7 +3,7 @@
 test-spec:
   info:
     name: "Test Case 2"
-    description: "Test versioning bot with feature branch"
+    description: "Test versioning bot with main branch"
 
   input:
     lastDevVersion: "22.4.28-dev.2"
