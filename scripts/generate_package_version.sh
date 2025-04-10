@@ -1,5 +1,6 @@
 #!/bin/bash +e
 
+## Reading action's global setting
 if [[ ! -z $BASH_SOURCE ]]; then
     ACTION_BASE_DIR=$(dirname $BASH_SOURCE)
     source $(find $ACTION_BASE_DIR/.. -type f | grep general.ini)
@@ -11,7 +12,6 @@ else
     echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to find and source general.ini"
     exit 1
 fi
-
 ## ANTZ TEMPORARY
 # source ./test-files/mock-base-variables.sh
 #source run2.sh
