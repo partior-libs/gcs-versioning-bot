@@ -1,5 +1,6 @@
 #!/bin/bash +e
-if [[ ! -z $BASH_SOURCE && "${unitTestEnable}" ]]; then
+
+if [[ ! -z $BASH_SOURCE ]]; then
     ACTION_BASE_DIR=$(dirname $BASH_SOURCE)
     source $(find $ACTION_BASE_DIR/.. -type f | grep general.ini)
 elif [[ $(find . -type f -name general.ini | wc -l) > 0 ]]; then
@@ -13,7 +14,7 @@ fi
 
 ## ANTZ TEMPORARY
 # source ./test-files/mock-base-variables.sh
-# source run2.sh
+#source run2.sh
 
 artifactName="$1"
 currentBranch=$(echo $2 | cut -d'/' -f1)
@@ -300,7 +301,7 @@ function degaussCoreVersionVariables() {
     fi
     source ./$tmpVariable
     cat ./$tmpVariable
-    rm -f $tmpVariable
+    # rm -f $tmpVariable
 }
 
 ## Reset variables that's not used, to simplify requirement evaluation later
@@ -362,7 +363,7 @@ function degaussPreReleaseVersionVariables() {
         echo "export ${vCurrentVersionFile}=false" >> $tmpVariable
     fi
     source ./$tmpVariable
-    rm -f $tmpVariable
+    # rm -f $tmpVariable
 }
 
 ## Reset variables that's not used, to simplify requirement evaluation later
