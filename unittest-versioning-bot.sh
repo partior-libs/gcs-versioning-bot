@@ -8,6 +8,7 @@ YAML_IMPORTER_FILE="yaml-importer-tmp"
 GENERAL_CONFIG="config/general.ini"
 BASE_CONTROLLER_CONFIG_DIR="controller-config-files/projects"
 DEFAULT_CONTROLLER_CONFIG_FILE="controller-config-files/projects/default.yml"
+BUILD_GH_COMMIT_MESSAGE_FILE="commit-message-tmp"
 
 # Function to log messages
 function logMessage() {
@@ -119,7 +120,7 @@ function runTest() {
     fi
 
     # Get the actual output from the script
-    source "${GENERATE_VERSION_SCRIPT_PATH}" "${artifact_base_name}" "${sourceBranch}" "${BUILD_GH_LABEL_FILE}" "${BUILD_GH_TAG_FILE}" "${BUILD_GH_COMMIT_MESSAGE_FILE}" "${lastBaseVersion}" "${versionFileTmp}" "true"
+    source "${GENERATE_VERSION_SCRIPT_PATH}" "${artifact_base_name}" "${sourceBranch}" "${BUILD_GH_LABEL_FILE}" "${BUILD_GH_TAG_FILE}" "${testCasePath}/${BUILD_GH_COMMIT_MESSAGE_FILE}" "${lastBaseVersion}" "${versionFileTmp}" "true"
 
     if [[ "${artifact_auto_versioning__prepend_version__enabled}" == "true" ]]; then
         getFinalPrependedVersion "${versionPrependLabel}"
