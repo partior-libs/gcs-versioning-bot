@@ -2,7 +2,7 @@
 
 test-spec:
   info:
-    name: "Test Case 6"
+    name: "Test Case 8"
     description: "Test versioning bot with hotfix branch and a MINOR commit message enabled"
 
   input:

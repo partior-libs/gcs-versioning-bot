@@ -3,7 +3,7 @@ TEST_SUITE_PATH="./test-files"
 TEST_SPEC_FILE="unit-test-spec.yml"
 GENERATE_VERSION_SCRIPT_PATH="./scripts/generate_package_version.sh"
 YAML_IMPORTER_SCRIPT_PATH="./scripts/yaml-converter.sh"
-LOG_FILE="unit-test-report.txt"
+LOG_FILE="unit-test-report-$(date +%s).txt"
 YAML_IMPORTER_FILE="yaml-importer-tmp"
 GENERAL_CONFIG="config/general.ini"
 BASE_CONTROLLER_CONFIG_DIR="controller-config-files/projects"
@@ -188,10 +188,45 @@ function verifyOutput(){
     if [ "$testPassed" == "true" ]; then
         logMessage "SUCCESS" "$testName PASSED. As Expected: '$expectedOutput'"
         echo "$testName PASSED"
+        eval "$resultVar+=(\"- $testName PASS\")"
+        ((configPassCount++))
+        ((totalPass++))
     else
         logMessage "ERROR" "$testName FAILED. Expected: '$expectedOutput', but Actual: '$actualOutput'"
         echo "$testName FAILED"
+        eval "$resultVar+=(\"- $testName FAILED\")"
+        ((configFailCount++))
+        ((totalFail++))
     fi
+}
+
+function summaryReport(){
+    # After finishing whole unit test execution, generate a report 
+    echo "" >> $LOG_FILE
+    echo "===============================" >> $LOG_FILE
+    echo "Test Summary Report" >> $LOG_FILE
+    echo "===============================" >> $LOG_FILE
+
+    for config in "${!configPassCounts[@]}"; do
+        sanitizedConfigName="$(echo "$config" | tr '-' '_')"
+        resultVar="config_${sanitizedConfigName}_results"
+
+        echo "" >> $LOG_FILE
+        echo "Config Name: $config" >> $LOG_FILE
+        eval "for line in \"\${$resultVar[@]}\"; do echo \"\$line\" >> $LOG_FILE; done"
+        echo "Result: ${configPassCounts[$config]} passed / $((${configPassCounts[$config]} + ${configFailCounts[$config]})) total" >> $LOG_FILE
+    done
+
+    # Overall Summary
+    echo "" >> $LOG_FILE
+    echo "===============================" >> $LOG_FILE
+    echo "Overall Summary" >> $LOG_FILE
+    echo "-------------------------------" >> $LOG_FILE
+    echo "Total Configs:     $totalConfig" >> $LOG_FILE
+    echo "Total Test Cases:  $totalTests" >> $LOG_FILE
+    echo "Passed:            $totalPass" >> $LOG_FILE
+    echo "Failed:            $totalFail" >> $LOG_FILE
+    echo "===============================" >> $LOG_FILE
 }
 
 # Function to restore the original contents of the input files
@@ -265,7 +300,7 @@ function findConfigFile() {
     foundFile=$(find "${baseDir}" -type f \( -name "${scopeConfigFile}.yml" -o -name "${scopeConfigFile}.yaml" \))
 
     if [[ -z "$foundFile" ]]; then
-        echo "[ERROR] No config file found containing: ${scopeConfigFile}"
+        echo "[ERROR] No config file found containing: ${scopeConfigFile}" >&2
         exit 1
     fi
     
@@ -289,9 +324,8 @@ function getVersionPrependLabel(){
     echo "[INFO] Reading label from $versionLabelFile" >&2
     versionPrependLabel=$(cat "$versionLabelFile" | grep -v "^#" | grep "$versionLabelPropKey" | cut -d"=" -f1 --complement)
     if [[ -z "$versionPrependLabel" ]]; then
-        echo "[ERROR] Version label value for key [$versionLabelPropKey] is missing in config file: $versionLabelFile"
-        echo "[DEBUG] Content of version config:"
-        cat $versionLabelFile
+        echo "[ERROR] Version label value for key [$versionLabelPropKey] is missing in config file: $versionLabelFile" >&2
+        echo "[DEBUG] Content of version config:" >&2
         exit 1
     fi
     echo "[INFO] Version prepend label: $versionPrependLabel" >&2
@@ -310,13 +344,27 @@ function runTests() {
     local scopeOfConfigFiles="$1"
     local scopeOfTestSuite="$2"
 
+    configPassCount=0
+    configFailCount=0
+    configTotal=0
+
+    sanitizedConfigName="$(echo "$scopeOfConfigFiles" | tr '-' '_')"
+    resultVar="config_${sanitizedConfigName}_results"
+    eval "$resultVar=()"
+
     echo "scopeOfTestSuite: $scopeOfTestSuite"
     echo "scopeOfConfigFiles: $scopeOfConfigFiles"
     
     logMessage "INFO" "Starting test execution"
     logMessage "INFO" "---------------------------------------------"
 
-    for tcPath in $scopeOfTestSuite; do
+    local testCaseList=()
+    for testcase in $scopeOfTestSuite; do
+        testCaseList+=("$testcase")
+    done
+
+    # Sort a list of test cases numerically
+    for tcPath in $(printf "%s\n" "${testCaseList[@]}" | sort -V); do
         if [[ -d $tcPath ]]; then
             logMessage "INFO" "Running the test from config: $scopeOfConfigFiles"
 
@@ -364,16 +412,16 @@ function runTests() {
             echo "BUILD_GH_RUN_NUMBER: $BUILD_GH_RUN_NUMBER"
             echo "BUILD_GH_RUN_ATTEMPT: $BUILD_GH_RUN_ATTEMPT"
             runTest "${name}" "${expectedValue}" "${versionFileFullPath}" "${branchName}" "${targetBaseVersion}" "${tcPath}"
+            ((totalTests++))
         fi
     done
-
-    # Add more tests here as needed
-    logMessage "INFO" "Test execution completed"
 }
 
 function mainTestRunner(){
     local configFile="$1"
     local scope="$2"
+
+    local baseConfigName
 
     echo "Starting test run at $(date '+%Y-%m-%d %H:%M:%S')" > "$LOG_FILE"
     logMessage "INFO" "Log file initialized"
@@ -388,26 +436,60 @@ function mainTestRunner(){
     if [[ $configFile != "all" && $scope =~ ^[0-9]+$ ]]; then
         runTests "$configFile" "${TEST_SUITE_PATH}/${configFile}/testcase${scope}"
 
+        # echo "" >> $LOG_FILE
+        # echo "Config: ${configFile}" >> $LOG_FILE
+        # echo "-----------------------------" >> $LOG_FILE
+
+        # echo "Result: $configPassCount passed / $configTotal total" >> $LOG_FILE
+        # ((totalConfig++))
+
+        configPassCounts["$configFile"]=$configPassCount
+        configFailCounts["$configFile"]=$configFailCount
+        ((totalConfig++))
+
     # Case 2: Run one config file + all testcases (e.g., testcase1, testcase2, ...)
     elif [[ $configFile != "all" && $scope == "all" ]]; then
         runTests "$configFile" "${TEST_SUITE_PATH}/${configFile}/testcase*"
 
+        configPassCounts["$configFile"]=$configPassCount
+        configFailCounts["$configFile"]=$configFailCount
+        ((totalConfig++))
+
     # Case 3: Run all config files + their whole testcases (e.g., testcase1, testcase2, ...)
     elif [[ $configFile == "all" && $scope == "all" ]]; then
-        for config in "$TEST_SUITE_PATH"/*; do
-            if [[ -d "$config" ]]; then
-                runTests "$(basename "$config")" "$config/testcase*"
+        for configPath in "$TEST_SUITE_PATH"/*; do
+            if [[ -d "$configPath" ]]; then
+                baseConfigName="$(basename "$configPath")"
+                runTests "$baseConfigName" "$configPath/testcase*"
+
+                configPassCounts["$baseConfigName"]=$configPassCount
+                configFailCounts["$baseConfigName"]=$configFailCount
+                ((totalConfig++))
             fi
         done
     else
         echo "Invalid option. Usage: $0 [all | specific_testcase | range_of_testcases]"
         exit 1
     fi
+
+    # Add more tests as needed
+    logMessage "INFO" "Test execution completed"
+    
+    summaryReport
 }
 
 # Handle options
 configFile="$1"
 scope="$2"
+
+# Global environment variables
+declare -A configPassCounts
+declare -A configFailCounts
+
+totalConfig=0
+totalTests=0
+totalPass=0
+totalFail=0
 
 mainTestRunner "${configFile}" "${scope}"
 
