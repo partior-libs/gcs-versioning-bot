@@ -53,14 +53,22 @@ echo "[INFO] Last RC version in Artifactory: $lastRCVersion"
 echo "[INFO] Last Release version in Artifactory: $lastRelVersion"
 echo "[INFO] Last Base version in Artifactory: $lastBaseVersion"
 echo "[INFO] Target rebase release version: ${rebaseReleaseVersion}"
+echo "[INFO] Initial version: $ARTIFACT_INITIAL_VERSION"
 echo "[INFO] Is initial version?: $isInitialVersion"
-
 
 ## Ensure dev and rel version are in sync
 function versionCompareLessOrEqual() {
     [  "$1" = "`echo -e "$1\n$2" | sort -V | head -n1`" ]
 }
 
+## Reset value to global variables
+function resetLastArtifactFiles() {
+    lastDevVersion=$(cat $ARTIFACT_LAST_DEV_VERSION_FILE | cut -d"+" -f1)
+    lastRCVersion=$(cat $ARTIFACT_LAST_RC_VERSION_FILE | cut -d"+" -f1)
+    lastRelVersion=$(cat $ARTIFACT_LAST_REL_VERSION_FILE | cut -d"+" -f1)
+    lastBaseVersion=$(cat $ARTIFACT_LAST_BASE_VERSION_FILE | cut -d"+" -f1)
+
+}
 # When increment pre-release, make sure the release version is considered
 function needToIncrementRelVersion() {
     local inputCurrentVersion=$1
@@ -81,19 +89,31 @@ function getNeededIncrementReleaseVersion() {
     local devVersion=$1
     local rcVersion=$2
     local relVersion=$3
+    local newRelVersion=""
 
-    local devIncrease=$(needToIncrementRelVersion "$devVersion" "$relVersion")
-    local newRelVersion=$relVersion
+    if [[ "$(checkReleaseVersionFile "${MAJOR_SCOPE}")" == "true" ]] && [[ "$(checkReleaseVersionFile "${MINOR_SCOPE}")" == "true" ]]; then
+        if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): MAJOR and MINOR are file referenced. No incrementation needed."; fi >&2; 
+        newRelVersion=$relVersion
+    else
+        if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): devVersion=$devVersion, rcVersion=$rcVersion, relVersion=$relVersion"; fi >&2; 
+        local devIncrease=$(needToIncrementRelVersion "$devVersion" "$relVersion")
+        if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): getNeededIncrementReleaseVersion devIncrease=$devIncrease"; fi >&2; 
+        newRelVersion=$relVersion
 
-    if [[ "$devIncrease" == "false" && "$devVersion" != "$VBOT_NIL" ]]; then
-        newRelVersion=$(echo $devVersion | cut -d"-" -f1)
-        touch $CORE_VERSION_UPDATED_FILE
-    fi
-    local rcIncrease=$(needToIncrementRelVersion "$rcVersion" "$newRelVersion")
-    if [[ "$rcIncrease" == "false" && "$rcVersion" != "$VBOT_NIL" ]]; then
-        newRelVersion=$(echo $rcVersion | cut -d"-" -f1)
-        touch $CORE_VERSION_UPDATED_FILE
-    fi
+        if [[ "$devIncrease" == "false" && "$devVersion" != "$VBOT_NIL" ]]; then
+            newRelVersion=$(echo $devVersion | cut -d"-" -f1)
+            touch $CORE_VERSION_UPDATED_FILE
+            if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): getNeededIncrementReleaseVersion newRelVersion1=$newRelVersion"; fi >&2; 
+        fi
+        local rcIncrease=$(needToIncrementRelVersion "$rcVersion" "$newRelVersion")
+        if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): getNeededIncrementReleaseVersion rcIncrease=$rcIncrease"; fi >&2; 
+        if [[ "$rcIncrease" == "false" && "$rcVersion" != "$VBOT_NIL" ]]; then
+            newRelVersion=$(echo $rcVersion | cut -d"-" -f1)
+            touch $CORE_VERSION_UPDATED_FILE
+            if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): getNeededIncrementReleaseVersion newRelVersion2=$newRelVersion"; fi >&2; 
+        fi
+    fi 
+    
     ## Store the updated rel version in file for next incrementation consideration
     echo $newRelVersion > $ARTIFACT_UPDATED_REL_VERSION_FILE
     echo $newRelVersion
@@ -125,10 +145,19 @@ function incrementPreReleaseVersion() {
     local trunkCoreIncrement="$(cat $TRUNK_CORE_NEED_INCREMENT_FILE)"
     ## If not pre-release, then increment the core version too
     local lastRelVersion=$(cat $ARTIFACT_LAST_REL_VERSION_FILE)
+    if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): lastRelVersion=$lastRelVersion" >&2; fi
+
     # If present, use the updated release version
     if [[ -f $ARTIFACT_UPDATED_REL_VERSION_FILE ]]; then
         lastRelVersion=$(cat $ARTIFACT_UPDATED_REL_VERSION_FILE)
+        if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): lastRelVersion=$lastRelVersion" >&2; fi
     fi
+    ## If not fixed release, then reset
+    if (! echo $lastRelVersion | grep -qE "^[0-9]+\.[0-9]+\.[0-9]+$"); then
+        lastRelVersion=""
+        if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): lastRelVersion=$lastRelVersion" >&2; fi
+    fi
+
     ## Return vanilla if not found
     if [[ "$inputVersion" == "$VBOT_NIL" ]]; then
         echo "[DEBUG] Pre-release version not found. Resetting to [$lastRelVersion-$preIdentifider.1]" >&2
@@ -154,22 +183,29 @@ function incrementPreReleaseVersion() {
     if [[ ! "$inputVersion" == *"-"* ]]; then
         if [[ "$lastRelVersion" = "" ]]; then
             currentSemanticVersion=$(incrementReleaseVersion $currentSemanticVersion ${PATCH_POSITION})
+            if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): currentSemanticVersion=$currentSemanticVersion" >&2; fi
         else  ## Increment with last release version if present
             currentSemanticVersion=$(incrementReleaseVersion $lastRelVersion ${PATCH_POSITION})
+            if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): currentSemanticVersion=$currentSemanticVersion" >&2; fi
         fi
     else
         local needIncreaseVersion=$(needToIncrementRelVersion "$inputVersion" "$lastRelVersion")
+        if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): needToIncrementRelVersion inputVersion=$inputVersion, lastRelVersion=$lastRelVersion, needIncreaseVersion=$needIncreaseVersion" >&2; fi
         if [[ "$trunkCoreIncrement" == "false" ]]; then
             currentSemanticVersion=$lastRelVersion
             nextPreReleaseNumber=1
+            if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): currentSemanticVersion=$currentSemanticVersion" >&2; fi
         elif [[ -f $CORE_VERSION_UPDATED_FILE ]]; then
             currentSemanticVersion=$lastRelVersion
             nextPreReleaseNumber=1
+            if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): currentSemanticVersion=$currentSemanticVersion" >&2; fi
         elif [[ "$trunkCoreIncrement" == "true" ]] || [[ "$needIncreaseVersion" == "true" ]]; then
             currentSemanticVersion=$(incrementReleaseVersion $lastRelVersion ${PATCH_POSITION})
             nextPreReleaseNumber=1
+            if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): currentSemanticVersion=$currentSemanticVersion" >&2; fi
         elif [[ "$needIncreaseVersion" == "false" ]]; then
             nextPreReleaseNumber=$(( $(echo $inputVersion | awk -F"-$preIdentifider." '{print $2}') + 1))
+            if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): currentSemanticVersion=$currentSemanticVersion" >&2; fi
         fi      
     fi
     local finalPrereleaseVersion=$currentSemanticVersion-$preIdentifider.$nextPreReleaseNumber
@@ -453,6 +489,7 @@ function incrementReleaseVersionByFile() {
         return 1
     fi
     local versionArray=''
+    echo "-------------- [DEBUG]: inputVersion: [${inputVersion}]" >&2
     IFS='. ' read -r -a versionArray <<< "$inputVersion"
     versionArray[$versionPos]=$tmpVersion
     echo $(local IFS=. ; echo "${versionArray[*]}")
@@ -469,7 +506,7 @@ function incrementPreReleaseVersionByFile() {
     local vConfigVersionFileKey=${versionScope}_V_CONFIG_VFILE_KEY
 
     if [[ ! -f ${!vConfigVersionFileName} ]]; then
-        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate version file: [${!vConfigVersionFileName}]"
+        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate version file: [${!vConfigVersionFileName}]" >&2
         return 1
     fi
     local preReleaseVersionFromFile=$(cat ./${!vConfigVersionFileName} | grep -E "^${!vConfigVersionFileKey}" 2>/dev/null | cut -d"=" -f2)
@@ -482,20 +519,25 @@ function incrementPreReleaseVersionByFile() {
     if [[ -f $ARTIFACT_UPDATED_REL_VERSION_FILE ]]; then
         lastRelVersion=$(cat $ARTIFACT_UPDATED_REL_VERSION_FILE)
     fi
-
+    if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): currentSemanticVersion=$currentSemanticVersion" >&2; fi
     if [[ ! "$inputVersion" == *"-"* ]]; then
         if [[ "$lastRelVersion" = "" ]]; then
             currentSemanticVersion=$(incrementReleaseVersion $currentSemanticVersion ${PATCH_POSITION})
+            if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): currentSemanticVersion=$currentSemanticVersion" >&2; fi
         else  ## Increment with last release version if present
             currentSemanticVersion=$(incrementReleaseVersion $lastRelVersion ${PATCH_POSITION})
+            if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): currentSemanticVersion=$currentSemanticVersion" >&2; fi
         fi
     else
         local needIncreaseVersion=$(needToIncrementRelVersion "$inputVersion" "$lastRelVersion")
+        if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): needIncreaseVersion=$needIncreaseVersion" >&2; fi
         if [[ -f $CORE_VERSION_UPDATED_FILE ]]; then
             currentSemanticVersion=$lastRelVersion
             nextPreReleaseNumber=1
+            if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): currentSemanticVersion=$currentSemanticVersion" >&2; fi
         elif [[ "$needIncreaseVersion" == "true" ]]; then
             currentSemanticVersion=$(incrementReleaseVersion $lastRelVersion ${PATCH_POSITION})
+            if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): currentSemanticVersion=$currentSemanticVersion" >&2; fi
         fi       
     fi
 
@@ -631,13 +673,24 @@ function checkReplacementFeatureFlag() {
     fi
 }
 
+## Return true if MAJOR, MINOR or PATCH uses versionFile
+function checkReleaseVersionFile() {
+    local versionScope="$1"
+    local versionFileRuleEnabled=${versionScope}_V_RULE_VFILE_ENABLED
+    if [[ "$(checkReleaseVersionFeatureFlag ${versionScope})" == "true" ]] && [[ "${!versionFileRuleEnabled}" == "true" ]]; then
+        echo "true"
+    else
+        echo "false"
+    fi
+}
+
 ## Engine to increment Release Version with external file value
 function processWithReleaseVersionFile() {
     local inputVersion="$1"
     local versionPos="$2"
     local versionScope="$3"
     local versionListFile="$4"
-
+    echo "---------------- [DEBUG] processWithReleaseVersionFile started " >&2
     echo "[DEBUG] $BASH_SOURCE (line:$LINENO): inputVersion=$inputVersion" >&2
     echo "[DEBUG] $BASH_SOURCE (line:$LINENO): versionPos=$versionPos" >&2
     echo "[DEBUG] $BASH_SOURCE (line:$LINENO): versionScope=$versionScope" >&2
@@ -647,13 +700,14 @@ function processWithReleaseVersionFile() {
     local currentIncrementedVersion="$inputVersion"
     echo "[DEBUG] $BASH_SOURCE (line:$LINENO): checkReleaseVersionFeatureFlag=$(checkReleaseVersionFeatureFlag ${versionScope}) and versionFileRuleEnabled=${!versionFileRuleEnabled}" >&2
     if [[ "$(checkReleaseVersionFeatureFlag ${versionScope})" == "true" ]] && [[ "${!versionFileRuleEnabled}" == "true" ]]; then
+        echo "[DEBUG] $BASH_SOURCE (line:$LINENO): currentIncrementedVersion=$currentIncrementedVersion" >&2
         currentIncrementedVersion=$(incrementReleaseVersionByFile $currentIncrementedVersion ${versionPos} ${versionScope})
         if [[ $? -ne 0 ]]; then
             echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed retrieving version from version file." >&2
             echo "[ERROR_MSG] $currentIncrementedVersion" >&2
             return 1
         fi
-                echo "-------------- [DEBUG]: versionScope: [${versionScope}]" >&2
+        echo "[DEBUG] $BASH_SOURCE (line:$LINENO): Ater incrementReleaseVersionByFile, versionScope=$versionScope, currentIncrementedVersion=$currentIncrementedVersion" >&2
         if [[ "$versionScope" == "$MINOR_SCOPE" ]] || [[ "$versionScope" == "$PATCH_SCOPE" ]]; then
             if [[ ! -f "$versionListFile" ]]; then
                 echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to locate versionListFile [$versionListFile]" >&2
@@ -663,54 +717,98 @@ function processWithReleaseVersionFile() {
 
             local tmpInputVersion=$(echo $currentIncrementedVersion | cut -d"." -f1-"$tmpPos")
             if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): tmpInputVersion=$tmpInputVersion" >&2; fi
+            if [[ "$versionScope" == "$MINOR_SCOPE" ]]; then
+                currentIncrementedVersion="$tmpInputVersion.0"
+            fi
 
             local foundVersion=$(cat "$versionListFile" | grep -E "\"$tmpInputVersion(\.|+|-|$|\"|_)*" | sort -rV | head -n1 | cut -d"\"" -f4)
             if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): foundVersion=$foundVersion" >&2; fi
 
             ## if empty, need to reset
             if [[ -z "$foundVersion" ]]; then
-                ## Reset the core version update if found
+                ## Reset the core version update
                 rm -f $CORE_VERSION_UPDATED_FILE
                 echo "false" > $TRUNK_CORE_NEED_INCREMENT_FILE
                 currentIncrementedVersion="$tmpInputVersion"$(resetCoreRelease "$versionPos")
                 if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): currentIncrementedVersion=$currentIncrementedVersion" >&2; fi
+            ## Found the version with correct format
             elif (echo $foundVersion | grep -qE '([0-9]+\.){2}[0-9]+(((-|\+)[0-9a-zA-Z]+\.[0-9]+)*(\+[0-9a-zA-Z]+\.[0-9\.]+)*$)'); then 
-                local releasedVersionOnly=""
+                local releasedVersionOnly=$(echo $foundVersion | grep -oE "^[0-9]+\.[0-9]+\.[0-9]+")
+                ## If fixed release version, increment by one
                 if (echo $foundVersion | grep -qE "^[0-9]+\.[0-9]+\.[0-9]+$"); then
                     echo "false" > $TRUNK_CORE_NEED_INCREMENT_FILE
-                    releasedVersionOnly=$(echo $foundVersion | grep -E "^[0-9]+\.[0-9]+\.[0-9]+$")
+                    echo $foundVersion > $ARTIFACT_UPDATED_REL_VERSION_FILE
                     currentIncrementedVersion=$(incrementCoreReleaseByPos "$versionPos" "$foundVersion")
                     if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): releasedVersionOnly=$releasedVersionOnly, currentIncrementedVersion=$currentIncrementedVersion" >&2; fi
                 else
-                    echo "true" > $TRUNK_CORE_NEED_INCREMENT_FILE
-                    releasedVersionOnly=$(echo $foundVersion | grep -oE "^[0-9]+\.[0-9]+\.[0-9]+")
-                    # Do not need to increment because it's a pre-release version
-                    currentIncrementedVersion=$releasedVersionOnly
-                    if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): releasedVersionOnly=$releasedVersionOnly, currentIncrementedVersion=$currentIncrementedVersion" >&2; fi
+                    # echo "true" > $TRUNK_CORE_NEED_INCREMENT_FILE
+                    echo "false" > $TRUNK_CORE_NEED_INCREMENT_FILE                   
+                    if (cat "$versionListFile" | grep -qE "\"$releasedVersionOnly\""); then
+                        echo $releasedVersionOnly > $ARTIFACT_UPDATED_REL_VERSION_FILE
+                        currentIncrementedVersion=$(incrementCoreReleaseByPos "$versionPos" "$foundVersion")
+                        if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): releasedVersionOnly=$releasedVersionOnly, currentIncrementedVersion=$currentIncrementedVersion" >&2; fi
+                    else
+                        echo "[DEBUG] $BASH_SOURCE (line:$LINENO): foundVersion=$foundVersion" >&2
+                        # if (echo $foundVersion | grep -qE "^[0-9]+\.[0-9]+\.[0-9]+$"); then
+                        #     currentIncrementedVersion=$(incrementReleaseVersion $releasedVersionOnly ${PATCH_POSITION})
+                        #     echo "[DEBUG] $BASH_SOURCE (line:$LINENO) antz $currentIncrementedVersion" >&2
+                        # fi
+                        #currentIncrementedVersion=$(incrementReleaseVersion $releasedVersionOnly ${PATCH_POSITION})
+                        currentIncrementedVersion=$releasedVersionOnly
+                        echo "[DEBUG] $BASH_SOURCE (line:$LINENO) antz $currentIncrementedVersion" >&2
+                        echo "[DEBUG] $BASH_SOURCE (line:$LINENO):  ---------------------------------------------- $versionScope, releasedVersionOnly=$releasedVersionOnly, currentIncrementedVersion=$currentIncrementedVersion" >&2
+                        # if [[ "$releasedVersionOnly" == "$currentIncrementedVersion" ]]; then
+                        #     # Increment patch because it's the same as released version
+                        #     currentIncrementedVersion=$(incrementReleaseVersion $currentIncrementedVersion ${PATCH_POSITION})
+                        #     echo "[DEBUG] $BASH_SOURCE (line:$LINENO): --------------- currentIncrementedVersion=$currentIncrementedVersion" >&2
+                        # else
+                        #     # Do not need to increment because it's a pre-release version
+                        #     currentIncrementedVersion=$releasedVersionOnly
+                        #     echo "[DEBUG] $BASH_SOURCE (line:$LINENO): --------------- currentIncrementedVersion=$currentIncrementedVersion" >&2
+                        # fi
+                        #currentIncrementedVersion=$releasedVersionOnly
+                        echo "[DEBUG] $BASH_SOURCE (line:$LINENO): --------------- currentIncrementedVersion=$currentIncrementedVersion" >&2
+                        if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): releasedVersionOnly=$releasedVersionOnly, currentIncrementedVersion=$currentIncrementedVersion" >&2; fi
+                    fi
+                    
                 fi
                 ## Store the latest pre-release into files for post processing later
                 if (grep -qE "$releasedVersionOnly\-$RC_V_IDENTIFIER\." $versionListFile); then
                     lastRCVersion=$(cat "$versionListFile" | grep -E "$releasedVersionOnly\-$RC_V_IDENTIFIER\." | sort -rV | head -n1 | cut -d"\"" -f4)
-                    echo $lastRCVersion > $ARTIFACT_LAST_RC_VERSION_FILE
-                    if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): Reset last RC version to $lastRCVersion" >&2; fi
+                    echo "$lastRCVersion" > $ARTIFACT_LAST_RC_VERSION_FILE
+                else
+                    lastRCVersion="$releasedVersionOnly-$RC_V_IDENTIFIER.0" 
+                    echo "$lastRCVersion" > $ARTIFACT_LAST_RC_VERSION_FILE
                 fi
+                if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): Reset last RC version to $lastRCVersion" >&2; fi
+
                 if (grep -qE "$releasedVersionOnly\-$DEV_V_IDENTIFIER\." $versionListFile); then
                     lastDevVersion=$(cat "$versionListFile" | grep -E "$releasedVersionOnly\-$DEV_V_IDENTIFIER\." | sort -rV | head -n1 | cut -d"\"" -f4)
-                    echo $lastDevVersion > $ARTIFACT_LAST_DEV_VERSION_FILE
-                    if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): Reset last DEV version to $lastDevVersion" >&2; fi
+                    echo "$lastDevVersion" > $ARTIFACT_LAST_DEV_VERSION_FILE
+                else
+                    lastDevVersion="$releasedVersionOnly-$DEV_V_IDENTIFIER.0" 
+                    echo "$lastDevVersion"  > $ARTIFACT_LAST_DEV_VERSION_FILE
                 fi
+                if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): Reset last DEV version to $lastDevVersion" >&2; fi
+
                 if (grep -qE "$releasedVersionOnly\-$REBASE_V_IDENTIFIER\." $versionListFile); then
                     lastBaseVersion=$(cat "$versionListFile" | grep -E "$releasedVersionOnly\-$REBASE_V_IDENTIFIER\." | sort -rV | head -n1 | cut -d"\"" -f4)
-                    echo $lastBaseVersion > $ARTIFACT_LAST_REBASE_VERSION_FILE
-                    if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): Reset last REBASE version to $lastBaseVersion" >&2; fi
+                    echo "$lastBaseVersion" > $ARTIFACT_LAST_BASE_VERSION_FILE
+                else
+                    lastBaseVersion="$releasedVersionOnly-$REBASE_V_IDENTIFIER.0" 
+                    echo "$lastBaseVersion" > $ARTIFACT_LAST_BASE_VERSION_FILE
                 fi
+                if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): Reset last REBASE version to $lastBaseVersion" >&2; fi
                 
             fi
 
         fi
     fi
     if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): currentIncrementedVersion=$currentIncrementedVersion" >&2; fi
-    echo $currentIncrementedVersion > $ARTIFACT_UPDATED_REL_VERSION_FILE
+    # if (echo $currentIncrementedVersion | grep -qE "^[0-9]+\.[0-9]+\.[0-9]+$"); then
+    #     echo $currentIncrementedVersion > $ARTIFACT_UPDATED_REL_VERSION_FILE
+    #     if [[ "$isDebug" == "true" ]]; then echo "==================================[DEBUG] $BASH_SOURCE (line:$LINENO): currentIncrementedVersion=$currentIncrementedVersion" >&2; fi
+    # fi
     echo $currentIncrementedVersion
 }
 
@@ -1000,13 +1098,16 @@ if [[ ! -z "${rebaseReleaseVersion}" ]]; then
     nextVersion=${rebaseReleaseVersion}-$REBASE_V_IDENTIFIER.$nextRebasePatchNum
 
 else
+    echo [INFO] Before getNeededIncrementReleaseVersion: $nextVersion
     nextVersion=$(getNeededIncrementReleaseVersion "$lastDevVersion" "$lastRCVersion" "$lastRelVersion")
     currentInitialVersion=$nextVersion
-    echo [INFO] Before incremented: $nextVersion
+    echo [INFO] After getNeededIncrementReleaseVersion: $nextVersion
 
     ## Process incrementation on MAJOR, MINOR and PATCH
     if [[ "$isInitialVersion" == "true" ]]; then
         echo "[INFO] This is initial version. So no core release incrementation needed: $nextVersion"
+    elif [[ "$(checkReleaseVersionFile "${MAJOR_SCOPE}")" == "true" ]] && [[ "$(checkReleaseVersionFile "${MINOR_SCOPE}")" == "true" ]]; then
+        echo "[INFO] MAJOR and MINOR will be file referenced. No incrementation needed"
     elif [[ "$(checkReleaseVersionFeatureFlag ${MAJOR_SCOPE})" == "true" ]] && [[ ! "${MAJOR_V_RULE_VFILE_ENABLED}" == "true" ]]; then
         # echo [DEBUG] currentRCSemanticVersion=$nextVersion
         touch $CORE_VERSION_UPDATED_FILE
@@ -1038,7 +1139,7 @@ else
             nextVersion=$(incrementReleaseVersion $nextVersion ${MINOR_POSITION})
         fi
         echo [DEBUG] MINOR INCREMENTED $nextVersion
-    elif [[ "$(checkReleaseVersionFeatureFlag ${PATCH_SCOPE})" == "true" ]] && [[ ! "${PATCH_V_RULE_VFILE_ENABLED}" == "true" ]] && [[ ! "${MAJOR_V_RULE_VFILE_ENABLED}" == "true" ]] && [[ ! "${MINOR_V_RULE_VFILE_ENABLED}" == "true" ]]; then
+    elif [[ "$(checkReleaseVersionFeatureFlag ${PATCH_SCOPE})" == "true" ]] && [[ ! "${PATCH_V_RULE_VFILE_ENABLED}" == "true" ]] && [[ ! "${MAJOR_V_RULE_VFILE_ENABLED}" == "true" ]] && [[ ! "${MINOR_V_RULE_VFILE_ENABLED}" == "true" ]] && [[ ! -f "$CORE_VERSION_UPDATED_FILE" ]]; then
         # echo [DEBUG] currentRCSemanticVersion=$nextVersion
         touch $CORE_VERSION_UPDATED_FILE
         # nextVersion=$(incrementReleaseVersion $nextVersion ${PATCH_POSITION})
@@ -1056,7 +1157,7 @@ else
         fi
         if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): PATCH INCREMENTED=$nextVersion" >&2; fi
     fi
-    echo [INFO] After core version incremented: $nextVersion
+    echo "[INFO] After core version incremented (without version file reference): $nextVersion"
 
     ## Process incrementation on MAJOR, MINOR and PATCH via version file (manual). Skip if is initial version
     # if [[ "$isInitialVersion" == "true" ]]; then
@@ -1069,6 +1170,7 @@ else
         echo "[ERROR_MSG] $nextVersion" >&2
         exit 1
     fi
+    resetLastArtifactFiles
     if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): nextVersion=$nextVersion, lastDevVersion=$lastDevVersion, lastRcVersion=$lastRCVersion, lastBaseVersion=$lastBaseVersion, lastRelVersion=$lastRelVersion" >&2; fi
     nextVersion=$(processWithReleaseVersionFile "${nextVersion}" "${MINOR_POSITION}" "${MINOR_SCOPE}" "${versionListFile}")
     if [[ $? -ne 0 ]]; then
@@ -1076,6 +1178,7 @@ else
         echo "[ERROR_MSG] $nextVersion" >&2
         exit 1
     fi
+    resetLastArtifactFiles
     if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): nextVersion=$nextVersion, lastDevVersion=$lastDevVersion, lastRcVersion=$lastRCVersion, lastBaseVersion=$lastBaseVersion, lastRelVersion=$lastRelVersion" >&2; fi
     nextVersion=$(processWithReleaseVersionFile "${nextVersion}" "${PATCH_POSITION}" "${PATCH_SCOPE}" "${versionListFile}")
     if [[ $? -ne 0 ]]; then
@@ -1083,6 +1186,7 @@ else
         echo "[ERROR_MSG] $nextVersion" >&2
         exit 1
     fi
+    resetLastArtifactFiles
     if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): nextVersion=$nextVersion, lastDevVersion=$lastDevVersion, lastRcVersion=$lastRCVersion, lastBaseVersion=$lastBaseVersion, lastRelVersion=$lastRelVersion" >&2; fi
 
     # if ([[ "${MAJOR_V_RULE_VFILE_ENABLED}" == "true" ]] || [[ "${MINOR_V_RULE_VFILE_ENABLED}" == "true" ]]) && [[ ! "${PATCH_V_RULE_VFILE_ENABLED}" == "true" ]]; then
@@ -1099,7 +1203,9 @@ else
 # fi
 
     # Store in a file to be used in pre-release increment consideration later
-    echo $nextVersion > $ARTIFACT_UPDATED_REL_VERSION_FILE
+    if (echo $nextVersion | grep -qE "^[0-9]+\.[0-9]+\.[0-9]+$"); then
+        echo $nextVersion > $ARTIFACT_UPDATED_REL_VERSION_FILE
+    fi
 
     ## Debug section
     if [[ "$isDebug" == "true" ]]; then
@@ -1121,6 +1227,9 @@ else
     echo [INFO] After prerelease version incremented: [$nextVersion]
 
     ## Process incrementation on RC and DEV with version file
+    if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): RC_V_RULE_VFILE_ENABLED=$RC_V_RULE_VFILE_ENABLED, DEV_V_RULE_VFILE_ENABLED=$DEV_V_RULE_VFILE_ENABLED" >&2; fi
+    if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): \$(checkPreReleaseVersionFeatureFlag ${RC_SCOPE})=$(checkPreReleaseVersionFeatureFlag ${RC_SCOPE}),\$(checkPreReleaseVersionFeatureFlag ${DEV_SCOPE})=$(checkPreReleaseVersionFeatureFlag ${DEV_SCOPE})" >&2; fi
+
     if [[ "$(checkPreReleaseVersionFeatureFlag ${RC_SCOPE})" == "true" ]] && [[ "${RC_V_RULE_VFILE_ENABLED}" == "true" ]]; then
         nextVersion=$(incrementPreReleaseVersionByFile "$lastRCVersion" "$RC_V_IDENTIFIER" "${RC_SCOPE}")
     elif [[ "$(checkPreReleaseVersionFeatureFlag ${DEV_SCOPE})" == "true" ]] && [[ "${DEV_V_RULE_VFILE_ENABLED}" == "true" ]]; then

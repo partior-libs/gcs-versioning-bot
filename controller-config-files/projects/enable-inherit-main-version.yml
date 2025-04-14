@@ -8,8 +8,8 @@ smc:
         enabled: true
         rules:
           file:
-            enable: true
-            target: test-files/app-version.cfg
+            enabled: true
+            target: ./app-version.cfg
             key: PREPEND-LABEL
       major-version:
         enabled: true
@@ -28,7 +28,7 @@ smc:
             enabled: true
           file:
             enabled: true
-            target: test-files/app-version.cfg
+            target: ./app-version.cfg
             key: MAJOR-VERSION
       minor-version:
         enabled: true
@@ -47,7 +47,7 @@ smc:
             enabled: false
           file:
             enabled: false
-            target: test-files/app-version.cfg
+            target: ./app-version.cfg
             key: MINOR-VERSION
       patch-version:
         enabled: true
@@ -66,7 +66,7 @@ smc:
             enabled: false
           file:
             enabled: false
-            target: test-files/app-version.cfg
+            target: ./app-version.cfg
             key: PATCH-VERSION
       release-candidate-version:
         enabled: true
@@ -80,7 +80,7 @@ smc:
             enabled: false
           file:
             enabled: true
-            target: test-files/app-version.cfg
+            target: ./app-version.cfg
             key: RC-VERSION
       development-version:
         enabled: true
@@ -94,7 +94,7 @@ smc:
             enabled: false
           file:
             enabled: true
-            target: test-files/app-version.cfg
+            target: ./app-version.cfg
             key: DEV-VERSION
       build-version:
         enabled: false
@@ -107,11 +107,11 @@ smc:
         enabled: false
         file-token: 
           enabled: false
-          target: test-files/sample-version-file.xml
+          target: ./sample-version-file.xml
           token: '@@VERSION_BOT_TOKEN@@'
         maven-pom: 
           enabled: false
-          target: test-files/sample-pom-file.xml
+          target: ./sample-pom-file.xml
 
     branches:
       default:
