@@ -18,7 +18,7 @@ test-spec:
     versionFileTmp: "versionFile.tmp"
 
   output:
-    expectedValue: "22.4.28-dev.3"
+    expectedValue: "22.4.28-dev.1"
 
 
   
