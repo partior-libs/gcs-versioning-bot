@@ -1,0 +1,24 @@
+# Unit test specification of configuration file to test versioning bot
+
+test-spec:
+  info:
+    name: "Test Case 7"
+    description: "Do a commit on feature/24.3.0 concurrently with feature/test-for-R-25.1"
+
+  input:
+    lastDevVersion: "25.1.2-dev.2"
+    lastRcVersion: "1.2.10-rc.2"
+    lastReleaseVersion: "25.1.0"
+    lastRebaseVersion: ""
+    targetBaseVersion: ""
+    branchName: "feature"
+    appVersion: "24.3"
+
+  file:
+    versionFileTmp: "versionFile.tmp"
+
+  output:
+    expectedValue: "24.3.0-dev.3"
+
+
+  
