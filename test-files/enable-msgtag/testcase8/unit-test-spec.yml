@@ -2,8 +2,8 @@
 
 test-spec:
   info:
-    name: "Test Case 6"
-    description: "Test versioning bot with hotfix branch and a MINOR commit message enabled"
+    name: "Test Case 8"
+    description: "Test versioning bot with hotfix branch and a MINOR-VERSION commit message enabled"
 
   input:
     lastDevVersion: "22.4.28-dev.2"
