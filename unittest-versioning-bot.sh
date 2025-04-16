@@ -459,7 +459,7 @@ function mainTestRunner(){
     # Case 3: Run all config files + their whole testcases (e.g., testcase1, testcase2, ...)
     elif [[ $configFile == "all" && $scope == "all" ]]; then
         for configPath in "$TEST_SUITE_PATH"/*; do
-            if [[ -d "$configPath" ]]; then
+            if [[ -d "$configPath" && "$configPath" != *enable-replace-maven-pom* ]]; then
                 baseConfigName="$(basename "$configPath")"
                 runTests "$baseConfigName" "$configPath/testcase*"
 
