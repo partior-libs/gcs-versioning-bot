@@ -1,0 +1,41 @@
+name: A new Unit Tests 
+
+on:
+  push:
+    branches: [ main ] # Trigger the workflow on push to the main branch
+  pull_request:
+    branches: [ main ] # Trigger the workflow on pull requests targeting the main branch
+  workflow_dispatch:
+
+jobs:
+  unit-tests:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run unit tests
+        run: ./unittest-versioning-bot.sh enable-build-rules all
+
+      - name: Display test report
+        if: always() # Ensure this step runs even if the test script fails
+        run: |
+          echo "[INFO] List the unit test report"
+          ls unit-test-report-*
+          reportFile=$(ls unit-test-report-*)
+          if [ -f "$reportFile" ]; then
+            echo "## Unit Test Report"
+            cat "$reportFile"
+          else
+            echo "No unit test report file found."
+          fi
+
+      - name: Upload test report as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: unit-test-report
+          path: unit-test-report-*
