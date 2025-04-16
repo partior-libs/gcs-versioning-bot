@@ -11,7 +11,7 @@
     <parent>
         <groupId>com.partior</groupId>
         <artifactId>lib-dapps-parent</artifactId>
-        <version>12</version>
+        <version>0.0.1</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
