@@ -365,6 +365,7 @@ function runTests() {
 
     # Sort a list of test cases numerically
     for tcPath in $(printf "%s\n" "${testCaseList[@]}" | sort -V); do
+        echo "[DEBUG] Running the $(basename $tcPath) from config: $scopeOfConfigFiles"
         if [[ -d $tcPath ]]; then
             logMessage "INFO" "Running the test from config: $scopeOfConfigFiles"
 
