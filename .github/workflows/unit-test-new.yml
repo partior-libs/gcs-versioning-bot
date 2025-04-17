@@ -8,8 +8,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  unit-tests:
-    name: Run Unit Tests
+  local-unit-tests:
+    name: Run Local Unit Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -18,24 +18,128 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Run unit tests
-        run: ./unittest-versioning-bot.sh enable-build-rules all
+      - name: Run local unit tests
+        run: |
+          cd $GITHUB_WORKSPACE
+          ./unittest-versioning-bot.sh all all
 
       - name: Display test report
         if: always() # Ensure this step runs even if the test script fails
         run: |
+          cd $GITHUB_WORKSPACE
           echo "[INFO] List the unit test report"
           ls unit-test-report-*
           reportFile=$(ls unit-test-report-*)
           if [ -f "$reportFile" ]; then
+            echo "REPORT_FILE=$reportFile" >> "$GITHUB_ENV"
             echo "## Unit Test Report"
             cat "$reportFile"
           else
             echo "No unit test report file found."
           fi
 
+      - name: Check for failures
+        if: steps.display-report.outcome == 'success' && ${{ env.REPORT_FILE }} != ''
+        run: |
+          ${{ env.ARTIFACT_BASE_NAME }}
+          failedCount=$(grep -oP 'Failed:\s+\K\d+' "${{ env.REPORT_FILE }}")
+          if [[ -n "$failedCount" && "$failedCount" -ne 0 ]]; then
+            echo "[ERROR] Unit tests failed. Found $failedCount failed test cases (threshold => 1)."
+            exit 1
+          else
+            echo "[INFO] Unit tests passed."
+          fi
+
       - name: Upload test report as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: unit-test-report
+          name: unit-test-report-local
+          path: unit-test-report-*
+
+  maven-pom-unit-tests:
+    name: Run Maven POM Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate jfrog credential
+        run: |
+          if [[ -z "${{ secrets.SMC_JFROG_TOKEN }}" ]]; then
+            if [[ -z "${{ inputs.artifactory-username }}" ]] || [[ -z "${{ inputs.artifactory-password }}" ]]; then
+              echo [ERROR] Credential to artifactory or jfrog token must be specified.
+              exit 1
+            fi
+          fi
+        shell: bash
+
+      - name: Setup jfrog
+        uses: jfrog/setup-jfrog-cli@v4
+        env:
+          JF_ENV_1: ${{ secrets.SMC_JFROG_TOKEN }}
+
+      - name: Display jfrog setup
+        run: |
+          echo [DEBUG] Show jfrog setup
+          jfrog c show
+        shell: bash
+
+      - name: Run unit test for enable-replace-maven-pom
+        run: |
+          cd $GITHUB_WORKSPACE
+          ## To get mvn version, needs to add mvn function as jf mnvc. Adding variables to make it as backward compatible possible
+          echo "[INFO] Retrying with Partior's artifactory. This may takes longer..."
+          jfrogServerID=$(jf config show | grep "Server ID" | cut -d":" -f2 | xargs)
+          mvnRepoResolveRelease="maven-release"
+          mvnRepoResolveDev="maven-dev"
+          mvnRepoDeployRelease="$mvnRepoResolveRelease"
+
+          echo "[DEBUG] Jfrog Server ID: $jfrogServerID"
+          echo "[DEBUG] Maven Resolve Release Repo: $mvnRepoResolveRelease"
+          echo "[DEBUG] Maven Resolve Dev Repo: $mvnRepoResolveDev"
+          echo "[DEBUG] Maven Deploy Repo: $mvnRepoDeployRelease"
+
+          function mvn() { local myparam=$@; jf mvn $myparam; }
+          # Export the function, so it can be accessed from generate.sh
+          export -f mvn
+          echo jf mvnc --server-id-resolve="$jfrogServerID" --repo-resolve-releases="$mvnRepoResolveRelease" --repo-resolve-snapshots="$mvnRepoResolveDev" --repo-deploy-releases="$mvnRepoDeployRelease"  --repo-deploy-snapshots="$mvnRepoResolveDev"
+          jf mvnc --server-id-resolve="$jfrogServerID" --repo-resolve-releases="$mvnRepoResolveRelease" --repo-resolve-snapshots="$mvnRepoResolveDev" --repo-deploy-releases="$mvnRepoDeployRelease"  --repo-deploy-snapshots="$mvnRepoResolveDev"
+
+          ./unittest-versioning-bot.sh enable-replace-maven-pom all
+
+      - name: Display test report
+        id: display-report
+        if: always() # Ensure this step runs even if the test script fails
+        run: |
+          cd $GITHUB_WORKSPACE
+          echo "[INFO] List the unit test report"
+          ls unit-test-report-*
+          reportFile=$(ls unit-test-report-*)
+          if [ -f "$reportFile" ]; then
+            echo "REPORT_FILE=$reportFile" >> "$GITHUB_ENV"
+            echo "## Unit Test Report"
+            cat "$reportFile"
+          else
+            echo "No unit test report file found."
+          fi
+
+      - name: Check for failures
+        if: steps.display-report.outcome == 'success' && ${{ env.REPORT_FILE }} != ''
+        run: |
+          ${{ env.ARTIFACT_BASE_NAME }}
+          failedCount=$(grep -oP 'Failed:\s+\K\d+' "${{ env.REPORT_FILE }}")
+          if [[ -n "$failedCount" && "$failedCount" -ne 0 ]]; then
+            echo "[ERROR] Unit tests failed. Found $failedCount failed test cases (threshold => 1)."
+            exit 1
+          else
+            echo "[INFO] Unit tests passed."
+          fi
+
+      - name: Upload test report as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-report-maven-pom
           path: unit-test-report-*
