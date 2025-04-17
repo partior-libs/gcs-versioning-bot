@@ -15,7 +15,7 @@ fi
 
 ## ANTZ TEMPORARY
 # source ./test-files/mock-base-variables.sh
-
+# source run2.sh
 artifactoryBaseUrl=$1
 artifactoryTargetRepo=$2
 artifactoryTargetDevRepo=$3
@@ -36,8 +36,11 @@ jiraVersionIdentifier=${17}
 artifactType=${18:-default}
 prependVersionLabel=${19}
 excludeVersionName=${20:-latest}
-hotfixBaseVersion="${21}"
+rebaseReleaseVersion="${21}"
+versionListFile="${22:-versionlist.tmp}"
 
+rm -f $versionListFile
+JFROGEXE=jf
 
 echo "[INFO] Branch name: $sourceBranchName"
 echo "[INFO] Artifactory username: $artifactoryUsername"
@@ -55,9 +58,41 @@ echo "[INFO] Jira Version Identifier: $jiraVersionIdentifier"
 echo "[INFO] Artifact Type: $artifactType"
 echo "[INFO] Prepend Version: $prependVersionLabel"
 echo "[INFO] Exclude Version: $excludeVersionName"
-echo "[INFO] Hotfix Base Version: $hotfixBaseVersion"
+echo "[INFO] Rebase from release version: $rebaseReleaseVersion"
+echo "[INFO] Version list file: $versionListFile"
 
 
+function getVFileValue() {
+
+    local rulesEnabled="$1"
+    local rulesVFileEnabled="$2"
+    local rulesVFileName="$3"
+    local rulesVFileKey="$4"
+
+    local foundValue="$VBOT_NIL"    
+    if [[ "$rulesEnabled" == "true" ]] && [[ "$rulesVFileEnabled" == "true" ]]; then
+        if [[ -f "$rulesVFileName" ]]; then
+            foundValue=$(cat "$rulesVFileName" | grep -E "^rulesVFileKey=" | cut -d"=" -f2 | cut -d"#" -f1)
+        fi
+    fi
+    echo $foundValue
+}
+
+function storeFileVersionIntoFile() {
+    local inputList="$1"
+    local targetSaveFile="$2"
+
+    if [[ ! -f "$inputList" ]]; then
+        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Artifact list file not found: [$inputList]"
+        exit 1
+    fi
+
+    local majorVersion=$(getVFileValue "$MAJOR_V_RULES_ENABLED" "$MAJOR_V_RULE_VFILE_ENABLED" "$MAJOR_V_CONFIG_VFILE_NAME" "$MAJOR_V_CONFIG_VFILE_KEY")
+    local minorVersion=$(getVFileValue "$MINOR_V_RULES_ENABLED" "$MINOR_V_RULE_VFILE_ENABLED" "$MINOR_V_CONFIG_VFILE_NAME" "$MINOR_V_CONFIG_VFILE_KEY")
+    local patchVersion=$(getVFileValue "$PATCH_V_RULES_ENABLED" "$PATCH_V_RULE_VFILE_ENABLED" "$PATCH_V_CONFIG_VFILE_NAME" "$PATCH_V_CONFIG_VFILE_KEY")
+
+
+}
 
 function storeLatestBaseVersionIntoFile() {
     local inputList="$1"
@@ -73,7 +108,19 @@ function storeLatestBaseVersionIntoFile() {
         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Artifact list file not found: [$inputList]"
         exit 1
     fi
-    echo "[INFO] Store the latest hotfix from base [$targetBaseVersion]..."
+    if [[ "$REBASE_V_VALIDATION_FAIL_NONEXISTENT_ENABLED" == 'true' ]]; then
+        echo "[INFO] Rebase validation enabled. Checking..."
+        if (cat $inputList | grep -qE "\"$targetBaseVersion\""); then
+            echo "[INFO] Found target baseline: [$targetBaseVersion]"
+        else
+            echo "[ERROR] $BASH_SOURCE (line:$LINENO): Rebase validation enabled. Unable to find target baseline: [$targetBaseVersion]"
+            echo "[DEBUG] Versions:"
+            cat $inputList
+            exit 1
+        fi
+
+    fi
+    echo "[INFO] Store the latest rebased patch from release baseline [$targetBaseVersion] with identifier [$identifierType]..."
     if (cat $inputList | grep -qE "$targetBaseVersion-$identifierType\."); then
         echo "[INFO] Found existing..."
         echo $(cat $inputList | grep -E "version" | grep -E "$targetBaseVersion-$identifierType\." | cut -d"\"" -f4 | sort -rV | head -1) > $targetSaveFile
@@ -88,55 +135,64 @@ function storeLatestVersionIntoFile() {
     local inputList=$1
     local identifierType=$2
     local targetSaveFile=$3
-
+    echo "[DEBUG] inputList=$(cat $inputList), identifierType=$identifierType, targetSaveFile=$targetSaveFile"
     if [[ ! -f "$inputList" ]]; then
         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Artifact list file not found: [$inputList]"
         exit 1
     fi
     if [[ "$identifierType" == "$REL_SCOPE" ]]; then
         echo $(cat $inputList | grep -E "version" | grep -v -E "\-" | cut -d"\"" -f4 | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -rV | head -1) > $targetSaveFile
+        # echo antz1 $(cat $targetSaveFile)
     else
         echo $(cat $inputList | grep -E "version" | grep -E "\-$identifierType\." | cut -d"\"" -f4 | sort -rV | head -1) > $targetSaveFile
+        # echo antz2 $(cat $targetSaveFile)
     fi
-    ## If still empty, reset value
+
+    # If still empty, create dummy
     local updatedContent=$(cat $targetSaveFile | head -1 | xargs)
     if [[ -z "$updatedContent" ]]; then
-        echo "[INFO] Resetting $targetSaveFile..."
-        local tmpPreRelVersion=$initialVersion
-        ## Pick the release version from pre-release files if already generated.
-        if [[ -f "$ARTIFACT_LAST_RC_VERSION_FILE" ]] && [[ "$ARTIFACT_LAST_RC_VERSION_FILE" != "$targetSaveFile" ]]; then
-            tmpPreRelVersion=$(cat $ARTIFACT_LAST_RC_VERSION_FILE | cut -d"-" -f1)
-        elif [[ -f "$ARTIFACT_LAST_DEV_VERSION_FILE" ]] && [[ "$ARTIFACT_LAST_DEV_VERSION_FILE" != "$targetSaveFile" ]]; then
-            tmpPreRelVersion=$(cat $ARTIFACT_LAST_DEV_VERSION_FILE | cut -d"-" -f1)
-        fi
-        ## Adjust the version if returned version is invalid
-        if [[ -z "$tmpPreRelVersion" ]]; then
-            if [[ -f "$ARTIFACT_LAST_REL_VERSION_FILE" ]] && [[ ! -z $(cat $ARTIFACT_LAST_REL_VERSION_FILE) ]]; then
-                tmpPreRelVersion=$(cat $ARTIFACT_LAST_REL_VERSION_FILE | xargs)
-                local tmpRelMajorMinorVersion=$(echo $tmpPreRelVersion | cut -d"." -f1-2)
-                local tmpRelPatchVersion=$(echo $tmpPreRelVersion | cut -d"." -f3)
-                local tmpNewRelPatchVersion=$(( tmpRelPatchVersion + 1))
-                tmpPreRelVersion=${tmpRelMajorMinorVersion}.${tmpNewRelPatchVersion}
-            else
-                tmpPreRelVersion=$initialVersion
-            fi
-            
-        fi
-        ## Decrement the patch version if pre-release patch version is greater than 0
-        local tmpRelMajorMinorVersion=$(echo $tmpPreRelVersion | cut -d"." -f1-2)
-        local tmpRelPatchVersion=$(echo $tmpPreRelVersion | cut -d"." -f3)
-        local tmpRelVersion=${tmpRelMajorMinorVersion}.0
-        if [[ $(( tmpRelPatchVersion - 1 )) -gt 0 ]]; then
-            tmpRelVersion=${tmpRelMajorMinorVersion}.$(( tmpRelPatchVersion - 1))
-        fi
-
-        if [[ "$identifierType" == "$REL_SCOPE" ]]; then
-            echo "$tmpRelVersion" > $targetSaveFile
-        else
-            echo "$tmpPreRelVersion-$identifierType.0" > $targetSaveFile
-        fi 
-
+        echo "NIL" > $targetSaveFile
     fi
+    ## If still empty, reset value
+    # local updatedContent=$(cat $targetSaveFile | head -1 | xargs)
+    # if [[ -z "$updatedContent" ]]; then
+    #     echo "[INFO] Resetting $targetSaveFile..."
+    #     local tmpPreRelVersion=$initialVersion
+    #     ## Pick the release version from pre-release files if already generated.
+    #     if [[ -f "$ARTIFACT_LAST_RC_VERSION_FILE" ]] && [[ "$ARTIFACT_LAST_RC_VERSION_FILE" != "$targetSaveFile" ]]; then
+    #         tmpPreRelVersion=$(cat $ARTIFACT_LAST_RC_VERSION_FILE | cut -d"-" -f1)
+    #     elif [[ -f "$ARTIFACT_LAST_DEV_VERSION_FILE" ]] && [[ "$ARTIFACT_LAST_DEV_VERSION_FILE" != "$targetSaveFile" ]]; then
+    #         tmpPreRelVersion=$(cat $ARTIFACT_LAST_DEV_VERSION_FILE | cut -d"-" -f1)
+    #     fi
+    #     ## Adjust the version if returned version is invalid
+    #     if [[ -z "$tmpPreRelVersion" ]]; then
+    #         if [[ -f "$ARTIFACT_LAST_REL_VERSION_FILE" ]] && [[ ! -z $(cat $ARTIFACT_LAST_REL_VERSION_FILE) ]]; then
+    #             tmpPreRelVersion=$(cat $ARTIFACT_LAST_REL_VERSION_FILE | xargs)
+    #             local tmpRelMajorMinorVersion=$(echo $tmpPreRelVersion | cut -d"." -f1-2)
+    #             local tmpRelPatchVersion=$(echo $tmpPreRelVersion | cut -d"." -f3)
+    #             local tmpNewRelPatchVersion=$(( tmpRelPatchVersion + 1))
+    #             tmpPreRelVersion=${tmpRelMajorMinorVersion}.${tmpNewRelPatchVersion}
+    #         else
+    #             tmpPreRelVersion=$initialVersion
+    #             echo "true" > "$FLAG_FILE_IS_INITIAL_VERSION"
+    #         fi
+            
+    #     fi
+    #     ## Decrement the patch version if pre-release patch version is greater than 0
+    #     local tmpRelMajorMinorVersion=$(echo $tmpPreRelVersion | cut -d"." -f1-2)
+    #     local tmpRelPatchVersion=$(echo $tmpPreRelVersion | cut -d"." -f3)
+    #     local tmpRelVersion=${tmpRelMajorMinorVersion}.0
+    #     if [[ $(( tmpRelPatchVersion - 1 )) -gt 0 ]]; then
+    #         tmpRelVersion=${tmpRelMajorMinorVersion}.$(( tmpRelPatchVersion - 1))
+    #     fi
+
+    #     if [[ "$identifierType" == "$REL_SCOPE" ]]; then
+    #         echo "$tmpRelVersion" > $targetSaveFile
+    #     else
+    #         echo "$tmpPreRelVersion-$identifierType.0" > $targetSaveFile
+    #     fi 
+
+    # fi
 }
 
 function getArtifactLastVersion() {
@@ -170,11 +226,10 @@ function getArtifactLastVersion() {
     if [[ ! -z "$excludeVersionName" ]];
     then
         echo "[DEBUG] Clean up with exclusion"
-        cat $versionListFile | grep -v "$excludeVersionName" > $versionListFile.2
+        cat $versionListFile | sort -u | grep -v "$excludeVersionName" > $versionListFile.2
         mv $versionListFile.2 $versionListFile
-        echo "[DEBUG] List after cleaned up with exclusion"
+        echo "[DEBUG] List after cleaned up with exclusion2"
         cat $versionListFile
-
     fi
 
 }
@@ -205,7 +260,7 @@ function getDockerLatestVersionFromArtifactory() {
         ## Check which credential to use
         local execQuery="curl -k -s -u $artifactoryUsername:$artifactoryPassword"
         if [[ ! -z "$jfrogToken" ]]; then
-            execQuery="jfrog rt curl -k -s"
+            execQuery="$JFROGEXE rt curl -k -s"
             queryPath="-w 'status_code:[%{http_code}]' \
                 -XGET \
                 '/api/docker/${currentDockerRepo}/v2/${artifactoryDockerTargetArtifactName}/tags/list' -o $tmpOutputFile"
@@ -251,9 +306,10 @@ function getDockerLatestVersionFromArtifactory() {
 
     ## Reformating final output for next stage processing
     if [[ "$foundValidVersion" == "false" ]]; then
-        local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.0"
+        local resetVersion="$initialVersion"
         echo "[INFO] Unable to find last version. Resetting to: $resetVersion"
         echo "\"version\" : \"$resetVersion\"" > $versionOutputFile
+        echo "true" > "$FLAG_FILE_IS_INITIAL_VERSION"
     else
         ## Store all versions in the same format as artifactory list
         local versions=$(cat $versionOutputFile | grep -v "^$")
@@ -299,7 +355,7 @@ EOF
     ## Check which credential to use
     local execQuery="curl -k -s -u $artifactoryUsername:$artifactoryPassword"
     if [[ ! -z "$jfrogToken" ]]; then
-        execQuery="jfrog rt curl -k -s"
+        execQuery="$JFROGEXE rt curl -k -s"
         queryPath="-w 'status_code:[%{http_code}]' \
             -X POST \
             '/api/search/aql' -H 'Content-Type: text/plain' -d @$aqlQueryPayloadFile -o $versionOutputFile.tmp"
@@ -345,7 +401,7 @@ EOF
                 #echo "[DEBUG] Path basename [$artifactPathBasename] is not the same as artifact name [$artifactoryTargetArtifactName]. Proceed to extract version from basename..."
                 ## Verify base is a version
                 #if [[ "$artifactPathBasename" =~ [0-9]+\.[0-9]+\.[0-9]+ ]]; then
-                if (echo "$artifactPathBasename" | grep -qE '([0-9]+\.){2}[0-9]+((-|\+)[0-9a-zA-Z]+\.[0-9]+)*$'); then ## ensure only recognized format is stored
+                if (echo "$artifactPathBasename" | grep -qE '([0-9]+\.){2}[0-9]+(((-|\+)[0-9a-zA-Z]+\.[0-9]+)*(\+[0-9a-zA-Z]+\.[0-9\.]+)*$)'); then ## ensure only recognized format is stored
                     if (! grep -q "\"$artifactPathBasename\"" "$versionOutputFile"); then  ## store only unique
                         echo "\"version\": \"$artifactPathBasename\"" >> "$versionOutputFile"
                     fi
@@ -360,9 +416,10 @@ EOF
             
         done
     else
-        local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.0"
+        local resetVersion="$initialVersion"
         echo "[INFO] Unable to find last version. Resetting to: $resetVersion"
         echo "\"version\" : \"$resetVersion\"" > $versionOutputFile
+        echo "true" > "$FLAG_FILE_IS_INITIAL_VERSION"
     fi
 
     echo "[INFO] Trimming redundant lines..."
@@ -381,7 +438,7 @@ function extractAndStoreVersionFromArtifactName() {
     local artifactVersion=$(echo "$foundArtifactFile" | sed "s/$artifactoryTargetArtifactName-//g")
     artifactVersion=${artifactVersion%.*}       # Remove the last "." and everything after it
     artifactVersion=$(echo "$artifactVersion" | sed "s/-linux_amd64//g" | sed "s/-darwin_arm64//g")  # Remove any arch or OS related
-    if (echo "$artifactVersion" | grep -qE '([0-9]+\.){2}[0-9]+((-|\+)[0-9a-zA-Z]+\.[0-9]+)*$'); then ## ensure only recognized format is stored
+    if (echo "$artifactVersion" | grep -qE '([0-9]+\.){2}[0-9]+(((-|\+)[0-9a-zA-Z]+\.[0-9]+)*(\+[0-9a-zA-Z]+\.[0-9\.]+)*$)'); then ## ensure only recognized format is stored
         if (! grep -q "\"$artifactVersion\"" "$versionOutputFile"); then  ## store only unique
             echo "\"version\": \"$artifactVersion\"" >> "$versionOutputFile"
         fi
@@ -416,10 +473,11 @@ function getLatestVersionFromJira() {
         echo "[INFO] Response status $responseStatus"
         local versionsLength=$(jq '. | length' < $versionOutputFile)
         if (($versionsLength == 0 )); then
-            local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.0"
+            local resetVersion="$initialVersion"
 
             echo "[INFO] Unable to find last version. Resetting to: $resetVersion"
             echo "\"version\" : \"$resetVersion\"" > $versionOutputFile
+            echo "true" > "$FLAG_FILE_IS_INITIAL_VERSION"
         else
             ## Store all versions in the same format as artifactory list
             versions=$( jq -r --arg identifierType "$identifierType_" '.[] | select(.archived==false) | select(.name|startswith($identifierType)) | .name' < $versionOutputFile)
@@ -455,7 +513,7 @@ function filterVersionListWithPrependVersion() {
     if [[ ! -z "$inputPrependVersionLabel" ]]; then
         echo "[INFO] Filtering version list with version prepend label: $inputPrependVersionLabel"
         if [[ $(cat $versionOutputFile | grep -E "(^|\"|\s)$inputPrependVersionLabel-\<[0-9]+\.[0-9]+\.[0-9]+\>" | wc -l) -eq 0 ]]; then
-            local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.0"
+            local resetVersion="$initialVersion-${DEV_V_IDENTIFIER}.1"
             echo "[INFO] No version found after filtered. Resetting to: $resetVersion"
             echo "\"version\" : \"$resetVersion\"" > $versionOutputFile
             if [[ ! -z "$isDockerOutput" ]]; then
@@ -496,8 +554,9 @@ function checkInitialReleaseVersion() {
 }
 
 checkInitialReleaseVersion "$initialVersion"
-versionListFile=versionlist.tmp
 
+## Init
+rm -f "$FLAG_FILE_IS_INITIAL_VERSION"
 #Create empty file first
 touch $ARTIFACT_LAST_DEV_VERSION_FILE
 touch $ARTIFACT_LAST_RC_VERSION_FILE
@@ -508,8 +567,7 @@ getArtifactLastVersion "$versionListFile" "$jiraProjectKeyList"
 ## Store respective version type into file
 storeLatestVersionIntoFile "$versionListFile" "$DEV_V_IDENTIFIER" "$ARTIFACT_LAST_DEV_VERSION_FILE"
 storeLatestVersionIntoFile "$versionListFile" "$RC_V_IDENTIFIER" "$ARTIFACT_LAST_RC_VERSION_FILE"
-storeLatestBaseVersionIntoFile "$versionListFile" "$BASE_V_IDENTIFIER" "$ARTIFACT_LAST_BASE_VERSION_FILE" "$hotfixBaseVersion"
+storeLatestBaseVersionIntoFile "$versionListFile" "$REBASE_V_IDENTIFIER" "$ARTIFACT_LAST_BASE_VERSION_FILE" "$rebaseReleaseVersion"
 storeLatestVersionIntoFile "$versionListFile" "$REL_SCOPE" "$ARTIFACT_LAST_REL_VERSION_FILE"
 
 cat $versionListFile
-rm -f $versionListFile

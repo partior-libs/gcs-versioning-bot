@@ -31,7 +31,7 @@ smc:
             target: release
             enabled: true
           tag: 
-            target: false-VERSION 
+            target: MINOR-VERSION 
             enabled: false
           message-tag: 
             target: MINOR-VERSION 
@@ -47,7 +47,7 @@ smc:
         enabled: false
         rules:
           branches: 
-            target: release,main,main
+            target: release,main
             enabled: true
           tag: 
             target: PATCH-VERSION 

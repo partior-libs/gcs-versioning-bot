@@ -21,7 +21,7 @@ smc:
             enabled: true
           file:
             enabled: false
-            target: test-files/app-version.cfg
+            target: ./app-version.cfg
             key: MAJOR-VERSION
       minor-version:
         enabled: true
@@ -33,14 +33,14 @@ smc:
             target: MINOR-VERSION 
             enabled: false
           message-tag: 
-            target: MINOR 
+            target: MINOR-VERSION 
             enabled: true
           labels: 
             target: MINOR-VERSION  
             enabled: false
           file:
             enabled: false
-            target: test-files/app-version.cfg
+            target: ./app-version.cfg
             key: MINOR-VERSION
       patch-version:
         enabled: false
@@ -59,7 +59,7 @@ smc:
             enabled: true
           file:
             enabled: false
-            target: test-files/app-version.cfg
+            target: ./app-version.cfg
             key: PATCH-VERSION
       release-candidate-version:
         enabled: true
@@ -73,7 +73,7 @@ smc:
             enabled: false
           file:
             enabled: false
-            target: test-files/app-version.cfg
+            target: ./app-version.cfg
             key: RC-VERSION
       development-version:
         enabled: true
@@ -87,7 +87,7 @@ smc:
             enabled: false
           file:
             enabled: false
-            target: test-files/app-version.cfg
+            target: ./app-version.cfg
             key: DEV-VERSION
       build-version:
         enabled: false
@@ -100,11 +100,11 @@ smc:
         enabled: false
         file-token: 
           enabled: false
-          target: test-files/sample-version-file.xml
+          target: ./sample-version-file.xml
           token: '@@VERSION_BOT_TOKEN@@'
         maven-pom: 
           enabled: false
-          target: test-files/sample-pom-file.xml
+          target: ./sample-pom-file.xml
 
     branches:
       default:

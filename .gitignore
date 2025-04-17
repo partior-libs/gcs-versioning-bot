@@ -6,3 +6,13 @@ run*.sh
 run-*.sh
 artifact_updated_release_version.txt
 sample*
+source-*.tmp
+unit-test-report*.log
+unit-test-report*.txt
+tmpconfig.conf
+tmpChart.yaml
+yaml-importer-tmp
+yaml-importer-tmp.*
+*_GH_CURRENT_MSGTAG
+sample.out
+sampleversion.out

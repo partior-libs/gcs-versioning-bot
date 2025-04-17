@@ -349,7 +349,7 @@ jobs:
           branch-packager-rules-importer-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
           consolidated-commit-msg: ${{ env.ALL_DELTA_COMMIT_MSG }}
           artifact-type: ${{ env.BUILD_GH_ARTIFACT_TYPE }}
-          hotfix-base-branch: "hotfix-base/1.2.3"
+          rebase-branch-override: "hotfix-base/1.2.3"
           debug: true
           # branch-name: ${{ env.BRANCH_NAME }}
 
