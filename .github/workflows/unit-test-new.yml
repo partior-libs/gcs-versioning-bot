@@ -6,6 +6,15 @@ on:
   pull_request:
     branches: [ main ] # Trigger the workflow on pull requests targeting the main branch
   workflow_dispatch:
+    inputs:
+      artifactory-username:  
+        description: 'Username for artifactory'
+        required: false
+        default: ''
+      artifactory-password:  
+        description: 'Access Token/Password for artifactory'
+        required: false
+        default: ''
 
 jobs:
   local-unit-tests:
@@ -68,7 +77,7 @@ jobs:
 
       - name: Validate jfrog credential
         run: |
-          if [[ -z "${{ secrets.SMC_JFROG_TOKEN }}" ]]; then
+          if [[ -z "${{ secrets.JFROG_TOKEN }}" ]]; then
             if [[ -z "${{ inputs.artifactory-username }}" ]] || [[ -z "${{ inputs.artifactory-password }}" ]]; then
               echo [ERROR] Credential to artifactory or jfrog token must be specified.
               exit 1
@@ -79,7 +88,7 @@ jobs:
       - name: Setup jfrog
         uses: jfrog/setup-jfrog-cli@v4
         env:
-          JF_ENV_1: ${{ secrets.SMC_JFROG_TOKEN }}
+          JF_ENV_1: ${{ secrets.JFROG_TOKEN }}
 
       - name: Display jfrog setup
         run: |
