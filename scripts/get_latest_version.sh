@@ -482,10 +482,15 @@ function getLatestVersionFromJira() {
             ## Store all versions in the same format as artifactory list
             versions=$( jq -r --arg identifierType "$identifierType_" '.[] | select(.archived==false) | select(.name|startswith($identifierType)) | .name' < $versionOutputFile)
             rm -f $versionOutputFile
+            local foundVersionFlag=false
             for eachVersion in ${versions[@]}; do 
                 local trimVersion=$(echo $eachVersion | awk -F "${identifierType}_" '{print $2}')
                 echo "\"version\" : \"$trimVersion\"" >> $versionOutputFile
+                foundVersionFlag=true
             done
+            if [[ "$foundVersionFlag" == "true" ]]; then
+                rm -f "$FLAG_FILE_IS_INITIAL_VERSION"
+            fi
             ## Filter out only with matching version prepend label
             filterVersionListWithPrependVersion "$versionOutputFile" "$prependVersionLabel"
         fi
