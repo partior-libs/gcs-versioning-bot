@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>access-manager</artifactId>
+    <version>12</version>
+    <name>access-manager</name>
+
+    <parent>
+        <groupId>com.partior</groupId>
+        <artifactId>lib-dapps-parent</artifactId>
+        <version>0.0.1</version>
+        <relativePath/> <!-- lookup parent from repository -->
+    </parent>
+
+    <properties>
+        <revision>1.0.19</revision>
+        <changelist>BUILD</changelist>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>com/partior/accessmanager/model/*.class</exclude>
+                        <exclude>com/partior/accessmanager/db/model/*.class</exclude>
+                        <exclude>com/partior/accessmanager/util/TestJWTUtils.class</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
