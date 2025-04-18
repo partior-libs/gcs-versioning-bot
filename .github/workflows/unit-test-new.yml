@@ -227,5 +227,5 @@ jobs:
       - name: Upload test report as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: unit-test-report-local
+          name: unit-test-report-jira
           path: unit-test-report-*
