@@ -179,10 +179,10 @@ jobs:
           JF_ENV_1: ${{ secrets.JFROG_TOKEN }}
 
       - name: Display jfrog setup
-          run: |
-            echo [DEBUG] Show jfrog setup
-            jfrog c show
-          shell: bash
+        run: |
+          echo [DEBUG] Show jfrog setup
+          jfrog c show
+        shell: bash
 
       - name: Get the latest version
         run: |
