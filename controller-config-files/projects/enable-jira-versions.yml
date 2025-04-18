@@ -12,7 +12,9 @@ smc:
             enabled: true
             ## Comma delimited
             project-keys: DEVPILOT
-            version-identifier: "su"
+            version-identifier: "ut"
+      patch-version:
+        enabled: true
 
     branches:
       default:

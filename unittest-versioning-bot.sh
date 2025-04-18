@@ -9,6 +9,8 @@ GENERAL_CONFIG="config/general.ini"
 BASE_CONTROLLER_CONFIG_DIR="controller-config-files/projects"
 DEFAULT_CONTROLLER_CONFIG_FILE="controller-config-files/projects/default.yml"
 BUILD_GH_COMMIT_MESSAGE_FILE="commit-message-tmp"
+GITHUB_RUN_NUMBER="103"
+GITHUB_RUN_ATTEMPT="1"
 
 # Function to log messages
 function logMessage() {
@@ -33,22 +35,29 @@ function modifyVersionFilesForTestCase() {
 
     echo "" > env.tmp
 
-    echo "BUILD_GH_BRANCH_NAME=feature" >> env.tmp
+    echo "BUILD_GH_BRANCH_NAME=branch" >> env.tmp
     echo "MAJOR_GH_CURRENT_BRANCH=$BUILD_GH_BRANCH_NAME" >> env.tmp
     echo "MINOR_GH_CURRENT_BRANCH=$BUILD_GH_BRANCH_NAME" >> env.tmp
     echo "PATCH_GH_CURRENT_BRANCH=$BUILD_GH_BRANCH_NAME" >> env.tmp
     echo "RC_GH_CURRENT_BRANCH=$BUILD_GH_BRANCH_NAME" >> env.tmp
     echo "DEV_GH_CURRENT_BRANCH=$BUILD_GH_BRANCH_NAME" >> env.tmp
-    echo "GITHUB_RUN_NUMBER=103" >> env.tmp
-    echo "GITHUB_RUN_ATTEMPT=1" >> env.tmp
+    echo "GITHUB_RUN_NUMBER=$GITHUB_RUN_NUMBER" >> env.tmp
+    echo "GITHUB_RUN_ATTEMPT=$GITHUB_RUN_ATTEMPT" >> env.tmp
 
-    logMessage "INFO" "Modifying input files for test case"
-    echo "$devVersion" > "$ARTIFACT_LAST_DEV_VERSION_FILE"
-    echo "$rcVersion" > "$ARTIFACT_LAST_RC_VERSION_FILE"
-    echo "$releaseVersion" > "$ARTIFACT_LAST_REL_VERSION_FILE"
-    logMessage "INFO" "Last Dev version $(cat $ARTIFACT_LAST_DEV_VERSION_FILE)"
-    logMessage "INFO" "Last RC version $(cat $ARTIFACT_LAST_RC_VERSION_FILE)"
-    logMessage "INFO" "Last Release version $(cat $ARTIFACT_LAST_REL_VERSION_FILE)"
+    if [[ "${artifact_auto_versioning__version_sources__jira__enabled}" == "true" ]]; then
+        logMessage "INFO" "Get latest version from JIRA board..."
+        logMessage "INFO" "Last Dev version: $(cat $ARTIFACT_LAST_DEV_VERSION_FILE)"
+        logMessage "INFO" "Last RC version: $(cat $ARTIFACT_LAST_RC_VERSION_FILE)"
+        logMessage "INFO" "Last Release version: $(cat $ARTIFACT_LAST_REL_VERSION_FILE)"
+    else
+        logMessage "INFO" "Modifying input files for test case"
+        echo "$devVersion" > "$ARTIFACT_LAST_DEV_VERSION_FILE"
+        echo "$rcVersion" > "$ARTIFACT_LAST_RC_VERSION_FILE"
+        echo "$releaseVersion" > "$ARTIFACT_LAST_REL_VERSION_FILE"
+        logMessage "INFO" "Last Dev version: $(cat $ARTIFACT_LAST_DEV_VERSION_FILE)"
+        logMessage "INFO" "Last RC version: $(cat $ARTIFACT_LAST_RC_VERSION_FILE)"
+        logMessage "INFO" "Last Release version: $(cat $ARTIFACT_LAST_REL_VERSION_FILE)"
+    fi
 
     if [[ -z "${appVersion}" ]]; then
         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Missing app version values"
@@ -72,9 +81,11 @@ function modifyVersionFilesForTestCase() {
         if [[ "${sourceBranch}" =~ ^hotfix-base/* ]]; then
             branchName=$(echo "$sourceBranch" | cut -d'/' -f1)
             echo "branchName: $branchName"
-            echo "rebaseVersion: $rebaseVersion"
-            echo "$rebaseVersion" > "$ARTIFACT_LAST_BASE_VERSION_FILE"
-            logMessage "INFO" "Last Base version $(cat $ARTIFACT_LAST_BASE_VERSION_FILE)"
+            if [[ "${artifact_auto_versioning__version_sources__jira__enabled}" != "true" ]]; then
+                echo "rebaseVersion: $rebaseVersion"
+                echo "$rebaseVersion" > "$ARTIFACT_LAST_BASE_VERSION_FILE"
+            fi
+            logMessage "INFO" "Last Base version: $(cat $ARTIFACT_LAST_BASE_VERSION_FILE)"
             sed -i "s/^BUILD_GH_BRANCH_NAME=.*/BUILD_GH_BRANCH_NAME=$branchName/" "env.tmp"
         else
             echo "" > "$ARTIFACT_LAST_BASE_VERSION_FILE"
@@ -116,7 +127,7 @@ function runTest() {
     local versionPrependLabel
     if [[ "${artifact_auto_versioning__prepend_version__enabled}" == "true" ]]; then
         versionPrependLabel=$(getVersionPrependLabel "${testCasePath}")
-        echo "BUILD_GH_VERSION_PREPEND_LABEL: ${BUILD_GH_VERSION_PREPEND_LABEL}"
+        echo "BUILD_GH_VERSION_PREPEND_LABEL: ${versionPrependLabel}"
     fi
 
     # Get the actual output from the script

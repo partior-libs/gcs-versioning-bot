@@ -1,0 +1,19 @@
+# Unit test specification of configuration file to test versioning bot
+
+test-spec:
+  info:
+    name: "Test Case 1"
+    description: "Test versioning bot with feature branch"
+
+  input:
+    targetBaseVersion: ""
+    branchName: "feature"
+
+  file:
+    versionFileTmp: "versionFile.tmp"
+
+  output:
+    expectedValue: "2.0.2-dev.2+bld.103.1"
+
+
+  
