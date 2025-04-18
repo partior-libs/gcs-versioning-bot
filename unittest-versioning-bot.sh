@@ -429,15 +429,34 @@ function runTests() {
     done
 }
 
+function isExcluded(){
+    local name=$1; shift
+    local excludedList=("$@")
+
+    for exclude in "${excludedList[@]}"; do         
+        if [[ "$exclude" == "$name" ]]; then
+            echo "true" # Match found
+            return 0
+        fi
+    done
+    echo "false" # Not match found
+}
+
 function mainTestRunner(){
     local configFile="$1"
     local scope="$2"
-
+    local excludedListStr="$3"
     local baseConfigName
+    local excludedList=()
 
     echo "Starting test run at $(date '+%Y-%m-%d %H:%M:%S')" > "$LOG_FILE"
     logMessage "INFO" "Log file initialized"
 
+    for item in $(echo "$excludedListStr" | tr ',' "\n"); do
+        excludedList+=("$item")
+    done
+
+    echo "[INFO] excludedList: ${excludedList[@]}"
     # Check if arguments are provided
     if [ $# -eq 0 ]; then
         echo "Usage: $0 [all | specific_testcase | range_of_testcases]"
@@ -470,8 +489,14 @@ function mainTestRunner(){
     # Case 3: Run all config files + their whole testcases (e.g., testcase1, testcase2, ...)
     elif [[ $configFile == "all" && $scope == "all" ]]; then
         for configPath in "$TEST_SUITE_PATH"/*; do
-            if [[ -d "$configPath" && "$configPath" != *enable-replace-maven-pom* ]]; then
+            if [[ -d "$configPath" && "$configPath" == *"enable-"* ]]; then
                 baseConfigName="$(basename "$configPath")"
+                echo "baseConfigName: $baseConfigName"
+
+                if [[ "$(isExcluded ${baseConfigName} ${excludedList[@]})" == "true" ]]; then
+                    echo "[INFO] Skipping excluded config: $baseConfigName"
+                    continue
+                fi
                 runTests "$baseConfigName" "$configPath/testcase*"
 
                 configPassCounts["$baseConfigName"]=$configPassCount
@@ -493,6 +518,7 @@ function mainTestRunner(){
 # Handle options
 configFile="$1"
 scope="$2"
+excludedListStr="$3"
 
 # Global environment variables
 declare -A configPassCounts
@@ -503,7 +529,7 @@ totalTests=0
 totalPass=0
 totalFail=0
 
-mainTestRunner "${configFile}" "${scope}"
+mainTestRunner "${configFile}" "${scope}" "${excludedListStr}"
 
 
 

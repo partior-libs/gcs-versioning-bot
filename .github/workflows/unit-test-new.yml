@@ -30,7 +30,7 @@ jobs:
       - name: Run local unit tests
         run: |
           cd $GITHUB_WORKSPACE
-          ./unittest-versioning-bot.sh all all
+          ./unittest-versioning-bot.sh all all enable-jira-versions,enable-replace-maven-pom
 
       - name: Display test report
         if: always() # Ensure this step runs even if the test script fails
