@@ -1377,13 +1377,25 @@ else
         ## If triggered by commit message tag(s)
         if [[ $(checkListIsSubstringInFileContent "${!vConfigMsgTags}" "${!ghCurrentMsgTag}") == "true" ]] && [[ "${!vConfigMsgTags}" != "false" ]]; then # Added check for "false" string
             # Increment using the count from commit messages. Use lastRelVersion as base for multi-increments.
-            nextVersion=$(incrementReleaseVersion $lastRelVersion ${MAJOR_POSITION} $(getIncrementalCount "${!vConfigMsgTags}" "${!ghCurrentMsgTag}")) 
+            nextVersion=$(incrementReleaseVersion $lastRelVersion ${MAJOR_POSITION} $(getIncrementalCount "${!vConfigMsgTags}" "${!ghCurrentMsgTag}"))
+            if [[ $? -ne 0 ]]; then # Add check if increment failed 
+                # Error if increment failed.
+                echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed incrementation on Release version." >&2
+                echo "[DEBUG] nextVersion=$nextVersion, lastRelVersion=$lastRelVersion" >&2
+                exit 1 
+            fi
         elif [[ "$(isPreReleaseIncrementation)" == 'true' ]]; then
             # If a pre-release is also being bumped, *do not* auto-increment Major (avoids double bump).
             if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): Not incrementing MAJOR because isPreReleaseIncrementation=true" >&2; fi
         else 
             # Standard single increment.
             nextVersion=$(incrementReleaseVersion $nextVersion ${MAJOR_POSITION}) 
+            if [[ $? -ne 0 ]]; then # Add check if increment failed 
+                # Error if increment failed.
+                echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed incrementation on Release version." >&2
+                echo "[DEBUG] nextVersion=$nextVersion" >&2
+                exit 1 
+            fi
         fi
          
         echo "[DEBUG] MAJOR INCREMENTED $nextVersion" # Debug log
@@ -1398,12 +1410,24 @@ else
         if [[ $(checkListIsSubstringInFileContent "${!vConfigMsgTags}" "${!ghCurrentMsgTag}") == "true" && "${!vConfigMsgTags}" != "false" ]]; then # Added check for "false" string
              # Increment using the count from commit messages. Use lastRelVersion as base.
             nextVersion=$(incrementReleaseVersion $lastRelVersion ${MINOR_POSITION} $(getIncrementalCount "${!vConfigMsgTags}" "${!ghCurrentMsgTag}")) 
+            if [[ $? -ne 0 ]]; then # Add check if increment failed 
+                # Error if increment failed.
+                echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed incrementation on Release version." >&2
+                echo "[DEBUG] lastRelVersion=$lastRelVersion" >&2
+                exit 1 
+            fi
         elif [[ "$(isPreReleaseIncrementation)" == 'true' ]]; then
             # If a pre-release is also being bumped, *do not* auto-increment Minor.
             if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): Not incrementing MINOR because isPreReleaseIncrementation=true" >&2; fi # Corrected PATCH -> MINOR
         else 
             # Standard single increment.
             nextVersion=$(incrementReleaseVersion $nextVersion ${MINOR_POSITION}) 
+            if [[ $? -ne 0 ]]; then # Add check if increment failed 
+                # Error if increment failed.
+                echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed incrementation on Release version." >&2
+                echo "[DEBUG] nextVersion=$nextVersion" >&2
+                exit 1 
+            fi
         fi
         echo "[DEBUG] MINOR INCREMENTED $nextVersion" # Debug log
     # 2c. Check for PATCH increment trigger (feature flag active, not using file, Major/Minor file rules off, core not already updated).
@@ -1420,6 +1444,12 @@ else
         if [[ $(checkListIsSubstringInFileContent "${!vConfigMsgTags}" "${!ghCurrentMsgTag}") == "true" && "${!vConfigMsgTags}" != "false" ]]; then # Added check for "false" string
             # Increment using the count from commit messages. Use lastRelVersion as base.
             nextVersion=$(incrementReleaseVersion $lastRelVersion ${PATCH_POSITION} $(getIncrementalCount "${!vConfigMsgTags}" "${!ghCurrentMsgTag}")) 
+            if [[ $? -ne 0 ]]; then # Add check if increment failed 
+                # Error if increment failed.
+                echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed incrementation on Release version." >&2
+                echo "[DEBUG] lastRelVersion=$lastRelVersion" >&2
+                exit 1 
+            fi
             if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): After incrementReleaseVersion (MsgTag): $nextVersion" >&2; fi # Corrected message
         elif [[ "$(isPreReleaseIncrementation)" == 'true' ]]; then
             # If a pre-release is also being bumped, *do not* auto-increment Patch.
@@ -1427,6 +1457,12 @@ else
         else 
             # Standard single increment.
             nextVersion=$(incrementReleaseVersion $nextVersion ${PATCH_POSITION}) 
+            if [[ $? -ne 0 ]]; then # Add check if increment failed 
+                # Error if increment failed.
+                echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed incrementation on Release version." >&2
+                echo "[DEBUG] nextVersion=$nextVersion" >&2
+                exit 1 
+            fi
             if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): After incrementReleaseVersion (Auto): $nextVersion" >&2; fi # Corrected message
         fi
         if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): PATCH INCREMENTED=$nextVersion" >&2; fi 
@@ -1494,10 +1530,22 @@ else
     if [[ "$(checkPreReleaseVersionFeatureFlag ${RC_SCOPE})" == "true" ]] && [[ ! "${RC_V_RULE_VFILE_ENABLED}" == "true" ]]; then 
         # Increment RC based on the last known RC version.
         nextVersion=$(incrementPreReleaseVersion "$lastRCVersion" "$RC_V_IDENTIFIER") 
+        if [[ $? -ne 0 ]]; then # Add check if increment failed 
+            # Error if increment failed.
+            echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed incrementation on PreRelease version." >&2
+            echo "[DEBUG] lastRCVersion=$lastRCVersion" >&2
+            exit 1 
+        fi
     # Check if DEV increment is triggered (feature active, not file-based).
     elif [[ "$(checkPreReleaseVersionFeatureFlag ${DEV_SCOPE})" == "true" ]] && [[ ! "${DEV_V_RULE_VFILE_ENABLED}" == "true" ]]; then 
         # Increment Dev based on the last known Dev version.
         nextVersion=$(incrementPreReleaseVersion "$lastDevVersion" "$DEV_V_IDENTIFIER") 
+        if [[ $? -ne 0 ]]; then # Add check if increment failed 
+            # Error if increment failed.
+            echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed incrementation on PreRelease version." >&2
+            echo "[DEBUG] lastDevVersion=$lastDevVersion" >&2
+            exit 1 
+        fi
     fi
     echo "[INFO] After prerelease version incremented: [$nextVersion]" 
 
@@ -1510,10 +1558,22 @@ else
     if [[ "$(checkPreReleaseVersionFeatureFlag ${RC_SCOPE})" == "true" ]] && [[ "${RC_V_RULE_VFILE_ENABLED}" == "true" ]]; then 
         # Set RC version using number from file.
         nextVersion=$(incrementPreReleaseVersionByFile "$lastRCVersion" "$RC_V_IDENTIFIER" "${RC_SCOPE}") 
+        if [[ $? -ne 0 ]]; then # Add check if increment failed 
+            # Error if increment failed.
+            echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed incrementation on PreRelease version." >&2
+            echo "[DEBUG] lastRCVersion=$lastRCVersion" >&2
+            exit 1 
+        fi
     # Check if DEV file-based increment is triggered.
     elif [[ "$(checkPreReleaseVersionFeatureFlag ${DEV_SCOPE})" == "true" ]] && [[ "${DEV_V_RULE_VFILE_ENABLED}" == "true" ]]; then 
         # Set Dev version using number from file.
         nextVersion=$(incrementPreReleaseVersionByFile "$lastDevVersion" "$DEV_V_IDENTIFIER" "${DEV_SCOPE}") 
+        if [[ $? -ne 0 ]]; then # Add check if increment failed 
+            # Error if increment failed.
+            echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed incrementation on PreRelease version." >&2
+            echo "[DEBUG] lastDevVersion=$lastDevVersion" >&2
+            exit 1 
+        fi
     fi
     echo "[INFO] After prerelease version incremented with input from version file: [$nextVersion]" 
 
@@ -1548,7 +1608,7 @@ fi # End of standard version logic (else block for rebase check)
 # 7. Replace version string in configured files.
 ## Replace the version in file if enabled (Generic token replacement)
 if [[ "$(checkReplacementFeatureFlag ${REPLACEMENT_SCOPE})" == "true" ]] && [[ "$REPLACE_V_RULE_FILETOKEN_ENABLED" == "true" ]]; then 
-    replaceVersionInFile "$nextVersion" "$REPLACE_V_CONFIG_FILETOKEN_FILE" "$REPLACE_V_CONFIG_FILETOKEN_NAME" 
+    replaceVersionInFile "$nextVersion" "$REPLACE_V_CONFIG_FILETOKEN_FILE" "$REPLACE_V_CONFIG_FILETOKEN_NAME"
     echo "[INFO] Version updated successfully in $REPLACE_V_CONFIG_FILETOKEN_FILE" 
     if [[ "$isDebug" == "true" ]]; then 
         echo "[DEBUG] Updated $REPLACE_V_CONFIG_FILETOKEN_FILE:" 
