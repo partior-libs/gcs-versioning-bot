@@ -203,7 +203,7 @@ runs:
       shell: bash
 
     - name: Get version prepend label
-      if: steps.yaml-config.outputs.artifact-auto-versioning_prepend-version_enabled == 'true' && steps.yaml-config.outputs.artifact-auto-versioning_prepend-version_rules_file_enabled == 'true' && ((steps.yaml-config.outputs.artifact-auto-versioning_rebase-version_enabled != 'true' || (steps.yaml-config.outputs.artifact-auto-versioning_rebase-version_enabled == 'true' && steps.rebase-branch.outputs.matches != 'true')
+      if: steps.yaml-config.outputs.artifact-auto-versioning_prepend-version_enabled == 'true' && steps.yaml-config.outputs.artifact-auto-versioning_prepend-version_rules_file_enabled == 'true' && ((steps.yaml-config.outputs.artifact-auto-versioning_rebase-version_enabled != 'true' || (steps.yaml-config.outputs.artifact-auto-versioning_rebase-version_enabled == 'true' && steps.rebase-branch.outputs.matches != 'true'))
       run: |
         echo "[INFO] Retrieving version append label..."
         versionLabelFile="${{ steps.yaml-config.outputs.artifact-auto-versioning_prepend-version_rules_file_target }}"
