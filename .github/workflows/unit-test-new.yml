@@ -30,7 +30,7 @@ jobs:
       - name: Run local unit tests
         run: |
           cd $GITHUB_WORKSPACE
-          ./unittest-versioning-bot.sh all all enable-jira-versions,enable-replace-maven-pom
+          ./unittest-versioning-bot.sh local all all
 
       - name: Display test report
         if: always() # Ensure this step runs even if the test script fails
@@ -117,7 +117,7 @@ jobs:
           echo jf mvnc --server-id-resolve="$jfrogServerID" --repo-resolve-releases="$mvnRepoResolveRelease" --repo-resolve-snapshots="$mvnRepoResolveDev" --repo-deploy-releases="$mvnRepoDeployRelease"  --repo-deploy-snapshots="$mvnRepoResolveDev"
           jf mvnc --server-id-resolve="$jfrogServerID" --repo-resolve-releases="$mvnRepoResolveRelease" --repo-resolve-snapshots="$mvnRepoResolveDev" --repo-deploy-releases="$mvnRepoDeployRelease"  --repo-deploy-snapshots="$mvnRepoResolveDev"
 
-          ./unittest-versioning-bot.sh enable-replace-maven-pom all
+          ./unittest-versioning-bot.sh maven enable-replace-maven-pom all
 
       - name: Display test report
         id: display-report
@@ -190,12 +190,12 @@ jobs:
           jfrogToken="${{ secrets.JFROG_TOKEN }}"
           jiraUserName="${{ secrets.JIRA_USERNAME }}"
           jiraPassword="${{ secrets.JIRA_API_TOKEN }}"
-          ./unittest-get-latest-version.sh enable-jira-versions all "${jfrogToken}" "${jiraUserName}" "${jiraPassword}"
+          ./unittest-get-latest-version.sh jira enable-jira-versions all "${jfrogToken}" "${jiraUserName}" "${jiraPassword}"
 
       - name: Run JIRA unit tests
         run: |
           cd $GITHUB_WORKSPACE
-          ./unittest-versioning-bot.sh enable-jira-versions all 
+          ./unittest-versioning-bot.sh jira enable-jira-versions all 
 
       - name: Display test report
         if: always() # Ensure this step runs even if the test script fails
@@ -267,12 +267,12 @@ jobs:
           jfrogToken="${{ secrets.JFROG_TOKEN }}"
           jiraUserName="${{ secrets.JIRA_USERNAME }}"
           jiraPassword="${{ secrets.JIRA_API_TOKEN }}"
-          ./unittest-get-latest-version.sh enable-generic-artifact all "${jfrogToken}" "${jiraUserName}" "${jiraPassword}"
+          ./unittest-get-latest-version.sh artifact enable-generic-artifact all "${jfrogToken}" "${jiraUserName}" "${jiraPassword}"
 
       - name: Run Generic Artifact unit tests
         run: |
           cd $GITHUB_WORKSPACE
-          ./unittest-versioning-bot.sh enable-generic-artifact all 
+          ./unittest-versioning-bot.sh artifact enable-generic-artifact all 
 
       - name: Display test report
         if: always() # Ensure this step runs even if the test script fails
@@ -304,5 +304,51 @@ jobs:
       - name: Upload test report as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: unit-test-report-artifact
+          name: unit-test-report-generic-artifact
+          path: unit-test-report-*
+
+      - name: Get the latest version
+        run: |
+          cd $GITHUB_WORKSPACE
+          jfrogToken="${{ secrets.JFROG_TOKEN }}"
+          jiraUserName="${{ secrets.JIRA_USERNAME }}"
+          jiraPassword="${{ secrets.JIRA_API_TOKEN }}"
+          ./unittest-get-latest-version.sh artifact enable-docker-artifact all "${jfrogToken}" "${jiraUserName}" "${jiraPassword}"
+
+      - name: Run Generic Artifact unit tests
+        run: |
+          cd $GITHUB_WORKSPACE
+          ./unittest-versioning-bot.sh artifact enable-docker-artifact all 
+
+      - name: Display test report
+        if: always() # Ensure this step runs even if the test script fails
+        run: |
+          cd $GITHUB_WORKSPACE
+          echo "[INFO] List the unit test report"
+          ls unit-test-report-*
+          reportFile=$(ls unit-test-report-*)
+          if [ -f "$reportFile" ]; then
+            echo "REPORT_FILE=$reportFile" >> "$GITHUB_ENV"
+            echo "## Unit Test Report"
+            cat "$reportFile"
+          else
+            echo "No unit test report file found."
+          fi
+
+      - name: Check for failures
+        if: steps.display-report.outcome == 'success' && ${{ env.REPORT_FILE }} != ''
+        run: |
+          ${{ env.ARTIFACT_BASE_NAME }}
+          failedCount=$(grep -oP 'Failed:\s+\K\d+' "${{ env.REPORT_FILE }}")
+          if [[ -n "$failedCount" && "$failedCount" -ne 0 ]]; then
+            echo "[ERROR] Unit tests failed. Found $failedCount failed test cases (threshold => 1)."
+            exit 1
+          else
+            echo "[INFO] Unit tests passed."
+          fi
+
+      - name: Upload test report as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-report-docker-artifact
           path: unit-test-report-*

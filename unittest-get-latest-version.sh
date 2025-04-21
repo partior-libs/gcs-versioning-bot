@@ -163,10 +163,6 @@ function runTests() {
     local jiraUserName="$4"
     local jiraPassword="$5"
 
-    sanitizedConfigName="$(echo "$scopeOfConfigFiles" | tr '-' '_')"
-    resultVar="config_${sanitizedConfigName}_results"
-    eval "$resultVar=()"
-
     echo "scopeOfTestSuite: $scopeOfTestSuite"
     echo "scopeOfConfigFiles: $scopeOfConfigFiles"
 
@@ -198,8 +194,9 @@ function runTests() {
 }
 
 function mainTestRunner(){
-    local configFile="$1"
-    local scope="$2"
+    local suiteCollection="$1"
+    local configFile="$2"
+    local scope="$3"
 
     # Check if arguments are provided
     if [ $# -eq 0 ]; then
@@ -209,11 +206,11 @@ function mainTestRunner(){
 
     # Case 1: Run one config file + a specific testcase (e.g., testcase1, testcase2)
     if [[ $configFile != "all" && $scope =~ ^[0-9]+$ ]]; then
-        runTests "$configFile" "${TEST_SUITE_PATH}/${configFile}/testcase${scope}" "${jfrogToken}" "${jiraUserName}" "${jiraPassword}"
+        runTests "$configFile" "${TEST_SUITE_PATH}/${suiteCollection}/${configFile}/testcase${scope}" "${jfrogToken}" "${jiraUserName}" "${jiraPassword}"
 
     # Case 2: Run one config file + all testcases (e.g., testcase1, testcase2, ...)
     elif [[ $configFile != "all" && $scope == "all" ]]; then
-        runTests "$configFile" "${TEST_SUITE_PATH}/${configFile}/testcase*" "${jfrogToken}" "${jiraUserName}" "${jiraPassword}"
+        runTests "$configFile" "${TEST_SUITE_PATH}/${suiteCollection}/${configFile}/testcase*" "${jfrogToken}" "${jiraUserName}" "${jiraPassword}"
 
     else
         echo "Invalid option. Usage: $0 [all | specific_testcase | range_of_testcases]"
@@ -222,13 +219,14 @@ function mainTestRunner(){
 }
 
 # Handle options
-configFile="$1"
-scope="$2"
-jfrogToken="$3"
-jiraUserName="$4"
-jiraPassword="$5"
+suiteCollection="$1"
+configFile="$2"
+scope="$3"
+jfrogToken="$4"
+jiraUserName="$5"
+jiraPassword="$6"
 
-mainTestRunner "${configFile}" "${scope}" "${jfrogToken}" "${jiraUserName}" "${jiraPassword}"
+mainTestRunner "${suiteCollection}" "${configFile}" "${scope}" "${jfrogToken}" "${jiraUserName}" "${jiraPassword}"
 
 
 

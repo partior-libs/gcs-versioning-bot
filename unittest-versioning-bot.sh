@@ -443,9 +443,10 @@ function isExcluded(){
 }
 
 function mainTestRunner(){
-    local configFile="$1"
-    local scope="$2"
-    local excludedListStr="$3"
+    local suiteCollection="$1"
+    local configFile="$2"
+    local scope="$3"
+    local excludedListStr="$4"
     local baseConfigName
     local excludedList=()
 
@@ -465,14 +466,7 @@ function mainTestRunner(){
 
     # Case 1: Run one config file + a specific testcase (e.g., testcase1, testcase2)
     if [[ $configFile != "all" && $scope =~ ^[0-9]+$ ]]; then
-        runTests "$configFile" "${TEST_SUITE_PATH}/${configFile}/testcase${scope}"
-
-        # echo "" >> $LOG_FILE
-        # echo "Config: ${configFile}" >> $LOG_FILE
-        # echo "-----------------------------" >> $LOG_FILE
-
-        # echo "Result: $configPassCount passed / $configTotal total" >> $LOG_FILE
-        # ((totalConfig++))
+        runTests "$configFile" "${TEST_SUITE_PATH}/${suiteCollection}/${configFile}/testcase${scope}"
 
         configPassCounts["$configFile"]=$configPassCount
         configFailCounts["$configFile"]=$configFailCount
@@ -480,7 +474,7 @@ function mainTestRunner(){
 
     # Case 2: Run one config file + all testcases (e.g., testcase1, testcase2, ...)
     elif [[ $configFile != "all" && $scope == "all" ]]; then
-        runTests "$configFile" "${TEST_SUITE_PATH}/${configFile}/testcase*"
+        runTests "$configFile" "${TEST_SUITE_PATH}/${suiteCollection}/${configFile}/testcase*"
 
         configPassCounts["$configFile"]=$configPassCount
         configFailCounts["$configFile"]=$configFailCount
@@ -488,7 +482,7 @@ function mainTestRunner(){
 
     # Case 3: Run all config files + their whole testcases (e.g., testcase1, testcase2, ...)
     elif [[ $configFile == "all" && $scope == "all" ]]; then
-        for configPath in "$TEST_SUITE_PATH"/*; do
+        for configPath in "$TEST_SUITE_PATH/${suiteCollection}"/*; do
             if [[ -d "$configPath" && "$configPath" == *"enable-"* ]]; then
                 baseConfigName="$(basename "$configPath")"
                 echo "baseConfigName: $baseConfigName"
@@ -516,9 +510,10 @@ function mainTestRunner(){
 }
 
 # Handle options
-configFile="$1"
-scope="$2"
-excludedListStr="$3"
+suiteCollection="$1"
+configFile="$2"
+scope="$3"
+excludedListStr="$4"
 
 # Global environment variables
 declare -A configPassCounts
@@ -529,7 +524,7 @@ totalTests=0
 totalPass=0
 totalFail=0
 
-mainTestRunner "${configFile}" "${scope}" "${excludedListStr}"
+mainTestRunner "${suiteCollection}" "${configFile}" "${scope}" "${excludedListStr}"
 
 
 
