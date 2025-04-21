@@ -38,7 +38,7 @@ isDebug="$8"               # Argument 8: Flag to enable verbose debug logging ('
 rm -f $CORE_VERSION_UPDATED_FILE       # File indicating if the core (X.Y.Z) version was programmatically updated.
 rm -f $TRUNK_CORE_NEED_INCREMENT_FILE  # File indicating if the core version needs incrementing based on pre-release logic.
 echo "$VBOT_NIL" > $TRUNK_CORE_NEED_INCREMENT_FILE # Initialize the 'need increment' flag to a 'nil' or 'false' state.
-exit 1
+
 ## Set the current branch - Export makes it available to sub-processes if needed.
 export currentBranch="$currentBranch" 
 
