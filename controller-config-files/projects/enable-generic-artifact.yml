@@ -110,31 +110,31 @@ smc:
       default:
         artifact:
           packager:
-            group: antztest
+            group: partior
             artifactory-username: svc-smc-read
             artifactory-dev-repo: sandbox-generic-dev
             artifactory-release-repo: sandbox-generic-release
       main:
         artifact:
           packager:
-            group: antztest
+            group: partior
       feature:
         artifact:
           packager:
-            group: antztest
+            group: partior
       release:
         artifact:
           packager:
-            group: antztest
+            group: partior
       hotfix:
         artifact:
           packager:
-            group: antztest
+            group: partior
       bugfix:
         artifact:
           packager:
-            group: antztest
+            group: partior
       develop:
         artifact:
           packager:
-            group: antztest
+            group: partior
