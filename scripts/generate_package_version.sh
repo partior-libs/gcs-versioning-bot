@@ -10,13 +10,13 @@ if [[ ! -z $BASH_SOURCE ]]; then
     # If BASH_SOURCE is set (usually true when the script is sourced or executed directly),
     # find 'general.ini' in the parent directory of the script's location.
     ACTION_BASE_DIR=$(dirname $BASH_SOURCE) 
-    source $(find $ACTION_BASE_DIR/.. -type f | grep general.ini) 
+    source $(find $ACTION_BASE_DIR/.. -type f -name general.ini) 
 elif [[ $(find . -type f -name general.ini | wc -l) > 0 ]]; then
     # If not found relative to the script source, look in the current directory (.).
-    source $(find . -type f | grep general.ini) 
+    source $(find . -type f -name general.ini) 
 elif [[ $(find .. -type f -name general.ini | wc -l) > 0 ]]; then
     # If not found in the current directory, look in the parent directory (..).
-    source $(find .. -type f | grep general.ini) 
+    source $(find .. -type f -name general.ini) 
 else
     # If 'general.ini' cannot be found in any of the expected locations, print an error and exit.
     echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to find and source general.ini" 
