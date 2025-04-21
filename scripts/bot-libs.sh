@@ -24,7 +24,7 @@ function digestRebaseBranchSetup() {
     
     ## If matches any of the target branches
     if (echo "$rebaseBranches" | grep -qE "(^|,|\s)+$currentBranchType(\s|$|,)+" >/dev/null ) ; then
-        echo "matches=${rebaseBranchMatch}" | tee -a >> $GITHUB_OUTPUT
+        echo "matches=true" | tee -a >> $GITHUB_OUTPUT
         echo "version=${currentBranchRefenceName#v*}" | tee -a >> $GITHUB_OUTPUT
     else
         echo "matches=false" | tee -a >> $GITHUB_OUTPUT
