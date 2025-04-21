@@ -328,7 +328,9 @@ runs:
                   "${{ steps.rebase-branch.outputs.version }}" \
                   "versionFile.tmp" \
                   "${{ inputs.debug }}"
+                exitCode=$?
             fi
+            exit $exitCode
         else
             exit $exitCode
         fi
