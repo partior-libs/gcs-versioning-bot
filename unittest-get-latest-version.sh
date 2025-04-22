@@ -197,6 +197,9 @@ function mainTestRunner(){
     local suiteCollection="$1"
     local configFile="$2"
     local scope="$3"
+    local jfrogToken="$4"
+    local jiraUserName="$5"
+    local jiraPassword="$6"
 
     # Check if arguments are provided
     if [ $# -eq 0 ]; then
