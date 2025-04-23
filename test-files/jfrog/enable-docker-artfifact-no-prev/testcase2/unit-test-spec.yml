@@ -2,17 +2,18 @@
 
 test-spec:
   info:
-    name: "Test Case 1"
-    description: "Test versioning bot with feature branch"
+    name: "Test Case 2"
+    description: "Test versioning bot with main branch"
 
   input:
     targetBaseVersion: ""
-    branchName: "feature"
+    branchName: "main"
 
   file:
     versionFileTmp: "versionFile.tmp"
 
   output:
-    expectedValue: "0.0.95-dev.1"
+    expectedValue: "1.0.0"
+
 
   

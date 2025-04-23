@@ -13,6 +13,7 @@ test-spec:
     versionFileTmp: "versionFile.tmp"
 
   output:
-    expectedValue: "0.0.95-dev.1"
+    expectedValue: "1.0.0-dev.1"
+
 
   

@@ -52,6 +52,7 @@ function runTest() {
     local versionFile="$4"
     local artifactoryUsername="$5"
     local artifactoryPassword="$6"
+    local artifactType="$7"
 
     local versionPrependLabel
     if [[ "${artifact_auto_versioning__prepend_version__enabled}" == "true" ]]; then
@@ -167,8 +168,14 @@ function runTests() {
     local artifactoryUsername="$6"
     local artifactoryPassword="$7"
 
+    local artifactType
+
     echo "scopeOfTestSuite: $scopeOfTestSuite"
     echo "scopeOfConfigFiles: $scopeOfConfigFiles"
+
+    if [[ "${scopeOfConfigFiles}" =~ "docker" ]]; then
+        artifactType="docker"
+    fi
 
     local testCaseList=()
     for testcase in $scopeOfTestSuite; do
@@ -192,7 +199,7 @@ function runTests() {
             startYamlImporter "${YAML_IMPORTER_FILE}" "${configFilePath}"
             source "${YAML_IMPORTER_FILE}"
 
-            runTest "${jfrogToken}" "${jiraUserName}" "${jiraPassword}" "${versionFileFullPath}" "${artifactoryUsername}" "${artifactoryPassword}"
+            runTest "${jfrogToken}" "${jiraUserName}" "${jiraPassword}" "${versionFileFullPath}" "${artifactoryUsername}" "${artifactoryPassword}" "${artifactType}"
         fi
     done
 }

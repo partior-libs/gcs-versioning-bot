@@ -1,7 +1,7 @@
 ---
 smc:
   ci:
-    artifact-base-name: unit-test-artifact
+    artifact-base-name: access-manager
     artifact-auto-versioning:
       enabled: true
       major-version:
@@ -110,31 +110,32 @@ smc:
       default:
         artifact:
           packager:
-            group: partior
+            enabled: true
+            group: com/partior
             artifactory-username: svc-smc-read
-            artifactory-dev-repo: sandbox-generic-dev-local
-            artifactory-release-repo: sandbox-generic-release-local
+            artifactory-dev-repo: sandbox-maven-dev-local
+            artifactory-release-repo: sandbox-maven-release-local
       main:
         artifact:
           packager:
-            group: partior
+            group: com/partior
       feature:
         artifact:
           packager:
-            group: partior
+            group: com/partior
       release:
         artifact:
           packager:
-            group: partior
+            group: com/partior
       hotfix:
         artifact:
           packager:
-            group: partior
+            group: com/partior
       bugfix:
         artifact:
           packager:
-            group: partior
+            group: com/partior
       develop:
         artifact:
           packager:
-            group: partior
+            group: com/partior

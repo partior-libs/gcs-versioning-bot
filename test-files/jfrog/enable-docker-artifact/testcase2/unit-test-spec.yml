@@ -6,8 +6,8 @@ test-spec:
     description: "Test versioning bot with main branch"
 
   input:
+    targetBaseVersion: ""
     branchName: "main"
-    appVersion: "22.5"
 
   file:
     versionFileTmp: "versionFile.tmp"

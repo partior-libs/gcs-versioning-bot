@@ -10,15 +10,6 @@ smc:
           branches: 
             target: release
             enabled: true
-          labels: 
-            target: MAJOR-VERSION 
-            enabled: false
-          tag: 
-            target: MAJOR-VERSION 
-            enabled: false
-          message-tag: 
-            target: MAJOR-VERSION 
-            enabled: true
           file:
             enabled: false
             target: ./app-version.cfg
@@ -29,33 +20,15 @@ smc:
           branches: 
             target: release
             enabled: true
-          tag: 
-            target: MINOR-VERSION 
-            enabled: false
-          message-tag: 
-            target: MINOR-VERSION 
-            enabled: true
-          labels: 
-            target: MINOR-VERSION  
-            enabled: false
           file:
             enabled: false
             target: ./app-version.cfg
             key: MINOR-VERSION
       patch-version:
-        enabled: false
+        enabled: true
         rules:
           branches: 
             target: release,main
-            enabled: true
-          tag: 
-            target: PATCH-VERSION 
-            enabled: true
-          message-tag: 
-            target: PATCH-VERSION 
-            enabled: true
-          labels: 
-            target: PATCH-VERSION
             enabled: true
           file:
             enabled: false
@@ -112,8 +85,8 @@ smc:
           packager:
             group: partior
             artifactory-username: svc-smc-read
-            artifactory-dev-repo: sandbox-docker-dev
-            artifactory-release-repo: sandbox-docker-release
+            artifactory-dev-repo: sandbox-docker-dev-local
+            artifactory-release-repo: sandbox-docker-release-local
       main:
         artifact:
           packager:

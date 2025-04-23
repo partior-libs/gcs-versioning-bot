@@ -1,7 +1,0 @@
-<project>
-    <groupId>com.partior</groupId>
-	<artifactId>transaction-manager</artifactId>
-	<version>22.4.28</version>
-	<packaging>jar</packaging>
-	<name>transaction-manager</name>
-</project>
