@@ -184,13 +184,23 @@ jobs:
           jfrog c show
         shell: bash
 
+      - name: Get Temporary Access Token
+        id: arti-access-token
+        run: |
+          accessUsername=$(jf config show | grep "User:" | awk -F'[\t ]+' '{print $2}' | head -n 1)
+          accessToken=$(jf rt access-token-create | jq -r .access_token)
+          echo "ARTIFACTORY_TMP_USERNAME=${accessUsername}" >> ${GITHUB_ENV}
+          echo "ARTIFACTORY_TMP_TOKEN=${accessToken}" >> ${GITHUB_ENV}
+          echo "::add-mask::${accessToken}"
+          echo "[INFO] accessUsername: $accessUsername"
+
       - name: Get the latest version
         run: |
           cd $GITHUB_WORKSPACE
           jfrogToken="${{ secrets.JFROG_TOKEN }}"
           jiraUserName="${{ secrets.JIRA_USERNAME }}"
           jiraPassword="${{ secrets.JIRA_API_TOKEN }}"
-          ./unittest-get-latest-version.sh jira enable-jira-versions all "${jfrogToken}" "${jiraUserName}" "${jiraPassword}"
+          ./unittest-get-latest-version.sh jira enable-jira-versions all "${jfrogToken}" "${jiraUserName}" "${jiraPassword}" "${ARTIFACTORY_TMP_USERNAME}" "${ARTIFACTORY_TMP_TOKEN}"
 
       - name: Run JIRA unit tests
         run: |

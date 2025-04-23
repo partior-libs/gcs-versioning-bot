@@ -50,6 +50,8 @@ function runTest() {
     local jiraUserName="$2"
     local jiraPassword="$3"
     local versionFile="$4"
+    local artifactoryUsername="$5"
+    local artifactoryPassword="$6"
 
     local versionPrependLabel
     if [[ "${artifact_auto_versioning__prepend_version__enabled}" == "true" ]]; then
@@ -162,6 +164,8 @@ function runTests() {
     local jfrogToken="$3"
     local jiraUserName="$4"
     local jiraPassword="$5"
+    local artifactoryUsername="$6"
+    local artifactoryPassword="$7"
 
     echo "scopeOfTestSuite: $scopeOfTestSuite"
     echo "scopeOfConfigFiles: $scopeOfConfigFiles"
@@ -188,7 +192,7 @@ function runTests() {
             startYamlImporter "${YAML_IMPORTER_FILE}" "${configFilePath}"
             source "${YAML_IMPORTER_FILE}"
 
-            runTest "${jfrogToken}" "${jiraUserName}" "${jiraPassword}" "${versionFileFullPath}"
+            runTest "${jfrogToken}" "${jiraUserName}" "${jiraPassword}" "${versionFileFullPath}" "${artifactoryUsername}" "${artifactoryPassword}"
         fi
     done
 }
@@ -200,6 +204,8 @@ function mainTestRunner(){
     local jfrogToken="$4"
     local jiraUserName="$5"
     local jiraPassword="$6"
+    local artifactoryUsername="$7"
+    local artifactoryPassword="$8"
 
     # Check if arguments are provided
     if [ $# -eq 0 ]; then
@@ -209,11 +215,11 @@ function mainTestRunner(){
 
     # Case 1: Run one config file + a specific testcase (e.g., testcase1, testcase2)
     if [[ $configFile != "all" && $scope =~ ^[0-9]+$ ]]; then
-        runTests "$configFile" "${TEST_SUITE_PATH}/${suiteCollection}/${configFile}/testcase${scope}" "${jfrogToken}" "${jiraUserName}" "${jiraPassword}"
+        runTests "$configFile" "${TEST_SUITE_PATH}/${suiteCollection}/${configFile}/testcase${scope}" "${jfrogToken}" "${jiraUserName}" "${jiraPassword}" "${artifactoryUsername}" "${artifactoryPassword}"
 
     # Case 2: Run one config file + all testcases (e.g., testcase1, testcase2, ...)
     elif [[ $configFile != "all" && $scope == "all" ]]; then
-        runTests "$configFile" "${TEST_SUITE_PATH}/${suiteCollection}/${configFile}/testcase*" "${jfrogToken}" "${jiraUserName}" "${jiraPassword}"
+        runTests "$configFile" "${TEST_SUITE_PATH}/${suiteCollection}/${configFile}/testcase*" "${jfrogToken}" "${jiraUserName}" "${jiraPassword}" "${artifactoryUsername}" "${artifactoryPassword}"
 
     else
         echo "Invalid option. Usage: $0 [all | specific_testcase | range_of_testcases]"
@@ -228,8 +234,10 @@ scope="$3"
 jfrogToken="$4"
 jiraUserName="$5"
 jiraPassword="$6"
+artifactoryUsername="$7"
+artifactoryPassword="$8"
 
-mainTestRunner "${suiteCollection}" "${configFile}" "${scope}" "${jfrogToken}" "${jiraUserName}" "${jiraPassword}"
+mainTestRunner "${suiteCollection}" "${configFile}" "${scope}" "${jfrogToken}" "${jiraUserName}" "${jiraPassword}" "${artifactoryUsername}" "${artifactoryPassword}"
 
 
 
