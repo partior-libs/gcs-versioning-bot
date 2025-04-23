@@ -267,12 +267,12 @@ jobs:
           jfrogToken="${{ secrets.JFROG_TOKEN }}"
           jiraUserName="${{ secrets.JIRA_USERNAME }}"
           jiraPassword="${{ secrets.JIRA_API_TOKEN }}"
-          ./unittest-get-latest-version.sh artifact enable-generic-artifact all "${jfrogToken}" "${jiraUserName}" "${jiraPassword}"
+          ./unittest-get-latest-version.sh jfrog enable-generic-artifact all "${jfrogToken}" "${jiraUserName}" "${jiraPassword}"
 
       - name: Run Generic Artifact unit tests
         run: |
           cd $GITHUB_WORKSPACE
-          ./unittest-versioning-bot.sh artifact enable-generic-artifact all 
+          ./unittest-versioning-bot.sh jfrog enable-generic-artifact all 
 
       - name: Display test report
         if: always() # Ensure this step runs even if the test script fails
