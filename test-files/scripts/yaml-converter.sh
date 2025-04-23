@@ -6,13 +6,13 @@
 ## Reading action's global setting
 if [[ ! -z $BASH_SOURCE ]]; then
     ACTION_BASE_DIR=$(dirname $BASH_SOURCE)
-    source $(find $ACTION_BASE_DIR/.. -type f | grep general.ini)
-elif [[ $(find . -type f -name general.ini | wc -l) > 0 ]]; then
-    source $(find . -type f | grep general.ini)
-elif [[ $(find .. -type f -name general.ini | wc -l) > 0 ]]; then
-    source $(find .. -type f | grep general.ini)
+    source $(find $ACTION_BASE_DIR/.. -type f | grep general-importer.ini)
+elif [[ $(find . -type f -name general-importer.ini | wc -l) > 0 ]]; then
+    source $(find . -type f | grep general-importer.ini)
+elif [[ $(find .. -type f -name general-importer.ini | wc -l) > 0 ]]; then
+    source $(find .. -type f | grep general-importer.ini)
 else
-    echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to find and source general.ini"
+    echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to find and source general-importer.ini"
     exit 1
 fi
 

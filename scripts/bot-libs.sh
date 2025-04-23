@@ -3,11 +3,11 @@
 ## Reading action's global setting
 if [[ ! -z $BASH_SOURCE ]]; then
     ACTION_BASE_DIR=$(dirname $BASH_SOURCE)
-    source $(find $ACTION_BASE_DIR/.. -type f | grep general.ini)
+    source $(find $ACTION_BASE_DIR/.. -type f -name general.ini)
 elif [[ $(find . -type f -name general.ini | wc -l) > 0 ]]; then
-    source $(find . -type f | grep general.ini)
+    source $(find . -type f -name general.ini)
 elif [[ $(find .. -type f -name general.ini | wc -l) > 0 ]]; then
-    source $(find .. -type f | grep general.ini)
+    source $(find .. -type f -name general.ini)
 else
     echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to find and source general.ini"
     exit 1
@@ -24,7 +24,7 @@ function digestRebaseBranchSetup() {
     
     ## If matches any of the target branches
     if (echo "$rebaseBranches" | grep -qE "(^|,|\s)+$currentBranchType(\s|$|,)+" >/dev/null ) ; then
-        echo "matches=${rebaseBranchMatch}" | tee -a >> $GITHUB_OUTPUT
+        echo "matches=true" | tee -a >> $GITHUB_OUTPUT
         echo "version=${currentBranchRefenceName#v*}" | tee -a >> $GITHUB_OUTPUT
     else
         echo "matches=false" | tee -a >> $GITHUB_OUTPUT
