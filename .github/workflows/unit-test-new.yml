@@ -106,7 +106,7 @@ jobs:
           echo jf mvnc --server-id-resolve="$jfrogServerID" --repo-resolve-releases="$mvnRepoResolveRelease" --repo-resolve-snapshots="$mvnRepoResolveDev" --repo-deploy-releases="$mvnRepoDeployRelease"  --repo-deploy-snapshots="$mvnRepoResolveDev"
           jf mvnc --server-id-resolve="$jfrogServerID" --repo-resolve-releases="$mvnRepoResolveRelease" --repo-resolve-snapshots="$mvnRepoResolveDev" --repo-deploy-releases="$mvnRepoDeployRelease"  --repo-deploy-snapshots="$mvnRepoResolveDev"
 
-          ./unittest-versioning-bot.sh maven enable-replace-maven-pom all
+          ./unittest-versioning-bot.sh maven all all
 
       - name: Display test report
         id: display-report
