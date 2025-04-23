@@ -194,7 +194,7 @@ jobs:
           sanitizedConfigProfile="$(echo "${{ matrix.rule }}" | sed "s/_/-/g")"
           echo "SANITIZED_CONFIG_PROFILE=${sanitizedConfigProfile}" >> ${GITHUB_ENV}
 
-          ./unittest-get-latest-version.sh jira "${sanitizedConfigProfile}" "" "${jiraUserName}" "${jiraPassword}" "${ARTIFACTORY_TMP_USERNAME}" "${ARTIFACTORY_TMP_TOKEN}"
+          ./unittest-get-latest-version.sh jira "${sanitizedConfigProfile}" all "" "${jiraUserName}" "${jiraPassword}" "${ARTIFACTORY_TMP_USERNAME}" "${ARTIFACTORY_TMP_TOKEN}"
 
       - name: Run JIRA unit tests
         run: |
