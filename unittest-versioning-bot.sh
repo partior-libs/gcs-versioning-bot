@@ -44,19 +44,26 @@ function modifyVersionFilesForTestCase() {
     echo "GITHUB_RUN_NUMBER=$GITHUB_RUN_NUMBER" >> env.tmp
     echo "GITHUB_RUN_ATTEMPT=$GITHUB_RUN_ATTEMPT" >> env.tmp
 
-    if [[ "${artifact_auto_versioning__version_sources__jira__enabled}" == "true" || -z "${branches__default__artifact__packager__artifactory_dev_repo}" || -z "${branches__default__artifact__packager__artifactory_release_repo}" ]]; then
+    if [[ "${artifact_auto_versioning__version_sources__jira__enabled}" == "true" ]]; then
         logMessage "INFO" "Get latest version from JIRA board..."
         logMessage "INFO" "Last Dev version: $(cat $ARTIFACT_LAST_DEV_VERSION_FILE)"
         logMessage "INFO" "Last RC version: $(cat $ARTIFACT_LAST_RC_VERSION_FILE)"
         logMessage "INFO" "Last Release version: $(cat $ARTIFACT_LAST_REL_VERSION_FILE)"
     else
-        logMessage "INFO" "Modifying input files for test case"
-        echo "$devVersion" > "$ARTIFACT_LAST_DEV_VERSION_FILE"
-        echo "$rcVersion" > "$ARTIFACT_LAST_RC_VERSION_FILE"
-        echo "$releaseVersion" > "$ARTIFACT_LAST_REL_VERSION_FILE"
-        logMessage "INFO" "Last Dev version: $(cat $ARTIFACT_LAST_DEV_VERSION_FILE)"
-        logMessage "INFO" "Last RC version: $(cat $ARTIFACT_LAST_RC_VERSION_FILE)"
-        logMessage "INFO" "Last Release version: $(cat $ARTIFACT_LAST_REL_VERSION_FILE)"
+        if [[ "${devVersion}" == "null" && "${releaseVersion}" == "null" && "${releaseVersion}" == "null" ]]; then
+            logMessage "INFO" "Get latest version from Artifactory..."
+            logMessage "INFO" "Last Dev version: $(cat $ARTIFACT_LAST_DEV_VERSION_FILE)"
+            logMessage "INFO" "Last RC version: $(cat $ARTIFACT_LAST_RC_VERSION_FILE)"
+            logMessage "INFO" "Last Release version: $(cat $ARTIFACT_LAST_REL_VERSION_FILE)"
+        else
+            logMessage "INFO" "Modifying input files for test case"
+            echo "$devVersion" > "$ARTIFACT_LAST_DEV_VERSION_FILE"
+            echo "$rcVersion" > "$ARTIFACT_LAST_RC_VERSION_FILE"
+            echo "$releaseVersion" > "$ARTIFACT_LAST_REL_VERSION_FILE"
+            logMessage "INFO" "Last Dev version: $(cat $ARTIFACT_LAST_DEV_VERSION_FILE)"
+            logMessage "INFO" "Last RC version: $(cat $ARTIFACT_LAST_RC_VERSION_FILE)"
+            logMessage "INFO" "Last Release version: $(cat $ARTIFACT_LAST_REL_VERSION_FILE)"
+        fi
     fi
 
     if [[ -z "${appVersion}" ]]; then
