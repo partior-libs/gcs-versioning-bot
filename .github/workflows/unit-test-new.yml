@@ -6,15 +6,6 @@ on:
   pull_request:
     branches: [ main ] # Trigger the workflow on pull requests targeting the main branch
   workflow_dispatch:
-    inputs:
-      artifactory-username:  
-        description: 'Username for artifactory'
-        required: false
-        default: ''
-      artifactory-password:  
-        description: 'Access Token/Password for artifactory'
-        required: false
-        default: ''
 
 jobs:
   local-unit-tests:
@@ -78,10 +69,8 @@ jobs:
       - name: Validate jfrog credential
         run: |
           if [[ -z "${{ secrets.JFROG_ARTIFACTORY_CONFIG }}" ]]; then
-            if [[ -z "${{ inputs.artifactory-username }}" ]] || [[ -z "${{ inputs.artifactory-password }}" ]]; then
-              echo [ERROR] Credential to artifactory or jfrog token must be specified.
-              exit 1
-            fi
+            echo [ERROR] Credential to artifactory or jfrog token must be specified.
+            exit 1
           fi
         shell: bash
 
@@ -156,6 +145,10 @@ jobs:
   jira-unit-tests:
     name: Run Jira Unit Tests
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rule: [ enable_jira_versions ]
 
     steps:
       - name: Checkout code
@@ -166,10 +159,8 @@ jobs:
       - name: Validate jfrog credential
         run: |
           if [[ -z "${{ secrets.JFROG_ARTIFACTORY_CONFIG }}" ]]; then
-            if [[ -z "${{ inputs.artifactory-username }}" ]] || [[ -z "${{ inputs.artifactory-password }}" ]]; then
-              echo [ERROR] Credential to artifactory or jfrog token must be specified.
-              exit 1
-            fi
+            echo [ERROR] Credential to artifactory or jfrog token must be specified.
+            exit 1
           fi
         shell: bash
 
@@ -200,12 +191,15 @@ jobs:
           jfrogToken="${{ secrets.JFROG_ARTIFACTORY_CONFIG }}"
           jiraUserName="${{ secrets.JIRA_USERNAME }}"
           jiraPassword="${{ secrets.JIRA_API_TOKEN }}"
-          ./unittest-get-latest-version.sh jira enable-jira-versions all "" "${jiraUserName}" "${jiraPassword}" "${ARTIFACTORY_TMP_USERNAME}" "${ARTIFACTORY_TMP_TOKEN}"
+          sanitizedConfigProfile="$(echo "${{ matrix.rule }}" | sed "s/_/-/g")"
+          echo "SANITIZED_CONFIG_PROFILE=${sanitizedConfigProfile}" >> ${GITHUB_ENV}
+
+          ./unittest-get-latest-version.sh jira "${sanitizedConfigProfile}" "" "${jiraUserName}" "${jiraPassword}" "${ARTIFACTORY_TMP_USERNAME}" "${ARTIFACTORY_TMP_TOKEN}"
 
       - name: Run JIRA unit tests
         run: |
           cd $GITHUB_WORKSPACE
-          ./unittest-versioning-bot.sh jira enable-jira-versions all 
+          ./unittest-versioning-bot.sh jira "${SANITIZED_CONFIG_PROFILE}" all 
 
       - name: Display test report
         if: always() # Ensure this step runs even if the test script fails
@@ -237,7 +231,7 @@ jobs:
       - name: Upload test report as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: unit-test-report-jira
+          name: unit-test-report-${{ env.SANITIZED_CONFIG_PROFILE }}
           path: unit-test-report-*
 
   artifact-unit-tests:
@@ -257,10 +251,8 @@ jobs:
       - name: Validate jfrog credential
         run: |
           if [[ -z "${{ secrets.JFROG_ARTIFACTORY_CONFIG }}" ]]; then
-            if [[ -z "${{ inputs.artifactory-username }}" ]] || [[ -z "${{ inputs.artifactory-password }}" ]]; then
-              echo [ERROR] Credential to artifactory or jfrog token must be specified.
-              exit 1
-            fi
+            echo [ERROR] Credential to artifactory or jfrog token must be specified.
+            exit 1
           fi
         shell: bash
 
