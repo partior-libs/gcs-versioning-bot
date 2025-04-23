@@ -77,7 +77,7 @@ jobs:
 
       - name: Validate jfrog credential
         run: |
-          if [[ -z "${{ secrets.JFROG_SANDBOX_TOKEN }}" ]]; then
+          if [[ -z "${{ secrets.JFROG_ARTIFACTORY_CONFIG }}" ]]; then
             if [[ -z "${{ inputs.artifactory-username }}" ]] || [[ -z "${{ inputs.artifactory-password }}" ]]; then
               echo [ERROR] Credential to artifactory or jfrog token must be specified.
               exit 1
@@ -88,7 +88,7 @@ jobs:
       - name: Setup jfrog
         uses: jfrog/setup-jfrog-cli@v4
         env:
-          JF_ENV_1: ${{ secrets.JFROG_SANDBOX_TOKEN }}
+          JF_ENV_1: ${{ secrets.JFROG_ARTIFACTORY_CONFIG }}
 
       - name: Display jfrog setup
         run: |
@@ -165,7 +165,7 @@ jobs:
 
       - name: Validate jfrog credential
         run: |
-          if [[ -z "${{ secrets.JFROG_SANDBOX_TOKEN }}" ]]; then
+          if [[ -z "${{ secrets.JFROG_ARTIFACTORY_CONFIG }}" ]]; then
             if [[ -z "${{ inputs.artifactory-username }}" ]] || [[ -z "${{ inputs.artifactory-password }}" ]]; then
               echo [ERROR] Credential to artifactory or jfrog token must be specified.
               exit 1
@@ -176,7 +176,7 @@ jobs:
       - name: Setup jfrog
         uses: jfrog/setup-jfrog-cli@v4
         env:
-          JF_ENV_1: ${{ secrets.JFROG_SANDBOX_TOKEN }}
+          JF_ENV_1: ${{ secrets.JFROG_ARTIFACTORY_CONFIG }}
 
       - name: Display jfrog setup
         run: |
@@ -197,7 +197,7 @@ jobs:
       - name: Get the latest version
         run: |
           cd $GITHUB_WORKSPACE
-          jfrogToken="${{ secrets.JFROG_SANDBOX_TOKEN }}"
+          jfrogToken="${{ secrets.JFROG_ARTIFACTORY_CONFIG }}"
           jiraUserName="${{ secrets.JIRA_USERNAME }}"
           jiraPassword="${{ secrets.JIRA_API_TOKEN }}"
           ./unittest-get-latest-version.sh jira enable-jira-versions all "" "${jiraUserName}" "${jiraPassword}" "${ARTIFACTORY_TMP_USERNAME}" "${ARTIFACTORY_TMP_TOKEN}"
@@ -256,7 +256,7 @@ jobs:
 
       - name: Validate jfrog credential
         run: |
-          if [[ -z "${{ secrets.JFROG_SANDBOX_TOKEN }}" ]]; then
+          if [[ -z "${{ secrets.JFROG_ARTIFACTORY_CONFIG }}" ]]; then
             if [[ -z "${{ inputs.artifactory-username }}" ]] || [[ -z "${{ inputs.artifactory-password }}" ]]; then
               echo [ERROR] Credential to artifactory or jfrog token must be specified.
               exit 1
@@ -267,7 +267,7 @@ jobs:
       - name: Setup jfrog
         uses: jfrog/setup-jfrog-cli@v4
         env:
-          JF_ENV_1: ${{ secrets.JFROG_SANDBOX_TOKEN }}
+          JF_ENV_1: ${{ secrets.JFROG_ARTIFACTORY_CONFIG }}
 
       - name: Display jfrog setup
         run: |
@@ -287,7 +287,7 @@ jobs:
       - name: Get the latest version
         run: |
           cd $GITHUB_WORKSPACE
-          jfrogToken="${{ secrets.JFROG_SANDBOX_TOKEN }}"
+          jfrogToken="${{ secrets.JFROG_ARTIFACTORY_CONFIG }}"
           jiraUserName="${{ secrets.JIRA_USERNAME }}"
           jiraPassword="${{ secrets.JIRA_API_TOKEN }}"
           sanitizedConfigProfile="$(echo "${{ matrix.rule }}" | sed "s/_/-/g")"
