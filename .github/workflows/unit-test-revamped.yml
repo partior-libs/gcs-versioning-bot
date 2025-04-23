@@ -85,7 +85,7 @@ jobs:
           jfrog c show
         shell: bash
 
-      - name: Run unit test for enable-replace-maven-pom
+      - name: Run unit test for maven scenarios
         run: |
           cd $GITHUB_WORKSPACE
           ## To get mvn version, needs to add mvn function as jf mnvc. Adding variables to make it as backward compatible possible
