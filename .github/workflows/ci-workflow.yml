@@ -403,6 +403,7 @@ jobs:
           source ./${{ env.YAML_BRANCH_CONFIG_IMPORTER }}
 
   update-partior-tag:
+    runs-on: ubuntu-latest
     needs: [ read-config, local-unit-tests, maven-pom-unit-tests, jira-unit-tests, artifact-unit-tests ]
     if: needs.read-config.outputs.TAG-VERSION == 'true'
     steps:
