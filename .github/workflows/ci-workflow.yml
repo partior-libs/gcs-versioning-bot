@@ -356,7 +356,6 @@ jobs:
         with:
           repository: ${{ inputs.CONTROLLER-REPO }}
           ref: ${{ inputs.CONTROLLER-REF }}
-          token: ${{ secrets.GH_REPO_READER_TOKEN }}
 
       - name: Get repo details
         id: get-repo
