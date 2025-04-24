@@ -13,16 +13,11 @@ on:
       - '*.md'
       - '.gitignore'
       - 'CODEOWNERS'
-  workflow_call:
-    inputs:
-      CONTROLLER-REPO: 
-        required: false
-        type: string
-        default: partior-libs/controller-generic-pipelines
-      CONTROLLER-REF:
-        required: false
-        type: string
-        default: feature/DSO-3475_add_gcs_versioning
+  workflow_dispatch:
+
+env:
+  CONTROLLER_REPO: partior-libs/controller-generic-pipelines
+  CONTROLLER_REF: feature/DSO-3475_add_gcs_versioning
 
 jobs:
   local-unit-tests:
@@ -355,14 +350,14 @@ jobs:
       - uses: actions/create-github-app-token@v1
         id: app-token
         with:
-          app-id: ${{ vars.BOT_APP_ID }}
-          private-key: ${{ secrets.BOT_APP_KEY }}
+          app-id: ${{ vars.BOT_READONLY_APP_ID }}
+          private-key: ${{ secrets.BOT_READONLY_APP_KEY }}
           owner: partior-libs
         
       - uses: actions/checkout@v4
         with:
-          repository: ${{ inputs.CONTROLLER-REPO }}
-          ref: ${{ inputs.CONTROLLER-REF }}
+          repository: ${{ env.CONTROLLER_REPO }}
+          ref: ${{ env.CONTROLLER_REF }}
           token: ${{ steps.app-token.outputs.token }}
 
       - name: Get repo details
