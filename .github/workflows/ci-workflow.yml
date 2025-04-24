@@ -22,7 +22,7 @@ on:
       CONTROLLER-REF:
         required: false
         type: string
-        default: main
+        default: feature/DSO-3475_add_gcs_versioning
 
 jobs:
   local-unit-tests:
@@ -344,6 +344,7 @@ jobs:
           path: unit-test-report-*
 
   read-config:
+    needs: [ local-unit-tests, maven-pom-unit-tests, jira-unit-tests, artifact-unit-tests ]
     runs-on: ubuntu-latest
     outputs:
       ARTIFACT-BASE-NAME: ${{ steps.pipeline-config.outputs.artifact-base-name }}
@@ -404,7 +405,9 @@ jobs:
   update-partior-tag:
     needs: [ read-config, local-unit-tests, maven-pom-unit-tests, jira-unit-tests, artifact-unit-tests ]
     if: needs.read-config.outputs.TAG-VERSION == 'true'
-    run: |
-      echo "Hi there, I'm triggering the update-partior-tag"
+    steps:
+      - name: Triggering the update-partior-tag
+        run: |
+          echo "Hi there, I'm triggering the update-partior-tag"
     # uses: partior-libs/controller-generic-pipelines/.github/workflows/pipeline-template-controller-ci.yaml@partior-stable
     # secrets: inherit
