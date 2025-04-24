@@ -1,11 +1,28 @@
-name: New Unit Test Runner
+name: Lib CI
 
 on:
   push:
-    branches: [ main ] # Trigger the workflow on push to the main branch
+    branches: [ main ]
+    paths-ignore:
+      - '*.md'
+      - '.gitignore'
+      - 'CODEOWNERS'
   pull_request:
-    branches: [ main ] # Trigger the workflow on pull requests targeting the main branch
+    branches: [ main ]
+    paths-ignore:
+      - '*.md'
+      - '.gitignore'
+      - 'CODEOWNERS'
   workflow_dispatch:
+    inputs:
+      CONTROLLER-REPO: 
+        required: false
+        type: string
+        default: partior-libs/controller-generic-pipelines
+      CONTROLLER-REF:
+        required: false
+        type: string
+        default: main
 
 jobs:
   local-unit-tests:
@@ -325,3 +342,69 @@ jobs:
         with:
           name: unit-test-report-${{ env.SANITIZED_CONFIG_PROFILE }}
           path: unit-test-report-*
+
+  read-config:
+    runs-on: ubuntu-latest
+    outputs:
+      ARTIFACT-BASE-NAME: ${{ steps.pipeline-config.outputs.artifact-base-name }}
+      PREPARE-RELEASE: ${{ steps.pipeline-branch-config.outputs.prepare-release_enabled }}
+      TAG-PARTIOR-STABLE: ${{ steps.pipeline-branch-config.outputs.tag-partior-stable_enabled }}
+      TAG-VERSION: ${{ steps.pipeline-branch-config.outputs.tag-version_git_enabled }}
+    steps:        
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.CONTROLLER-REPO }}
+          ref: ${{ inputs.CONTROLLER-REF }}
+          token: ${{ secrets.GH_REPO_READER_TOKEN }}
+
+      - name: Get repo details
+        id: get-repo
+        run: |
+          branchName="$(echo ${GITHUB_REF_NAME} | cut -d"/" -f1)"
+          if [[ ! -z "$GITHUB_HEAD_REF" ]]; then
+            branchName=$(echo $GITHUB_HEAD_REF | cut -d"/" -f1)
+          fi 
+          echo "branch-name=${branchName}" >> $GITHUB_OUTPUT
+          echo "name=$(echo ${GITHUB_REPOSITORY}  | cut -d'/' -f2)" >> $GITHUB_OUTPUT
+
+      - name: Generate CI config importer
+        uses: partior-libs/gcs-yaml-importer@main
+        with:
+          yaml-file: projects/${{ steps.get-repo.outputs.name }}.yaml
+          query-path: .controller.ci
+          set-sub-default-keys: .controller.ci-default
+          output-file: ${{ env.YAML_CONFIG_IMPORTER }}
+          yaml-file-for-default: projects/controller-default.yaml
+          query-path-for-default: .controller.ci
+          upload: true
+
+      - name: Start import pipeline config
+        id: pipeline-config
+        run: |
+          echo Importing ...${{ env.YAML_CONFIG_IMPORTER }}
+          source ./${{ env.YAML_CONFIG_IMPORTER }}
+
+      - name: Generate CI branch config importer
+        uses: partior-libs/gcs-yaml-importer@main
+        with:
+          yaml-file: projects/${{ steps.get-repo.outputs.name }}.yaml
+          query-path: .controller.ci.branches.${{ steps.get-repo.outputs.branch-name }}
+          set-sub-default-keys: .controller.ci.branches.default
+          output-file: ${{ env.YAML_BRANCH_CONFIG_IMPORTER }}
+          yaml-file-for-default: projects/controller-default.yaml
+          query-path-for-default: .controller.ci.branches.default
+          upload: true
+
+      - name: Start import pipeline branch config
+        id: pipeline-branch-config
+        run: |
+          echo Importing ...${{ env.YAML_BRANCH_CONFIG_IMPORTER }}
+          source ./${{ env.YAML_BRANCH_CONFIG_IMPORTER }}
+
+  update-partior-tag:
+    needs: [ read-config, local-unit-tests, maven-pom-unit-tests, jira-unit-tests, artifact-unit-tests ]
+    if: needs.read-config.outputs.TAG-VERSION == 'true'
+    run: |
+      echo "Hi there, I'm triggering the update-partior-tag"
+    # uses: partior-libs/controller-generic-pipelines/.github/workflows/pipeline-template-controller-ci.yaml@partior-stable
+    # secrets: inherit
