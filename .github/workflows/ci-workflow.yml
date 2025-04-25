@@ -416,7 +416,6 @@ jobs:
   update-partior-tag:
     needs: [ select-runners, read-config ]
     runs-on: ${{ fromJson(needs.select-runners.outputs.RUNNERS-POOL) }}
-    needs: [ read-config, local-unit-tests, maven-pom-unit-tests, jira-unit-tests, artifact-unit-tests ]
     if: needs.read-config.outputs.TAG-VERSION == 'true'
     steps:
       - name: Triggering the update-partior-tag
