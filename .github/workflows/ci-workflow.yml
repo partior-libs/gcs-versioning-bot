@@ -338,18 +338,9 @@ jobs:
           name: unit-test-report-${{ env.SANITIZED_CONFIG_PROFILE }}
           path: unit-test-report-*
 
-  select-runners:
+  read-config:
     needs: [ local-unit-tests, maven-pom-unit-tests, jira-unit-tests, artifact-unit-tests ]
     runs-on: ubuntu-latest
-    outputs:
-      RUNNERS-POOL: ${{ steps.runners.outputs.runners-pool }}
-    steps:
-      - id: runners
-        uses: partior-libs/gcs-pipe-utils/actions/generic-runner-selection@partior-stable
-
-  read-config:
-    needs: [ select-runners ]
-    runs-on: ${{ fromJson(needs.select-runners.outputs.RUNNERS-POOL) }}
     outputs:
       ARTIFACT-BASE-NAME: ${{ steps.pipeline-config.outputs.artifact-base-name }}
       PREPARE-RELEASE: ${{ steps.pipeline-branch-config.outputs.prepare-release_enabled }}
@@ -415,7 +406,7 @@ jobs:
 
   update-partior-tag:
     needs: [ select-runners, read-config ]
-    runs-on: ${{ fromJson(needs.select-runners.outputs.RUNNERS-POOL) }}
+    runs-on: runs-on: ubuntu-latest
     if: needs.read-config.outputs.TAG-VERSION == 'true'
     steps:
       - name: Triggering the update-partior-tag
