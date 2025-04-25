@@ -405,7 +405,7 @@ jobs:
           source ./${{ env.YAML_BRANCH_CONFIG_IMPORTER }}
 
   update-partior-tag:
-    needs: [ select-runners, read-config ]
+    needs: [ read-config ]
     runs-on: ubuntu-latest
     if: needs.read-config.outputs.TAG-VERSION == 'true'
     steps:
