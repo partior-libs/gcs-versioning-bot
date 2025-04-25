@@ -198,7 +198,7 @@ jobs:
           cd $GITHUB_WORKSPACE
           jfrogToken="${{ secrets.JFROG_ARTIFACTORY_CONFIG }}"
           jiraUserName="${{ secrets.JIRA_USERNAME }}"
-          jiraPassword="${{ secrets.JIRA_API_TOKEN }}"
+          jiraPassword="${{ secrets.JIRA_PASSWORD }}"
           sanitizedConfigProfile="$(echo "${{ matrix.rule }}" | sed "s/_/-/g")"
           echo "SANITIZED_CONFIG_PROFILE=${sanitizedConfigProfile}" >> ${GITHUB_ENV}
 
