@@ -408,11 +408,6 @@ jobs:
 
   update-partior-tag:
     needs: [ read-config ]
-    runs-on: ubuntu-latest
     if: needs.read-config.outputs.TAG-VERSION == 'true'
-    steps:
-      - name: Triggering the update-partior-tag
-        run: |
-          echo "Hi there, I'm triggering the update-partior-tag"
-    # uses: partior-libs/controller-generic-pipelines/.github/workflows/pipeline-template-controller-ci.yaml@partior-stable
-    # secrets: inherit
+    uses: partior-libs/controller-generic-pipelines/.github/workflows/pipeline-template-controller-ci.yaml@partior-stable
+    secrets: inherit
