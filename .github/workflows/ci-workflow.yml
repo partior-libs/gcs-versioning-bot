@@ -18,6 +18,8 @@ on:
 env:
   CONTROLLER_REPO: partior-libs/controller-generic-pipelines
   CONTROLLER_REF: feature/DSO-3475_add_gcs_versioning
+  YAML_CONFIG_IMPORTER: yaml_importer_${{ github.run_id }}_${{ github.run_number }}
+  YAML_BRANCH_CONFIG_IMPORTER: yaml_branch_importer_${{ github.run_id }}_${{ github.run_number }}
 
 jobs:
   local-unit-tests:
