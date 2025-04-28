@@ -134,7 +134,7 @@ function runTest() {
     local versionPrependLabel
     if [[ "${artifact_auto_versioning__prepend_version__enabled}" == "true" ]]; then
         versionPrependLabel=$(getVersionPrependLabel "${testCasePath}")
-        echo "BUILD_GH_VERSION_PREPEND_LABEL: ${versionPrependLabel}"
+        echo "[DEBUG] BUILD_GH_VERSION_PREPEND_LABEL: ${versionPrependLabel}"
     fi
 
     # Get the actual output from the script
@@ -150,6 +150,10 @@ function runTest() {
     if [[ "${REPLACE_V_RULES_ENABLED}" == "true" ]]; then
         restoreReplacementFiles
     fi
+
+    # Restore the environment variables after running a test case
+    sed 's/=.*//; s/^/unset /' "${YAML_IMPORTER_FILE}" > "unset-${YAML_IMPORTER_FILE}.sh"
+    source "unset-${YAML_IMPORTER_FILE}.sh"
     logMessage "INFO" "---------------------------------------------"
 }
 
@@ -428,8 +432,8 @@ function runTests() {
             modifyVersionFilesForTestCase "${lastDevVersion}" "${lastRcVersion}" "${lastReleaseVersion}" "${appVersion}" "${branchName}" "${lastRebaseVersion}"
 
             source "${YAML_IMPORTER_FILE}"
-            echo "BUILD_GH_RUN_NUMBER: $BUILD_GH_RUN_NUMBER"
-            echo "BUILD_GH_RUN_ATTEMPT: $BUILD_GH_RUN_ATTEMPT"
+            echo "[DEBUG] BUILD_GH_RUN_NUMBER: $BUILD_GH_RUN_NUMBER"
+            echo "[DEBUG] BUILD_GH_RUN_ATTEMPT: $BUILD_GH_RUN_ATTEMPT"
             runTest "${name}" "${expectedValue}" "${versionFileFullPath}" "${branchName}" "${targetBaseVersion}" "${tcPath}"
             ((totalTests++))
         fi
