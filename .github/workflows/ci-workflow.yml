@@ -336,5 +336,5 @@ jobs:
 
   update-partior-tag:
     needs: [ local-unit-tests, maven-pom-unit-tests, jira-unit-tests, artifact-unit-tests ]
-    uses: partior-libs/controller-3p-pipelines/.github/workflows/pipeline-template-controller-ci.yaml@main
+    uses: partior-libs/controller-3p-pipelines/.github/workflows/pipeline-template-controller-ci.yaml@partior-stable
     secrets: inherit
