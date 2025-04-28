@@ -1,0 +1,340 @@
+name: Lib CI
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - '*.md'
+      - '.gitignore'
+      - 'CODEOWNERS'
+  pull_request:
+    branches: [ main ]
+    paths-ignore:
+      - '*.md'
+      - '.gitignore'
+      - 'CODEOWNERS'
+  workflow_dispatch:
+
+jobs:
+  local-unit-tests:
+    name: Run Local Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run local unit tests
+        run: |
+          cd $GITHUB_WORKSPACE
+          ./unittest-versioning-bot.sh local all all
+
+      - name: Display test report
+        if: always() # Ensure this step runs even if the test script fails
+        run: |
+          cd $GITHUB_WORKSPACE
+          echo "[INFO] List the unit test report"
+          ls unit-test-report-*
+          reportFile=$(ls unit-test-report-*)
+          if [ -f "$reportFile" ]; then
+            echo "REPORT_FILE=$reportFile" >> "$GITHUB_ENV"
+            echo "## Unit Test Report"
+            cat "$reportFile"
+          else
+            echo "No unit test report file found."
+          fi
+
+      - name: Check for failures
+        if: steps.display-report.outcome == 'success' && ${{ env.REPORT_FILE }} != ''
+        run: |
+          ${{ env.ARTIFACT_BASE_NAME }}
+          failedCount=$(grep -oP 'Failed:\s+\K\d+' "${{ env.REPORT_FILE }}")
+          if [[ -n "$failedCount" && "$failedCount" -ne 0 ]]; then
+            echo "[ERROR] Unit tests failed. Found $failedCount failed test cases (threshold => 1)."
+            exit 1
+          else
+            echo "[INFO] Unit tests passed."
+          fi
+
+      - name: Upload test report as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-report-local
+          path: unit-test-report-*
+
+  maven-pom-unit-tests:
+    name: Run Maven POM Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate jfrog credential
+        run: |
+          if [[ -z "${{ secrets.JFROG_ARTIFACTORY_CONFIG }}" ]]; then
+            echo [ERROR] Credential to artifactory or jfrog token must be specified.
+            exit 1
+          fi
+        shell: bash
+
+      - name: Setup jfrog
+        uses: jfrog/setup-jfrog-cli@v4
+        env:
+          JF_ENV_1: ${{ secrets.JFROG_ARTIFACTORY_CONFIG }}
+
+      - name: Display jfrog setup
+        run: |
+          echo [DEBUG] Show jfrog setup
+          jfrog c show
+        shell: bash
+
+      - name: Run unit test for maven scenarios
+        run: |
+          cd $GITHUB_WORKSPACE
+          ## To get mvn version, needs to add mvn function as jf mnvc. Adding variables to make it as backward compatible possible
+          echo "[INFO] Retrying with Partior's artifactory. This may takes longer..."
+          jfrogServerID=$(jf config show | grep "Server ID" | cut -d":" -f2 | xargs)
+          mvnRepoResolveRelease="maven-release"
+          mvnRepoResolveDev="maven-dev"
+          mvnRepoDeployRelease="$mvnRepoResolveRelease"
+
+          echo "[DEBUG] Jfrog Server ID: $jfrogServerID"
+          echo "[DEBUG] Maven Resolve Release Repo: $mvnRepoResolveRelease"
+          echo "[DEBUG] Maven Resolve Dev Repo: $mvnRepoResolveDev"
+          echo "[DEBUG] Maven Deploy Repo: $mvnRepoDeployRelease"
+
+          function mvn() { local myparam=$@; jf mvn $myparam; }
+          # Export the function, so it can be accessed from generate.sh
+          export -f mvn
+          echo jf mvnc --server-id-resolve="$jfrogServerID" --repo-resolve-releases="$mvnRepoResolveRelease" --repo-resolve-snapshots="$mvnRepoResolveDev" --repo-deploy-releases="$mvnRepoDeployRelease"  --repo-deploy-snapshots="$mvnRepoResolveDev"
+          jf mvnc --server-id-resolve="$jfrogServerID" --repo-resolve-releases="$mvnRepoResolveRelease" --repo-resolve-snapshots="$mvnRepoResolveDev" --repo-deploy-releases="$mvnRepoDeployRelease"  --repo-deploy-snapshots="$mvnRepoResolveDev"
+
+          ./unittest-versioning-bot.sh maven all all
+
+      - name: Display test report
+        id: display-report
+        if: always() # Ensure this step runs even if the test script fails
+        run: |
+          cd $GITHUB_WORKSPACE
+          echo "[INFO] List the unit test report"
+          ls unit-test-report-*
+          reportFile=$(ls unit-test-report-*)
+          if [ -f "$reportFile" ]; then
+            echo "REPORT_FILE=$reportFile" >> "$GITHUB_ENV"
+            echo "## Unit Test Report"
+            cat "$reportFile"
+          else
+            echo "No unit test report file found."
+          fi
+
+      - name: Check for failures
+        if: steps.display-report.outcome == 'success' && ${{ env.REPORT_FILE }} != ''
+        run: |
+          ${{ env.ARTIFACT_BASE_NAME }}
+          failedCount=$(grep -oP 'Failed:\s+\K\d+' "${{ env.REPORT_FILE }}")
+          if [[ -n "$failedCount" && "$failedCount" -ne 0 ]]; then
+            echo "[ERROR] Unit tests failed. Found $failedCount failed test cases (threshold => 1)."
+            exit 1
+          else
+            echo "[INFO] Unit tests passed."
+          fi
+
+      - name: Upload test report as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-report-maven-pom
+          path: unit-test-report-*
+
+  jira-unit-tests:
+    name: Run Jira Unit Tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rule: [ enable_jira_versions ]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate jfrog credential
+        run: |
+          if [[ -z "${{ secrets.JFROG_ARTIFACTORY_CONFIG }}" ]]; then
+            echo [ERROR] Credential to artifactory or jfrog token must be specified.
+            exit 1
+          fi
+        shell: bash
+
+      - name: Setup jfrog
+        uses: jfrog/setup-jfrog-cli@v4
+        env:
+          JF_ENV_1: ${{ secrets.JFROG_ARTIFACTORY_CONFIG }}
+
+      - name: Display jfrog setup
+        run: |
+          echo [DEBUG] Show jfrog setup
+          jfrog c show
+        shell: bash
+
+      - name: Get Temporary Access Token
+        id: arti-access-token
+        run: |
+          accessUsername=$(jf config show | grep "User:" | awk -F'[\t ]+' '{print $2}' | head -n 1)
+          accessToken=$(jf rt access-token-create | jq -r .access_token)
+          echo "ARTIFACTORY_TMP_USERNAME=${accessUsername}" >> ${GITHUB_ENV}
+          echo "ARTIFACTORY_TMP_TOKEN=${accessToken}" >> ${GITHUB_ENV}
+          echo "::add-mask::${accessToken}"
+          echo "[INFO] accessUsername: $accessUsername"
+
+      - name: Get the latest version
+        run: |
+          cd $GITHUB_WORKSPACE
+          jfrogToken="${{ secrets.JFROG_ARTIFACTORY_CONFIG }}"
+          jiraUserName="${{ secrets.JIRA_USERNAME }}"
+          jiraPassword="${{ secrets.JIRA_PASSWORD }}"
+          sanitizedConfigProfile="$(echo "${{ matrix.rule }}" | sed "s/_/-/g")"
+          echo "SANITIZED_CONFIG_PROFILE=${sanitizedConfigProfile}" >> ${GITHUB_ENV}
+
+          ./unittest-get-latest-version.sh jira "${sanitizedConfigProfile}" all "" "${jiraUserName}" "${jiraPassword}" "${ARTIFACTORY_TMP_USERNAME}" "${ARTIFACTORY_TMP_TOKEN}"
+
+      - name: Run JIRA unit tests
+        run: |
+          cd $GITHUB_WORKSPACE
+          ./unittest-versioning-bot.sh jira "${SANITIZED_CONFIG_PROFILE}" all 
+
+      - name: Display test report
+        if: always() # Ensure this step runs even if the test script fails
+        run: |
+          cd $GITHUB_WORKSPACE
+          echo "[INFO] List the unit test report"
+          ls unit-test-report-*
+          reportFile=$(ls unit-test-report-*)
+          if [ -f "$reportFile" ]; then
+            echo "REPORT_FILE=$reportFile" >> "$GITHUB_ENV"
+            echo "## Unit Test Report"
+            cat "$reportFile"
+          else
+            echo "No unit test report file found."
+          fi
+
+      - name: Check for failures
+        if: steps.display-report.outcome == 'success' && ${{ env.REPORT_FILE }} != ''
+        run: |
+          ${{ env.ARTIFACT_BASE_NAME }}
+          failedCount=$(grep -oP 'Failed:\s+\K\d+' "${{ env.REPORT_FILE }}")
+          if [[ -n "$failedCount" && "$failedCount" -ne 0 ]]; then
+            echo "[ERROR] Unit tests failed. Found $failedCount failed test cases (threshold => 1)."
+            exit 1
+          else
+            echo "[INFO] Unit tests passed."
+          fi
+
+      - name: Upload test report as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-report-${{ env.SANITIZED_CONFIG_PROFILE }}
+          path: unit-test-report-*
+
+  artifact-unit-tests:
+    name: Run Artifactory Unit Tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rule: [ enable_generic_artifact, enable_docker_artifact, enable_docker_artifact_no_prev, enable_maven_artifact ]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate jfrog credential
+        run: |
+          if [[ -z "${{ secrets.JFROG_ARTIFACTORY_CONFIG }}" ]]; then
+            echo [ERROR] Credential to artifactory or jfrog token must be specified.
+            exit 1
+          fi
+        shell: bash
+
+      - name: Setup jfrog
+        uses: jfrog/setup-jfrog-cli@v4
+        env:
+          JF_ENV_1: ${{ secrets.JFROG_ARTIFACTORY_CONFIG }}
+
+      - name: Display jfrog setup
+        run: |
+          echo [DEBUG] Show jfrog setup
+          jfrog c show
+
+      - name: Get Temporary Access Token
+        id: arti-access-token
+        run: |
+          accessUsername=$(jf config show | grep "User:" | awk -F'[\t ]+' '{print $2}' | head -n 1)
+          accessToken=$(jf rt access-token-create | jq -r .access_token)
+          echo "ARTIFACTORY_TMP_USERNAME=${accessUsername}" >> ${GITHUB_ENV}
+          echo "ARTIFACTORY_TMP_TOKEN=${accessToken}" >> ${GITHUB_ENV}
+          echo "::add-mask::${accessToken}"
+          echo "[INFO] accessUsername: $accessUsername"
+
+      - name: Get the latest version
+        run: |
+          cd $GITHUB_WORKSPACE
+          jfrogToken="${{ secrets.JFROG_ARTIFACTORY_CONFIG }}"
+          jiraUserName="${{ secrets.JIRA_USERNAME }}"
+          jiraPassword="${{ secrets.JIRA_API_TOKEN }}"
+          sanitizedConfigProfile="$(echo "${{ matrix.rule }}" | sed "s/_/-/g")"
+          echo "SANITIZED_CONFIG_PROFILE=${sanitizedConfigProfile}" >> ${GITHUB_ENV}
+
+          ./unittest-get-latest-version.sh jfrog "${sanitizedConfigProfile}" all "" "${jiraUserName}" "${jiraPassword}" "${ARTIFACTORY_TMP_USERNAME}" "${ARTIFACTORY_TMP_TOKEN}"
+
+      - name: Run Artifact unit tests
+        run: |
+          cd $GITHUB_WORKSPACE
+          ls -l 
+          ./unittest-versioning-bot.sh jfrog "${SANITIZED_CONFIG_PROFILE}" all 
+
+      - name: Display test report
+        if: always() # Ensure this step runs even if the test script fails
+        run: |
+          cd $GITHUB_WORKSPACE
+          echo "[INFO] List the unit test report"
+          ls unit-test-report-*
+          reportFile=$(ls unit-test-report-*)
+          if [ -f "$reportFile" ]; then
+            echo "REPORT_FILE=$reportFile" >> "$GITHUB_ENV"
+            echo "## Unit Test Report"
+            cat "$reportFile"
+          else
+            echo "No unit test report file found."
+          fi
+
+      - name: Check for failures
+        if: steps.display-report.outcome == 'success' && ${{ env.REPORT_FILE }} != ''
+        run: |
+          ${{ env.ARTIFACT_BASE_NAME }}
+          failedCount=$(grep -oP 'Failed:\s+\K\d+' "${{ env.REPORT_FILE }}")
+          if [[ -n "$failedCount" && "$failedCount" -ne 0 ]]; then
+            echo "[ERROR] Unit tests failed. Found $failedCount failed test cases (threshold => 1)."
+            exit 1
+          else
+            echo "[INFO] Unit tests passed."
+          fi
+
+      - name: Upload test report as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-report-${{ env.SANITIZED_CONFIG_PROFILE }}
+          path: unit-test-report-*
+
+  update-partior-tag:
+    needs: [ local-unit-tests, maven-pom-unit-tests, jira-unit-tests, artifact-unit-tests ]
+    uses: partior-libs/controller-3p-pipelines/.github/workflows/pipeline-template-controller-ci.yaml@partior-stable
+    secrets: inherit

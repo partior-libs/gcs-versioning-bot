@@ -9,6 +9,8 @@ GENERAL_CONFIG="config/general.ini"
 BASE_CONTROLLER_CONFIG_DIR="controller-config-files/projects"
 DEFAULT_CONTROLLER_CONFIG_FILE="controller-config-files/projects/default.yml"
 BUILD_GH_COMMIT_MESSAGE_FILE="commit-message-tmp"
+GITHUB_RUN_NUMBER="103"
+GITHUB_RUN_ATTEMPT="1"
 
 # Function to log messages
 function logMessage() {
@@ -33,22 +35,36 @@ function modifyVersionFilesForTestCase() {
 
     echo "" > env.tmp
 
-    echo "BUILD_GH_BRANCH_NAME=feature" >> env.tmp
+    echo "BUILD_GH_BRANCH_NAME=branch" >> env.tmp
     echo "MAJOR_GH_CURRENT_BRANCH=$BUILD_GH_BRANCH_NAME" >> env.tmp
     echo "MINOR_GH_CURRENT_BRANCH=$BUILD_GH_BRANCH_NAME" >> env.tmp
     echo "PATCH_GH_CURRENT_BRANCH=$BUILD_GH_BRANCH_NAME" >> env.tmp
     echo "RC_GH_CURRENT_BRANCH=$BUILD_GH_BRANCH_NAME" >> env.tmp
     echo "DEV_GH_CURRENT_BRANCH=$BUILD_GH_BRANCH_NAME" >> env.tmp
-    echo "GITHUB_RUN_NUMBER=103" >> env.tmp
-    echo "GITHUB_RUN_ATTEMPT=1" >> env.tmp
+    echo "GITHUB_RUN_NUMBER=$GITHUB_RUN_NUMBER" >> env.tmp
+    echo "GITHUB_RUN_ATTEMPT=$GITHUB_RUN_ATTEMPT" >> env.tmp
 
-    logMessage "INFO" "Modifying input files for test case"
-    echo "$devVersion" > "$ARTIFACT_LAST_DEV_VERSION_FILE"
-    echo "$rcVersion" > "$ARTIFACT_LAST_RC_VERSION_FILE"
-    echo "$releaseVersion" > "$ARTIFACT_LAST_REL_VERSION_FILE"
-    logMessage "INFO" "Last Dev version $(cat $ARTIFACT_LAST_DEV_VERSION_FILE)"
-    logMessage "INFO" "Last RC version $(cat $ARTIFACT_LAST_RC_VERSION_FILE)"
-    logMessage "INFO" "Last Release version $(cat $ARTIFACT_LAST_REL_VERSION_FILE)"
+    if [[ "${artifact_auto_versioning__version_sources__jira__enabled}" == "true" ]]; then
+        logMessage "INFO" "Get latest version from JIRA board..."
+        logMessage "INFO" "Last Dev version: $(cat $ARTIFACT_LAST_DEV_VERSION_FILE)"
+        logMessage "INFO" "Last RC version: $(cat $ARTIFACT_LAST_RC_VERSION_FILE)"
+        logMessage "INFO" "Last Release version: $(cat $ARTIFACT_LAST_REL_VERSION_FILE)"
+    else
+        if [[ "${devVersion}" == "null" && "${releaseVersion}" == "null" && "${releaseVersion}" == "null" ]]; then
+            logMessage "INFO" "Get latest version from Artifactory..."
+            logMessage "INFO" "Last Dev version: $(cat $ARTIFACT_LAST_DEV_VERSION_FILE)"
+            logMessage "INFO" "Last RC version: $(cat $ARTIFACT_LAST_RC_VERSION_FILE)"
+            logMessage "INFO" "Last Release version: $(cat $ARTIFACT_LAST_REL_VERSION_FILE)"
+        else
+            logMessage "INFO" "Modifying input files for test case"
+            echo "$devVersion" > "$ARTIFACT_LAST_DEV_VERSION_FILE"
+            echo "$rcVersion" > "$ARTIFACT_LAST_RC_VERSION_FILE"
+            echo "$releaseVersion" > "$ARTIFACT_LAST_REL_VERSION_FILE"
+            logMessage "INFO" "Last Dev version: $(cat $ARTIFACT_LAST_DEV_VERSION_FILE)"
+            logMessage "INFO" "Last RC version: $(cat $ARTIFACT_LAST_RC_VERSION_FILE)"
+            logMessage "INFO" "Last Release version: $(cat $ARTIFACT_LAST_REL_VERSION_FILE)"
+        fi
+    fi
 
     if [[ -z "${appVersion}" ]]; then
         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Missing app version values"
@@ -72,9 +88,11 @@ function modifyVersionFilesForTestCase() {
         if [[ "${sourceBranch}" =~ ^hotfix-base/* ]]; then
             branchName=$(echo "$sourceBranch" | cut -d'/' -f1)
             echo "branchName: $branchName"
-            echo "rebaseVersion: $rebaseVersion"
-            echo "$rebaseVersion" > "$ARTIFACT_LAST_BASE_VERSION_FILE"
-            logMessage "INFO" "Last Base version $(cat $ARTIFACT_LAST_BASE_VERSION_FILE)"
+            if [[ "${artifact_auto_versioning__version_sources__jira__enabled}" != "true" ]]; then
+                echo "rebaseVersion: $rebaseVersion"
+                echo "$rebaseVersion" > "$ARTIFACT_LAST_BASE_VERSION_FILE"
+            fi
+            logMessage "INFO" "Last Base version: $(cat $ARTIFACT_LAST_BASE_VERSION_FILE)"
             sed -i "s/^BUILD_GH_BRANCH_NAME=.*/BUILD_GH_BRANCH_NAME=$branchName/" "env.tmp"
         else
             echo "" > "$ARTIFACT_LAST_BASE_VERSION_FILE"
@@ -116,7 +134,7 @@ function runTest() {
     local versionPrependLabel
     if [[ "${artifact_auto_versioning__prepend_version__enabled}" == "true" ]]; then
         versionPrependLabel=$(getVersionPrependLabel "${testCasePath}")
-        echo "BUILD_GH_VERSION_PREPEND_LABEL: ${BUILD_GH_VERSION_PREPEND_LABEL}"
+        echo "BUILD_GH_VERSION_PREPEND_LABEL: ${versionPrependLabel}"
     fi
 
     # Get the actual output from the script
@@ -365,6 +383,7 @@ function runTests() {
 
     # Sort a list of test cases numerically
     for tcPath in $(printf "%s\n" "${testCaseList[@]}" | sort -V); do
+        echo "[DEBUG] Running the $(basename $tcPath) from config: $scopeOfConfigFiles"
         if [[ -d $tcPath ]]; then
             logMessage "INFO" "Running the test from config: $scopeOfConfigFiles"
 
@@ -417,15 +436,35 @@ function runTests() {
     done
 }
 
-function mainTestRunner(){
-    local configFile="$1"
-    local scope="$2"
+function isExcluded(){
+    local name=$1; shift
+    local excludedList=("$@")
 
+    for exclude in "${excludedList[@]}"; do         
+        if [[ "$exclude" == "$name" ]]; then
+            echo "true" # Match found
+            return 0
+        fi
+    done
+    echo "false" # Not match found
+}
+
+function mainTestRunner(){
+    local suiteCollection="$1"
+    local configFile="$2"
+    local scope="$3"
+    local excludedListStr="$4"
     local baseConfigName
+    local excludedList=()
 
     echo "Starting test run at $(date '+%Y-%m-%d %H:%M:%S')" > "$LOG_FILE"
     logMessage "INFO" "Log file initialized"
 
+    for item in $(echo "$excludedListStr" | tr ',' "\n"); do
+        excludedList+=("$item")
+    done
+
+    echo "[INFO] excludedList: ${excludedList[@]}"
     # Check if arguments are provided
     if [ $# -eq 0 ]; then
         echo "Usage: $0 [all | specific_testcase | range_of_testcases]"
@@ -434,14 +473,7 @@ function mainTestRunner(){
 
     # Case 1: Run one config file + a specific testcase (e.g., testcase1, testcase2)
     if [[ $configFile != "all" && $scope =~ ^[0-9]+$ ]]; then
-        runTests "$configFile" "${TEST_SUITE_PATH}/${configFile}/testcase${scope}"
-
-        # echo "" >> $LOG_FILE
-        # echo "Config: ${configFile}" >> $LOG_FILE
-        # echo "-----------------------------" >> $LOG_FILE
-
-        # echo "Result: $configPassCount passed / $configTotal total" >> $LOG_FILE
-        # ((totalConfig++))
+        runTests "$configFile" "${TEST_SUITE_PATH}/${suiteCollection}/${configFile}/testcase${scope}"
 
         configPassCounts["$configFile"]=$configPassCount
         configFailCounts["$configFile"]=$configFailCount
@@ -449,7 +481,7 @@ function mainTestRunner(){
 
     # Case 2: Run one config file + all testcases (e.g., testcase1, testcase2, ...)
     elif [[ $configFile != "all" && $scope == "all" ]]; then
-        runTests "$configFile" "${TEST_SUITE_PATH}/${configFile}/testcase*"
+        runTests "$configFile" "${TEST_SUITE_PATH}/${suiteCollection}/${configFile}/testcase*"
 
         configPassCounts["$configFile"]=$configPassCount
         configFailCounts["$configFile"]=$configFailCount
@@ -457,9 +489,15 @@ function mainTestRunner(){
 
     # Case 3: Run all config files + their whole testcases (e.g., testcase1, testcase2, ...)
     elif [[ $configFile == "all" && $scope == "all" ]]; then
-        for configPath in "$TEST_SUITE_PATH"/*; do
-            if [[ -d "$configPath" ]]; then
+        for configPath in "$TEST_SUITE_PATH/${suiteCollection}"/*; do
+            if [[ -d "$configPath" && "$configPath" == *"enable-"* ]]; then
                 baseConfigName="$(basename "$configPath")"
+                echo "baseConfigName: $baseConfigName"
+
+                if [[ "$(isExcluded ${baseConfigName} ${excludedList[@]})" == "true" ]]; then
+                    echo "[INFO] Skipping excluded config: $baseConfigName"
+                    continue
+                fi
                 runTests "$baseConfigName" "$configPath/testcase*"
 
                 configPassCounts["$baseConfigName"]=$configPassCount
@@ -479,8 +517,10 @@ function mainTestRunner(){
 }
 
 # Handle options
-configFile="$1"
-scope="$2"
+suiteCollection="$1"
+configFile="$2"
+scope="$3"
+excludedListStr="$4"
 
 # Global environment variables
 declare -A configPassCounts
@@ -491,7 +531,7 @@ totalTests=0
 totalPass=0
 totalFail=0
 
-mainTestRunner "${configFile}" "${scope}"
+mainTestRunner "${suiteCollection}" "${configFile}" "${scope}" "${excludedListStr}"
 
 
 
