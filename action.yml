@@ -121,7 +121,7 @@ runs:
           echo "${{ inputs.consolidated-commit-msg }}" > $BUILD_GH_COMMIT_MESSAGE_FILE
 
           echo "Current branch: ${{ github.repository }}"
-          defaultBranchRef=$(repo view ${{ github.repository }} --json defaultBranchRef -q .defaultBranchRef.name)
+          defaultBranchRef=$(gh repo view ${{ github.repository }} --json defaultBranchRef -q .defaultBranchRef.name)
           exitCode=$?
           if [[ $exitCode -ne 0 ]]; then
             echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed to retrieve the default branch name using GitHub CLI." >&2
