@@ -111,16 +111,12 @@ runs:
 
         if [[ ! -z "$GITHUB_HEAD_REF" ]]; then
           echo "[DEBUG] This is a PR event..."
-          echo "[INFO] GITHUB_BASE_REF: $GITHUB_BASE_REF"
-          echo "[INFO] GITHUB_HEAD_REF: $GITHUB_HEAD_REF"
-          echo "[INFO] GITHUB_REF: $GITHUB_REF"
           branchName=$(echo $GITHUB_HEAD_REF | cut -d'/' -f1)
           branchReference="$(echo ${GITHUB_HEAD_REF} | cut -d'/' -f2)"
           isPR=true
           prTargetBranch=remotes/origin/${GITHUB_BASE_REF}
           echo "${{ inputs.consolidated-commit-msg }}" > $BUILD_GH_COMMIT_MESSAGE_FILE
 
-          echo "Current branch: ${{ github.repository }}"
           defaultBranchRef=$(gh repo view ${{ github.repository }} --json defaultBranchRef -q .defaultBranchRef.name)
           exitCode=$?
           if [[ $exitCode -ne 0 ]]; then
@@ -129,12 +125,16 @@ runs:
             exit 1
           fi
 
-          # Handle PR came from main branch
+          # Handle PR came from default branch
           if [[ "$GITHUB_HEAD_REF" == "$defaultBranchRef" ]]; then
+            echo "[INFO] Pull Request Details:"
+            echo "[INFO] Source Branch (HEAD): ${GITHUB_HEAD_REF}"
+            echo "[INFO] Target Branch (BASE): ${GITHUB_BASE_REF}"
+            echo "[INFO] PR is from the main branch. Switching to the target branch as the reference for version calculation."
+
             branchName=$(echo $GITHUB_BASE_REF | cut -d'/' -f1)
             branchReference="$(echo ${GITHUB_BASE_REF} | cut -d'/' -f2)"
             prTargetBranch=remotes/origin/${GITHUB_HEAD_REF}
-            echo "[INFO] PR is from the main branch. It should use the target branch as the reference branch."
           fi
         else
           echo "[DEBUG] This is NOT a PR event..."
