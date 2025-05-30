@@ -109,6 +109,9 @@ runs:
 
         if [[ ! -z "$GITHUB_HEAD_REF" ]]; then
           echo "[DEBUG] This is a PR event..."
+          echo "[INFO] GITHUB_BASE_REF: $GITHUB_BASE_REF"
+          echo "[INFO] GITHUB_HEAD_REF: $GITHUB_HEAD_REF"
+          echo "[INFO] GITHUB_REF: $GITHUB_REF"
           branchName=$(echo $GITHUB_HEAD_REF | cut -d'/' -f1)
           branchReference="$(echo ${GITHUB_HEAD_REF} | cut -d'/' -f2)"
           isPR=true
