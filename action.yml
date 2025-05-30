@@ -98,7 +98,7 @@ runs:
     - name: Get PR info
       id: pr-info
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ github.token }}
       run: |
         #!/bin/bash -e
 
