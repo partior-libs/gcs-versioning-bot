@@ -97,6 +97,8 @@ runs:
 
     - name: Get PR info
       id: pr-info
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         #!/bin/bash -e
 
@@ -107,26 +109,28 @@ runs:
         commitMessages=''
         BUILD_GH_COMMIT_MESSAGE_FILE=commit-message-$(date +%s).tmp
 
-        echo "GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}"
         if [[ ! -z "$GITHUB_HEAD_REF" ]]; then
           echo "[DEBUG] This is a PR event..."
           echo "[INFO] GITHUB_BASE_REF: $GITHUB_BASE_REF"
           echo "[INFO] GITHUB_HEAD_REF: $GITHUB_HEAD_REF"
           echo "[INFO] GITHUB_REF: $GITHUB_REF"
-          # [INFO] $GITHUB_BASE_REF: main
-          # [INFO] $GITHUB_HEAD_REF: release/DSO-3548_test_1
-          # [INFO] $GITHUB_REF: refs/pull/30/merge
           branchName=$(echo $GITHUB_HEAD_REF | cut -d'/' -f1)
           branchReference="$(echo ${GITHUB_HEAD_REF} | cut -d'/' -f2)"
           isPR=true
           prTargetBranch=remotes/origin/${GITHUB_BASE_REF}
           echo "${{ inputs.consolidated-commit-msg }}" > $BUILD_GH_COMMIT_MESSAGE_FILE
 
+          echo "Current branch: ${{ github.repository }}"
+          defaultBranchRef=$(repo view ${{ github.repository }} --json defaultBranchRef -q .defaultBranchRef.name)
+          exitCode=$?
+          if [[ $exitCode -ne 0 ]]; then
+            echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed to retrieve the default branch name using GitHub CLI." >&2
+            echo "[ERROR] Make sure the GitHub CLI is authenticated and the repository exists" >&2
+            exit 1
+          fi
+
           # Handle PR came from main branch
-          if [[ "$GITHUB_HEAD_REF" == "main" ]]; then
-            # [INFO] GITHUB_BASE_REF: release/DSO-3548_test_1
-            # [INFO] GITHUB_HEAD_REF: main
-            # [INFO] GITHUB_REF: refs/pull/29/merge
+          if [[ "$GITHUB_HEAD_REF" == "$defaultBranchRef" ]]; then
             branchName=$(echo $GITHUB_BASE_REF | cut -d'/' -f1)
             branchReference="$(echo ${GITHUB_BASE_REF} | cut -d'/' -f2)"
             prTargetBranch=remotes/origin/${GITHUB_HEAD_REF}
