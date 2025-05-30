@@ -130,7 +130,7 @@ runs:
             echo "[INFO] Pull Request Details:"
             echo "[INFO] Source Branch (HEAD): ${GITHUB_HEAD_REF}"
             echo "[INFO] Target Branch (BASE): ${GITHUB_BASE_REF}"
-            echo "[INFO] PR is from the main branch. Switching to the target branch as the reference for version calculation."
+            echo "[INFO] PR is from the $defaultBranchRef branch. Switching to the target branch as the reference for version calculation."
 
             branchName=$(echo $GITHUB_BASE_REF | cut -d'/' -f1)
             branchReference="$(echo ${GITHUB_BASE_REF} | cut -d'/' -f2)"
