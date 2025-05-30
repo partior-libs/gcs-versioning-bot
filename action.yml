@@ -112,11 +112,25 @@ runs:
           echo "[INFO] GITHUB_BASE_REF: $GITHUB_BASE_REF"
           echo "[INFO] GITHUB_HEAD_REF: $GITHUB_HEAD_REF"
           echo "[INFO] GITHUB_REF: $GITHUB_REF"
+          # [INFO] $GITHUB_BASE_REF: main
+          # [INFO] $GITHUB_HEAD_REF: release/DSO-3548_test_1
+          # [INFO] $GITHUB_REF: refs/pull/30/merge
           branchName=$(echo $GITHUB_HEAD_REF | cut -d'/' -f1)
           branchReference="$(echo ${GITHUB_HEAD_REF} | cut -d'/' -f2)"
           isPR=true
           prTargetBranch=remotes/origin/${GITHUB_BASE_REF}
           echo "${{ inputs.consolidated-commit-msg }}" > $BUILD_GH_COMMIT_MESSAGE_FILE
+
+          # Handle PR came from main branch
+          if [[ "$GITHUB_HEAD_REF" == "main" ]]; then
+            # [INFO] GITHUB_BASE_REF: release/DSO-3548_test_1
+            # [INFO] GITHUB_HEAD_REF: main
+            # [INFO] GITHUB_REF: refs/pull/29/merge
+            branchName=$(echo $GITHUB_BASE_REF | cut -d'/' -f1)
+            branchReference="$(echo ${GITHUB_BASE_REF} | cut -d'/' -f2)"
+            prTargetBranch=remotes/origin/${GITHUB_HEAD_REF}
+            echo "[INFO] PR is from the main branch. It should use the target branch as the reference branch."
+          fi
         else
           echo "[DEBUG] This is NOT a PR event..."
         fi
