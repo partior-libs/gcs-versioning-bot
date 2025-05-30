@@ -107,6 +107,7 @@ runs:
         commitMessages=''
         BUILD_GH_COMMIT_MESSAGE_FILE=commit-message-$(date +%s).tmp
 
+        echo "GITHUB_TOKEN: $GITHUB_TOKEN"
         if [[ ! -z "$GITHUB_HEAD_REF" ]]; then
           echo "[DEBUG] This is a PR event..."
           echo "[INFO] GITHUB_BASE_REF: $GITHUB_BASE_REF"
