@@ -436,6 +436,7 @@ function extractAndStoreVersionFromArtifactName() {
     local versionOutputFile="$3"
 
     local artifactVersion=$(echo "$foundArtifactFile" | sed "s/$artifactoryTargetArtifactName-//g")
+    artifactVersion=$(echo "$artifactVersion" | sed "s/.prov//g" )  # Remove .prov for helmchart tgz files
     artifactVersion=${artifactVersion%.*}       # Remove the last "." and everything after it
     artifactVersion=$(echo "$artifactVersion" | sed "s/-linux_amd64//g" | sed "s/-darwin_arm64//g")  # Remove any arch or OS related
     if (echo "$artifactVersion" | grep -qE '([0-9]+\.){2}[0-9]+(((-|\+)[0-9a-zA-Z]+\.[0-9]+)*(\+[0-9a-zA-Z]+\.[0-9\.]+)*$)'); then ## ensure only recognized format is stored
