@@ -321,15 +321,33 @@ function getDockerLatestVersionFromArtifactory() {
    
 }
 
+#
+# Improved function to get all versions from Artifactory using AQL pagination.
+# It queries in pages of 500 items until all results are retrieved.
+#
 function getLatestVersionFromArtifactory() {
     local targetRepo="$1"
     local targetDevRepo="$2"
     local targetReleaseRepo="$3"
     local versionOutputFile="$4"
-    echo "[INFO] Getting latest versions for RC, DEV and Release from Artifactory..."
+    
+    echo "[INFO] Getting all versions for RC, DEV and Release from Artifactory with pagination..."
+    
     local aqlTargetGroup=$(echo ${artifactoryTargetGroup} | sed "s/\./\//g")
-    local aqlQueryPayloadFile="aql.json"
+    local pageSize=500
+    local offset=0
+    local totalResults=0
+    local combinedResultsFile="$versionOutputFile.combined.tmp"
+    local currentPageResultFile="$versionOutputFile.page.tmp"
 
+    # Clean up previous temporary files
+    rm -f "$versionOutputFile" "$combinedResultsFile"
+
+    # Main loop to fetch all pages
+    while true; do
+        local aqlQueryPayloadFile="aql.json"
+
+        # AQL query with pagination (.offset and .limit)
 cat << EOF > $aqlQueryPayloadFile
 items.find(
     { 
@@ -344,90 +362,108 @@ items.find(
             { "path": {"\$match" : "$aqlTargetGroup/$artifactoryTargetArtifactName/*"}}
         ]
     }
-).sort({"\$desc" : ["created"]}).limit(500)
+).sort({"\$desc" : ["created"]}).offset($offset).limit($pageSize)
 EOF
-    echo "[INFO] AQL query:"
-    cat "$aqlQueryPayloadFile"
-    local queryPath="-w 'status_code:[%{http_code}]' \
-        -X POST \
-        '$artifactoryBaseUrl/api/search/aql' -H 'Content-Type: text/plain' -d @$aqlQueryPayloadFile -o $versionOutputFile.tmp"
+        echo "[INFO] AQL query for page (offset: $offset, limit: $pageSize):"
+        cat "$aqlQueryPayloadFile"
 
-    ## Check which credential to use
-    local execQuery="curl -k -s -u $artifactoryUsername:$artifactoryPassword"
-    if [[ ! -z "$jfrogToken" ]]; then
-        execQuery="$JFROGEXE rt curl -k -s"
-        queryPath="-w 'status_code:[%{http_code}]' \
+        local queryPath="-w 'status_code:[%{http_code}]' \
             -X POST \
-            '/api/search/aql' -H 'Content-Type: text/plain' -d @$aqlQueryPayloadFile -o $versionOutputFile.tmp"
-    fi
-    ## Start querying
-    rm -f $versionStoreFilename
-    local response=""
-    response=$(sh -c "$execQuery $queryPath")
-    if [[ $? -ne 0 ]]; then
-        echo "[ACTION_CURL_ERROR] $BASH_SOURCE (line:$LINENO): Error running curl to get latest version."
-        echo "[DEBUG] Curl: $execQuery $queryPath"
-        echo "[DEBUG] $(echo $response)"
-        exit 1
-    fi
-    ## Clean up aql file
-    rm -f $aqlQueryPayloadFile
-    #echo "[DEBUG] response...[$response]"
-    #responseBody=$(echo $response | awk -F'status_code:' '{print $1}')
-    local responseStatus=$(echo $response | awk -F'status_code:' '{print $2}' | awk -F'[][]' '{print $2}')
-    #echo "[INFO] responseBody: $responseBody"
-    echo "[INFO] Query status code: $responseStatus"
+            '$artifactoryBaseUrl/api/search/aql' -H 'Content-Type: text/plain' -d @$aqlQueryPayloadFile -o $currentPageResultFile"
 
-    if [[ $responseStatus -ne 200 ]]; then
-        echo "[ACTION_RESPONSE_ERROR] $BASH_SOURCE (line:$LINENO): Return code not 200 when querying latest version: [$responseStatus]"
-        echo "[DEBUG] $execQuery $queryPath" 
-        echo "[DEBUG] returned:"
-        cat "$versionOutputFile.tmp"
-        exit 1
-    fi
+        local execQuery="curl -k -s -u $artifactoryUsername:$artifactoryPassword"
+        if [[ ! -z "$jfrogToken" ]]; then
+            execQuery="$JFROGEXE rt curl -k -s"
+            queryPath="-w 'status_code:[%{http_code}]' \
+                -X POST \
+                '/api/search/aql' -H 'Content-Type: text/plain' -d @$aqlQueryPayloadFile -o $currentPageResultFile"
+        fi
 
-    ## Store in the compatible format if found something, otherwise reset to init version if empty
-    local returnResultCount=$(jq '.range.total' "$versionOutputFile.tmp")
-    if [[ "$returnResultCount" -gt 0 ]];then
-        local foundArtifactList=($(jq -r '.results[] | "\(.name),\(.path)"' "$versionOutputFile.tmp"))
+        echo "[INFO] Executing query..."
+        echo "[DEBUG] $execQuery $queryPath"
+        local response=$(sh -c "$execQuery $queryPath")
+        
+        if [[ $? -ne 0 ]]; then
+            echo "[ACTION_CURL_ERROR] $BASH_SOURCE (line:$LINENO): Error running curl."
+            echo "[DEBUG] Curl command: $execQuery $queryPath"
+            echo "[DEBUG] Response: $(echo $response)"
+            rm -f "$aqlQueryPayloadFile"
+            exit 1
+        fi
+
+        rm -f "$aqlQueryPayloadFile"
+
+        local responseStatus=$(echo "$response" | awk -F'status_code:' '{print $2}' | awk -F'[][]' '{print $2}')
+        echo "[INFO] Query status code: $responseStatus"
+
+        if [[ $responseStatus -ne 200 ]]; then
+            echo "[ACTION_RESPONSE_ERROR] $BASH_SOURCE (line:$LINENO): Return code not 200. Status: [$responseStatus]"
+            echo "[DEBUG] Curl command: $execQuery $queryPath" 
+            echo "[DEBUG] Returned content:"
+            cat "$currentPageResultFile"
+        fi
+
+        if ! jq . "$currentPageResultFile" > /dev/null 2>&1; then
+            echo "[ACTION_JSON_ERROR] $BASH_SOURCE (line:$LINENO): Invalid JSON received from Artifactory."
+            cat "$currentPageResultFile"
+            exit 1
+        fi
+
+        local pageResultCount=$(jq '.results | length' "$currentPageResultFile")
+        
+        if ! [[ "$pageResultCount" =~ ^[0-9]+$ ]]; then
+            echo "[WARN] Response from Artifactory did not contain a valid result count. This might be an error page or the end of results."
+            echo "[DEBUG] Full response from this page:"
+            cat "$currentPageResultFile"
+            pageResultCount=0
+        fi
+
+        echo "[INFO] Found $pageResultCount results on this page."
+
+        if [[ "$pageResultCount" -gt 0 ]]; then
+            jq -c '.results[]' "$currentPageResultFile" >> "$combinedResultsFile"
+            totalResults=$((totalResults + pageResultCount))
+        fi
+
+        if [[ "$pageResultCount" -lt "$pageSize" ]]; then
+            break
+        fi
+
+        offset=$((offset + pageSize))
+    done
+
+    echo "[INFO] Total results found across all pages: $totalResults"
+    date
+    if [[ "$totalResults" -gt 0 ]]; then
+        local finalJsonFile="$versionOutputFile.tmp"
+        echo "{\"results\": [$(paste -sd, "$combinedResultsFile")]}" > "$finalJsonFile"
+        # Use jq to extract just the 'name' field from each result
+        local foundArtifactList=($(jq -r '.results[].name' "$finalJsonFile"))
         touch "$versionOutputFile"
-        for eachFoundArtifact in "${foundArtifactList[@]}"; do
-            local currentArtifactFile=$(echo "$eachFoundArtifact" | cut -d"," -f1)
-            local currentArtifactPath=$(echo "$eachFoundArtifact" | cut -d"," -f2)
-            local artifactPathBasename=$(basename "$currentArtifactPath")
-            #echo "[DEBUG] artifactPathBasename=[$artifactPathBasename]"
-            #echo "[DEBUG] artifactoryTargetArtifactName=[$artifactoryTargetArtifactName]"
-            if [[ "$artifactPathBasename" != "$artifactoryTargetArtifactName" ]]; then
-                #echo "[DEBUG] Path basename [$artifactPathBasename] is not the same as artifact name [$artifactoryTargetArtifactName]. Proceed to extract version from basename..."
-                ## Verify base is a version
-                #if [[ "$artifactPathBasename" =~ [0-9]+\.[0-9]+\.[0-9]+ ]]; then
-                if (echo "$artifactPathBasename" | grep -qE '([0-9]+\.){2}[0-9]+(((-|\+)[0-9a-zA-Z]+\.[0-9]+)*(\+[0-9a-zA-Z]+\.[0-9\.]+)*$)'); then ## ensure only recognized format is stored
-                    if (! grep -q "\"$artifactPathBasename\"" "$versionOutputFile"); then  ## store only unique
-                        echo "\"version\": \"$artifactPathBasename\"" >> "$versionOutputFile"
-                    fi
-                else
-                    #echo "[DEBUG] Path basename [$artifactPathBasename] is not a valid semver. Proceed to extract version from filename..."
-                    extractAndStoreVersionFromArtifactName "$artifactoryTargetArtifactName" "$currentArtifactFile" "$versionOutputFile"
-                fi
-            else
-                #echo "[DEBUG] Path basename [$artifactPathBasename] is the same as artifact name. Proceed to extract version from filename..."
-                extractAndStoreVersionFromArtifactName "$artifactoryTargetArtifactName" "$currentArtifactFile" "$versionOutputFile"
-            fi
-            
+        for currentArtifactFile in "${foundArtifactList[@]}"; do
+            # The logic is now simplified to always extract the version from the filename
+            extractAndStoreVersionFromArtifactName "$artifactoryTargetArtifactName" "$currentArtifactFile" "$versionOutputFile"
         done
+        rm -f "$finalJsonFile"
     else
         local resetVersion="$initialVersion"
-        echo "[INFO] Unable to find last version. Resetting to: $resetVersion"
-        echo "\"version\" : \"$resetVersion\"" > $versionOutputFile
+        echo "[INFO] Unable to find any version. Resetting to: $resetVersion"
+        echo "\"version\" : \"$resetVersion\"" > "$versionOutputFile"
         echo "true" > "$FLAG_FILE_IS_INITIAL_VERSION"
     fi
+    date
+    rm -f "$combinedResultsFile" "$currentPageResultFile"
 
-    echo "[INFO] Trimming redundant lines..."
-    cat $versionOutputFile | grep "\"version\"" > $versionOutputFile.2
-    mv $versionOutputFile.2 $versionOutputFile
-      
-    ## Filter out only with matching version prepend label
-    filterVersionListWithPrependVersion "$versionOutputFile" "$prependVersionLabel"   
+    if [[ -f "$versionOutputFile" ]]; then
+        echo "[INFO] Trimming redundant lines..."
+        local tempTrimmedFile="$versionOutputFile.trimmed"
+        grep "\"version\"" "$versionOutputFile" > "$tempTrimmedFile"
+        mv "$tempTrimmedFile" "$versionOutputFile"
+        
+        filterVersionListWithPrependVersion "$versionOutputFile" "$prependVersionLabel"
+    fi
+    
+    echo "[INFO] Version processing complete."
 }
 
 function extractAndStoreVersionFromArtifactName() {
@@ -435,17 +471,24 @@ function extractAndStoreVersionFromArtifactName() {
     local foundArtifactFile="$2"
     local versionOutputFile="$3"
 
-    local artifactVersion=$(echo "$foundArtifactFile" | sed "s/$artifactoryTargetArtifactName-//g")
-    artifactVersion=${artifactVersion%.*}       # Remove the last "." and everything after it
-    artifactVersion=$(echo "$artifactVersion" | sed "s/-linux_amd64//g" | sed "s/-darwin_arm64//g")  # Remove any arch or OS related
-    if (echo "$artifactVersion" | grep -qE '([0-9]+\.){2}[0-9]+(((-|\+)[0-9a-zA-Z]+\.[0-9]+)*(\+[0-9a-zA-Z]+\.[0-9\.]+)*$)'); then ## ensure only recognized format is stored
-        if (! grep -q "\"$artifactVersion\"" "$versionOutputFile"); then  ## store only unique
-            echo "\"version\": \"$artifactVersion\"" >> "$versionOutputFile"
-        fi
+    # Use parameter expansion for speed: remove prefix
+    local artifactVersion="${foundArtifactFile#$artifactoryTargetArtifactName-}"
+    # Use parameter expansion for speed: remove suffix
+    artifactVersion="${artifactVersion%.*}"
+    # Use parameter expansion for speed: remove architecture strings
+    artifactVersion="${artifactVersion/-linux_amd64/}"
+    artifactVersion="${artifactVersion/-darwin_arm64/}"
+
+    # The regex check is still the most reliable way to validate the final format.
+    # This one external call is much better than multiple calls per artifact.
+    if [[ "$artifactVersion" =~ ^([0-9]+\.){2}[0-9]+(((-|\+)[0-9a-zA-Z]+\.[0-9]+)*(\+[0-9a-zA-Z]+\.[0-9\.]+)*$) ]]; then
+        # Append the valid version directly to the file. No uniqueness check here.
+        echo "\"version\": \"$artifactVersion\"" >> "$versionOutputFile"
     else
         echo "[WARNING] Invalid format detected. Ignored: [$artifactVersion]" >&2
     fi
 }
+
 function getLatestVersionFromJira() {
     local versionOutputFile="$1"
     local identifierType="$2"
