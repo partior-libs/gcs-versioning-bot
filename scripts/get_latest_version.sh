@@ -481,7 +481,7 @@ function extractAndStoreVersionFromArtifactName() {
 
     # The regex check is still the most reliable way to validate the final format.
     # This one external call is much better than multiple calls per artifact.
-    if [[ "$artifactVersion" =~ ^([0-9]+\.){2}[0-9]+(((-|\+)[0-9a-zA-Z]+\.[0-9]+)*(\+[0-9a-zA-Z]+\.[0-9\.]+)*$) ]]; then
+    if [[ "$artifactVersion" =~ ([0-9]+\.){2}[0-9]+(((-|\+)[0-9a-zA-Z]+\.[0-9]+)*(\+[0-9a-zA-Z]+\.[0-9\.]+)*$) ]]; then
         # Append the valid version directly to the file. No uniqueness check here.
         echo "\"version\": \"$artifactVersion\"" >> "$versionOutputFile"
     else
