@@ -479,9 +479,22 @@ function extractAndStoreVersionFromArtifactName() {
     artifactVersion="${artifactVersion/-linux_amd64/}"
     artifactVersion="${artifactVersion/-linux-amd64/}"
     artifactVersion="${artifactVersion/.linux.amd64/}"
+    artifactVersion="${artifactVersion/-linux_arm64/}"
+    artifactVersion="${artifactVersion/-linux-arm64/}"
+    artifactVersion="${artifactVersion/.linux.arm64/}"
+    artifactVersion="${artifactVersion/-linux_386/}"
+    artifactVersion="${artifactVersion/-linux-386/}"
+    artifactVersion="${artifactVersion/.linux.386/}"
     artifactVersion="${artifactVersion/-darwin_arm64/}"
     artifactVersion="${artifactVersion/-darwin-arm64/}"
     artifactVersion="${artifactVersion/.darwin.arm64/}"
+    artifactVersion="${artifactVersion/-darwin_amd64/}"
+    artifactVersion="${artifactVersion/-darwin-amd64/}"
+    artifactVersion="${artifactVersion/.darwin.amd64/}"
+    artifactVersion="${artifactVersion/-darwin_386/}"
+    artifactVersion="${artifactVersion/-darwin-386/}"
+    artifactVersion="${artifactVersion/.darwin.386/}"
+    artifactVersion="${artifactVersion/.tar/}"
 
     # The regex check is still the most reliable way to validate the final format.
     # This one external call is much better than multiple calls per artifact.
