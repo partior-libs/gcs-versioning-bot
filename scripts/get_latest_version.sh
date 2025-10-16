@@ -478,8 +478,10 @@ function extractAndStoreVersionFromArtifactName() {
     # Use parameter expansion for speed: remove architecture strings
     artifactVersion="${artifactVersion/-linux_amd64/}"
     artifactVersion="${artifactVersion/-linux-amd64/}"
+    artifactVersion="${artifactVersion/.linux.amd64/}"
     artifactVersion="${artifactVersion/-darwin_arm64/}"
     artifactVersion="${artifactVersion/-darwin-arm64/}"
+    artifactVersion="${artifactVersion/.darwin.arm64/}"
 
     # The regex check is still the most reliable way to validate the final format.
     # This one external call is much better than multiple calls per artifact.
