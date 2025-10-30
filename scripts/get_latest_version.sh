@@ -124,6 +124,14 @@ function storeLatestBaseVersionIntoFile() {
     if (cat $inputList | grep -qE "$targetBaseVersion-$identifierType\."); then
         echo "[INFO] Found existing..."
         echo $(cat $inputList | grep -E "version" | grep -E "$targetBaseVersion-$identifierType\." | cut -d"\"" -f4 | sort -rV | head -1) > $targetSaveFile
+    elif (echo "$targetBaseVersion" | grep -qE "\-$identifierType\."); then
+        if (cat $inputList | grep -qE "\"$targetBaseVersion\.[0-9]+\""); then
+            echo "[INFO] Found existing $identifierType...Entering hotfix on hotfix mode"
+            echo $(cat $inputList | grep -E "version" | grep -E "\"$targetBaseVersion\.[0-9]+\"" | cut -d"\"" -f4 | sort -rV | head -1) > $targetSaveFile
+        else
+            echo "[INFO] Not found existing hotfix on hotfix. Resetting to 0"
+            echo "$targetBaseVersion.0" > $targetSaveFile
+        fi
     else
         echo "[INFO] Not found. Resetting to 0"
         echo "$targetBaseVersion-$identifierType.0" > $targetSaveFile
@@ -228,7 +236,7 @@ function getArtifactLastVersion() {
         echo "[DEBUG] Clean up with exclusion"
         cat $versionListFile | sort -u | grep -v "$excludeVersionName" > $versionListFile.2
         mv $versionListFile.2 $versionListFile
-        echo "[DEBUG] List after cleaned up with exclusion2"
+        echo "[DEBUG] List after cleaned up with exclusion"
         cat $versionListFile
     fi
 
