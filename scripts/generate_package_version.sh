@@ -1349,12 +1349,7 @@ if [[ ! -z "${rebaseReleaseVersion}" ]]; then
     lastPatchNum="${currentRebasePatchNum##*.}"          # Extract text after last dot
     if [[ "$currentRebasePatchNum" == *.* ]]; then
         patchBaseNum="${currentRebasePatchNum%.*}"         # Extract text before last dot
-    else
-        patchBaseNum=""                    # No dot → no base part
     fi
-
-    echo "Base: $patchBaseNum"
-    echo "Last: $lastPatchNum"
 
     # Increment the rebase/hotfix number.
     nextRebasePatchNum=$((lastPatchNum + 1)) 
