@@ -928,7 +928,7 @@ function processWithReleaseVersionFile() {
                 currentIncrementedVersion="$tmpInputVersion"$(resetCoreRelease "$versionPos") 
                 if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): currentIncrementedVersion=$currentIncrementedVersion" >&2; fi 
             ## Found the version with correct format (SemVer-like)
-            elif (echo $foundVersion | grep -qE '([0-9]+\.){2}[0-9]+(((-|\+)[0-9a-zA-Z]+\.[0-9]+)*(\+[0-9a-zA-Z]+\.[0-9\.]+)*$)'); then  
+            elif (echo $foundVersion | grep -qE '([0-9]+\.){2}[0-9]+(([+-][0-9a-zA-Z]+(\.[0-9]+)+)*(\+[0-9a-zA-Z]+\.[0-9\.]+)*$)'); then  
                 # Extract just the X.Y.Z part of the highest found version.
                 local releasedVersionOnly=$(echo $foundVersion | grep -oE "^[0-9]+\.[0-9]+\.[0-9]+") 
                 ## If fixed release version (X.Y.Z exactly), increment the next logical part.
@@ -1337,13 +1337,22 @@ if [[ ! -z "${rebaseReleaseVersion}" ]]; then
     # --- Hotfix/Rebase Branch Logic ---
     baseCurrentVersion="$lastBaseVersion" # Use the last known base/hotfix version.
     if [[ -z "$lastBaseVersion" ]] || [[ "$lastBaseVersion" == "$VBOT_NIL" ]]; then # Handle nil/empty case
-        # If no previous base version, start from .0 using the provided rebase release version.
-        baseCurrentVersion="${rebaseReleaseVersion}-$REBASE_V_IDENTIFIER.0" 
+        if (echo "$rebaseReleaseVersion" | grep -qE "\-$REBASE_V_IDENTIFIER\."); then
+            baseCurrentVersion="${rebaseReleaseVersion}.0"
+        else
+            # If no previous base version, start from .0 using the provided rebase release version.
+            baseCurrentVersion="${rebaseReleaseVersion}-$REBASE_V_IDENTIFIER.0" 
+        fi
     fi
     # Extract the current rebase/hotfix number (N from -hf.N).
     currentRebasePatchNum=$(echo "$baseCurrentVersion" | awk -F"-$REBASE_V_IDENTIFIER." '{print $2}') 
+    lastPatchNum="${currentRebasePatchNum##*.}"          # Extract text after last dot
+    if [[ "$currentRebasePatchNum" == *.* ]]; then
+        patchBaseNum="${currentRebasePatchNum%.*}"         # Extract text before last dot
+    fi
+
     # Increment the rebase/hotfix number.
-    nextRebasePatchNum=$((currentRebasePatchNum + 1)) 
+    nextRebasePatchNum=$((lastPatchNum + 1)) 
     if [[ $? -ne 0 ]] || [[ ! "$nextRebasePatchNum" =~ ^[0-9]+$ ]]; then # Add check if increment failed or result not number
         # Error if increment failed.
         echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed incrementation on hf version." >&2
@@ -1351,8 +1360,12 @@ if [[ ! -z "${rebaseReleaseVersion}" ]]; then
         exit 1 
     fi
     # Construct the next rebase/hotfix version string.
-    nextVersion=${rebaseReleaseVersion}-$REBASE_V_IDENTIFIER.$nextRebasePatchNum 
-
+    # Check if rebaseReleaseVersion already has identifier
+    if (echo "$rebaseReleaseVersion" | grep -qE "\-$REBASE_V_IDENTIFIER\."); then
+        nextVersion=${rebaseReleaseVersion}.$nextRebasePatchNum 
+    else
+        nextVersion=${rebaseReleaseVersion}-$REBASE_V_IDENTIFIER.$nextRebasePatchNum 
+    fi
 else 
     # --- Standard Version Logic ---
     echo "[INFO] Before getNeededIncrementReleaseVersion: $nextVersion" # Should be empty here
