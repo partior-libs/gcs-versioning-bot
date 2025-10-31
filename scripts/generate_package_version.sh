@@ -928,7 +928,7 @@ function processWithReleaseVersionFile() {
                 currentIncrementedVersion="$tmpInputVersion"$(resetCoreRelease "$versionPos") 
                 if [[ "$isDebug" == "true" ]]; then echo "[DEBUG] $BASH_SOURCE (line:$LINENO): currentIncrementedVersion=$currentIncrementedVersion" >&2; fi 
             ## Found the version with correct format (SemVer-like)
-            elif (echo $foundVersion | grep -qE '([0-9]+\.){2}[0-9]+(((-|\+)[0-9a-zA-Z]+\.[0-9]+)*(\+[0-9a-zA-Z]+\.[0-9\.]+)*$)'); then  
+            elif (echo $foundVersion | grep -qE '([0-9]+\.){2}[0-9]+(([+-][0-9a-zA-Z]+(\.[0-9]+)+)*(\+[0-9a-zA-Z]+\.[0-9\.]+)*$)'); then  
                 # Extract just the X.Y.Z part of the highest found version.
                 local releasedVersionOnly=$(echo $foundVersion | grep -oE "^[0-9]+\.[0-9]+\.[0-9]+") 
                 ## If fixed release version (X.Y.Z exactly), increment the next logical part.
