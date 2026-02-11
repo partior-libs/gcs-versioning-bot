@@ -121,7 +121,7 @@ function storeLatestBaseVersionIntoFile() {
 
     fi
     echo "[INFO] Store the latest rebased patch from release baseline [$targetBaseVersion] with identifier [$identifierType]..."
-    if (cat $inputList | grep -qE "$targetBaseVersion-$identifierType\."); then
+    if (cat $inputList | grep -qE "$targetBaseVersion-$identifierType\.[0-9]*\""); then
         echo "[INFO] Found existing..."
         echo $(cat $inputList | grep -E "version" | grep -E "$targetBaseVersion-$identifierType\." | cut -d"\"" -f4 | sort -rV | head -1) > $targetSaveFile
     elif (echo "$targetBaseVersion" | grep -qE "\-$identifierType\."); then
