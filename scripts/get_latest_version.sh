@@ -356,6 +356,26 @@ function getLatestVersionFromArtifactory() {
         local aqlQueryPayloadFile="aql.json"
 
         # AQL query with pagination (.offset and .limit)
+        if [[ "$artifactType" == "npm" ]]; then
+            echo "[INFO] NPM artifact-type detected. Constructing scoped path..."
+            local npmPackagePath="$artifactoryTargetArtifactName/-"
+            if [[ ! -z "$artifactoryTargetGroup" ]]; then
+                npmPackagePath="@${artifactoryTargetGroup}/${artifactoryTargetArtifactName}/-"
+            fi
+cat << EOF > $aqlQueryPayloadFile
+items.find(
+    { 
+        "name": {"\$match": "$artifactoryTargetArtifactName-*"}, 
+        "\$or": [
+            { "repo": "$targetRepo" },
+            { "repo": "$targetDevRepo" },
+            { "repo": "$targetReleaseRepo" }
+        ], 
+        "path": {"\$match" : "$npmPackagePath"}
+    }
+).sort({"\$desc" : ["created"]}).offset($offset).limit($pageSize)
+EOF
+        else
 cat << EOF > $aqlQueryPayloadFile
 items.find(
     { 
@@ -367,13 +387,12 @@ items.find(
         ], 
         "\$or": [
             { "path": {"\$match" : "$aqlTargetGroup/$artifactoryTargetArtifactName"}},
-            { "path": {"\$match" : "$aqlTargetGroup/$artifactoryTargetArtifactName/*"}},
-            { "path": {"\$match" : "$artifactoryTargetArtifactName"}},
-            { "path": {"\$match" : "$artifactoryTargetArtifactName/*"}}
+            { "path": {"\$match" : "$aqlTargetGroup/$artifactoryTargetArtifactName/*"}}
         ]
     }
 ).sort({"\$desc" : ["created"]}).offset($offset).limit($pageSize)
 EOF
+        fi
         echo "[INFO] AQL query for page (offset: $offset, limit: $pageSize):"
         cat "$aqlQueryPayloadFile"
 
