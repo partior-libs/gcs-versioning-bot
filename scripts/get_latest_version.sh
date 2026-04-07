@@ -471,12 +471,10 @@ EOF
         # Use jq to extract just the 'name' field from each result
         local foundArtifactList=($(jq -r '.results[].name' "$finalJsonFile"))
         touch "$versionOutputFile"
-        # Determine the correct prefix to strip from the filename
-        local prefixToStrip="$artifactoryTargetArtifactName"
 
         for currentArtifactFile in "${foundArtifactList[@]}"; do
             # The logic is now simplified to always extract the version from the filename
-            extractAndStoreVersionFromArtifactName "$prefixToStrip" "$currentArtifactFile" "$versionOutputFile"
+            extractAndStoreVersionFromArtifactName "$artifactoryTargetArtifactName" "$currentArtifactFile" "$versionOutputFile"
         done
         rm -f "$finalJsonFile"
     else
