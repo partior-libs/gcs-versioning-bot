@@ -362,8 +362,7 @@ function getLatestVersionFromArtifactory() {
             local npmPackageFilename="$artifactoryTargetArtifactName-*"
             
             if [[ ! -z "$artifactoryTargetGroup" ]]; then
-                npmPackagePath="@${artifactoryTargetGroup}/${artifactoryTargetArtifactName}/-"
-                npmPackageFilename="@${artifactoryTargetGroup}/${artifactoryTargetArtifactName}-*"
+                npmPackagePath="@${artifactoryTargetGroup}/${artifactoryTargetArtifactName}/-/@${artifactoryTargetGroup}"
             fi
 cat << EOF > $aqlQueryPayloadFile
 items.find(
@@ -474,9 +473,6 @@ EOF
         touch "$versionOutputFile"
         # Determine the correct prefix to strip from the filename
         local prefixToStrip="$artifactoryTargetArtifactName"
-        if [[ "$artifactType" == "npm" && ! -z "$artifactoryTargetGroup" ]]; then
-            prefixToStrip="@${artifactoryTargetGroup}/${artifactoryTargetArtifactName}"
-        fi
 
         for currentArtifactFile in "${foundArtifactList[@]}"; do
             # The logic is now simplified to always extract the version from the filename
