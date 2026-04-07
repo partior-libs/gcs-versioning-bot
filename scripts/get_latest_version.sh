@@ -367,7 +367,9 @@ items.find(
         ], 
         "\$or": [
             { "path": {"\$match" : "$aqlTargetGroup/$artifactoryTargetArtifactName"}},
-            { "path": {"\$match" : "$aqlTargetGroup/$artifactoryTargetArtifactName/*"}}
+            { "path": {"\$match" : "$aqlTargetGroup/$artifactoryTargetArtifactName/*"}},
+            { "path": {"\$match" : "$artifactoryTargetArtifactName"}},
+            { "path": {"\$match" : "$artifactoryTargetArtifactName/*"}}
         ]
     }
 ).sort({"\$desc" : ["created"]}).offset($offset).limit($pageSize)
