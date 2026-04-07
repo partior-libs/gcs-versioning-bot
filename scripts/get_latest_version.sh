@@ -359,13 +359,16 @@ function getLatestVersionFromArtifactory() {
         if [[ "$artifactType" == "npm" ]]; then
             echo "[INFO] NPM artifact-type detected. Constructing scoped path..."
             local npmPackagePath="$artifactoryTargetArtifactName/-"
+            local npmPackageFilename="$artifactoryTargetArtifactName-*"
+            
             if [[ ! -z "$artifactoryTargetGroup" ]]; then
                 npmPackagePath="@${artifactoryTargetGroup}/${artifactoryTargetArtifactName}/-"
+                npmPackageFilename="@${artifactoryTargetGroup}/${artifactoryTargetArtifactName}-*"
             fi
 cat << EOF > $aqlQueryPayloadFile
 items.find(
     { 
-        "name": {"\$match": "$artifactoryTargetArtifactName-*"}, 
+        "name": {"\$match": "$npmPackageFilename"}, 
         "\$or": [
             { "repo": "$targetRepo" },
             { "repo": "$targetDevRepo" },
@@ -469,9 +472,15 @@ EOF
         # Use jq to extract just the 'name' field from each result
         local foundArtifactList=($(jq -r '.results[].name' "$finalJsonFile"))
         touch "$versionOutputFile"
+        # Determine the correct prefix to strip from the filename
+        local prefixToStrip="$artifactoryTargetArtifactName"
+        if [[ "$artifactType" == "npm" && ! -z "$artifactoryTargetGroup" ]]; then
+            prefixToStrip="@${artifactoryTargetGroup}/${artifactoryTargetArtifactName}"
+        fi
+
         for currentArtifactFile in "${foundArtifactList[@]}"; do
             # The logic is now simplified to always extract the version from the filename
-            extractAndStoreVersionFromArtifactName "$artifactoryTargetArtifactName" "$currentArtifactFile" "$versionOutputFile"
+            extractAndStoreVersionFromArtifactName "$prefixToStrip" "$currentArtifactFile" "$versionOutputFile"
         done
         rm -f "$finalJsonFile"
     else
