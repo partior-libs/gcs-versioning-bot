@@ -471,7 +471,6 @@ EOF
         # Use jq to extract just the 'name' field from each result
         local foundArtifactList=($(jq -r '.results[].name' "$finalJsonFile"))
         touch "$versionOutputFile"
-
         for currentArtifactFile in "${foundArtifactList[@]}"; do
             # The logic is now simplified to always extract the version from the filename
             extractAndStoreVersionFromArtifactName "$artifactoryTargetArtifactName" "$currentArtifactFile" "$versionOutputFile"
