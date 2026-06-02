@@ -242,6 +242,62 @@ jobs:
           name: unit-test-report-${{ env.SANITIZED_CONFIG_PROFILE }}
           path: unit-test-report-*
 
+  jira-auth-unit-tests:
+    name: Run Jira Auth Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Jira auth unit tests
+        env:
+          JIRA_USERNAME: ${{ secrets.JIRA_USERNAME }}
+          JIRA_PASSWORD: ${{ secrets.JIRA_PASSWORD }}
+          JIRA_OAUTH_TOKEN: ${{ secrets.JIRA_OAUTH_TOKEN }}
+          JIRA_CLIENT_ID: ${{ secrets.JIRA_CLIENT_ID }}
+          JIRA_CLIENT_SECRET: ${{ secrets.JIRA_CLIENT_SECRET }}
+        run: |
+          cd $GITHUB_WORKSPACE
+          chmod +x ./unittest-jira-auth.sh
+          ./unittest-jira-auth.sh
+
+      - name: Display test report
+        id: display-report
+        if: always()
+        run: |
+          cd $GITHUB_WORKSPACE
+          echo "[INFO] List the unit test report"
+          ls unit-test-report-*
+          reportFile=$(ls unit-test-report-*)
+          if [ -f "$reportFile" ]; then
+            echo "REPORT_FILE=$reportFile" >> "$GITHUB_ENV"
+            echo "## Jira Auth Unit Test Report"
+            cat "$reportFile"
+          else
+            echo "No unit test report file found."
+          fi
+
+      - name: Check for failures
+        if: steps.display-report.outcome == 'success' && env.REPORT_FILE != ''
+        run: |
+          failedCount=$(grep -oP 'Failed:\s+\K\d+' "${{ env.REPORT_FILE }}")
+          if [[ -n "$failedCount" && "$failedCount" -ne 0 ]]; then
+            echo "[ERROR] Jira auth tests failed. Found $failedCount failed test cases."
+            exit 1
+          else
+            echo "[INFO] Jira auth tests passed."
+          fi
+
+      - name: Upload test report as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-report-jira-auth
+          path: unit-test-report-*
+
   artifact-unit-tests:
     name: Run Artifactory Unit Tests
     runs-on: ubuntu-latest
@@ -335,6 +391,6 @@ jobs:
           path: unit-test-report-*
 
   update-partior-tag:
-    needs: [ local-unit-tests, maven-pom-unit-tests, jira-unit-tests, artifact-unit-tests ]
+    needs: [ local-unit-tests, maven-pom-unit-tests, jira-unit-tests, artifact-unit-tests, jira-auth-unit-tests ]
     uses: partior-libs/controller-3p-pipelines/.github/workflows/pipeline-template-controller-ci.yaml@partior-stable
     secrets: inherit

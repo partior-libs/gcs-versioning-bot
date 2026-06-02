@@ -21,6 +21,9 @@ newVersion="${5}"
 jiraVersionIdentifier="${6}"
 versionPrependLabel="${7}"
 commitMessageFile="${8}"
+jiraOauthToken="${9}"
+jiraClientId="${10}"
+jiraClientSecret="${11}"
 
 
 echo "[INFO] Jira Base Url: $jiraBaseUrl"
@@ -30,12 +33,22 @@ echo "[INFO] Jira Version Identifier: $jiraVersionIdentifier"
 echo "[INFO] Prepend Label: $versionPrependLabel"
 echo "[INFO] Commit Message File: $commitMessageFile"
 
+source "$ACTION_BASE_DIR/jira-auth-lib.sh"
+export JIRA_OAUTH_TOKEN="$jiraOauthToken"
+export JIRA_CLIENT_ID="$jiraClientId"
+export JIRA_CLIENT_SECRET="$jiraClientSecret"
+export JIRA_USERNAME="$jiraUsername"
+export JIRA_PASSWORD="$jiraPassword"
+export JIRA_BASE_URL="$jiraBaseUrl"
+resolve_jira_auth
+jiraBaseUrl="$JIRA_EFFECTIVE_BASE_URL"
+
 
 function getJiraProjectId() {
     local jiraProjectKey="$1"
     local responseOutFile=responseOutFile.tmp
     local response=""
-    response=$(curl -k -s -u $jiraUsername:$jiraPassword \
+    response=$(curl -k -s -H "$JIRA_AUTH_HEADER" \
                 -w "status_code:[%{http_code}]" \
                 -X GET \
                 -H "Content-Type: application/json" \
@@ -76,7 +89,7 @@ function tagFixVersionInJira() {
     local finalTargetVersion="${idenAndPrependLabel}${targetVersion}"
 
     local response=""
-    response=$(curl -k -s -u $jiraUsername:$jiraPassword \
+    response=$(curl -k -s -H "$JIRA_AUTH_HEADER" \
                 -w "status_code:[%{http_code}]" \
                 -X PUT \
                 -H "Content-Type: application/json" \

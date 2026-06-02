@@ -38,6 +38,9 @@ prependVersionLabel=${19}
 excludeVersionName=${20:-latest}
 rebaseReleaseVersion="${21}"
 versionListFile="${22:-versionlist.tmp}"
+jiraOauthToken="${23}"
+jiraClientId="${24}"
+jiraClientSecret="${25}"
 
 rm -f $versionListFile
 JFROGEXE=jf
@@ -546,7 +549,8 @@ function getLatestVersionFromJira() {
     local tempVariable=""
 
     echo "[INFO] Getting all versions from Jira... "
-    response=$(curl -k -s -u $jiraUsername:$jiraPassword \
+    response=$(curl -k -s \
+                    -H "$JIRA_AUTH_HEADER" \
                     -w "status_code:[%{http_code}]" \
                     -X GET \
                     "$jiraBaseUrl/rest/api/3/project/$jiraProjectKey/versions" -o $versionOutputFile)
@@ -650,6 +654,19 @@ function checkInitialReleaseVersion() {
 }
 
 checkInitialReleaseVersion "$initialVersion"
+
+## Resolve Jira auth when Jira integration is enabled
+if [[ "$jiraEnabler" == "true" ]]; then
+    source "$ACTION_BASE_DIR/jira-auth-lib.sh"
+    export JIRA_OAUTH_TOKEN="$jiraOauthToken"
+    export JIRA_CLIENT_ID="$jiraClientId"
+    export JIRA_CLIENT_SECRET="$jiraClientSecret"
+    export JIRA_USERNAME="$jiraUsername"
+    export JIRA_PASSWORD="$jiraPassword"
+    export JIRA_BASE_URL="$jiraBaseUrl"
+    resolve_jira_auth
+    jiraBaseUrl="$JIRA_EFFECTIVE_BASE_URL"
+fi
 
 ## Init
 rm -f "$FLAG_FILE_IS_INITIAL_VERSION"
