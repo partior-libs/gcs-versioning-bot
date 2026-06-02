@@ -549,6 +549,13 @@ function getLatestVersionFromJira() {
     local tempVariable=""
 
     echo "[INFO] Getting all versions from Jira... "
+    echo "[INFO]" "curl -k -s \
+    -H '$JIRA_AUTH_HEADER' \
+    -w 'status_code:[%{http_code}]' \
+    -X GET \
+    '$jiraBaseUrl/rest/api/3/project/$jiraProjectKey/versions' \
+    -o '$versionOutputFile'"
+
     response=$(curl -k -s \
                     -H "$JIRA_AUTH_HEADER" \
                     -w "status_code:[%{http_code}]" \
