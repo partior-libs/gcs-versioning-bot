@@ -286,7 +286,7 @@ jobs:
       - name: Check for failures
         if: steps.display-report.outcome == 'success' && env.REPORT_FILE != ''
         run: |
-          failedCount=$(grep -oP 'Failed:\s+\K\d+' "${{ env.REPORT_FILE }}")
+          failedCount=$(grep -oP 'Failed :\s+\K\d+' "${{ env.REPORT_FILE }}")
           if [[ -n "$failedCount" && "$failedCount" -ne 0 ]]; then
             echo "[ERROR] Jira auth tests failed. Found $failedCount failed test cases."
             exit 1

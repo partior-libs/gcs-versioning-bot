@@ -11,36 +11,32 @@
 #   JIRA_AUTH_HEADER       – full "Authorization: ..." header value
 #   JIRA_EFFECTIVE_BASE_URL – base URL to use for all Jira REST calls
 #                             (may differ from JIRA_BASE_URL when using dynamic OAuth)
-#
-# Callers must export the relevant input variables before sourcing/calling:
-#   JIRA_OAUTH_TOKEN, JIRA_CLIENT_ID, JIRA_CLIENT_SECRET,
-#   JIRA_USERNAME, JIRA_PASSWORD, JIRA_BASE_URL
 
 function resolve_jira_auth() {
-    local oauthToken="${JIRA_OAUTH_TOKEN:-}"
-    local clientId="${JIRA_CLIENT_ID:-}"
-    local clientSecret="${JIRA_CLIENT_SECRET:-}"
-    local username="${JIRA_USERNAME:-}"
-    local password="${JIRA_PASSWORD:-}"
-    local baseUrl="${JIRA_BASE_URL:-}"
+    local jiraOauthToken="${1}"
+    local jiraClientId="${2}"
+    local jiraClientSecret="${3}"
+    local jiraUserName="${4}"
+    local jiraPassword="${5}"
+    local jiraBaseUrl="${6}"
 
     # Priority 1: Static Bearer token
-    if [[ -n "$oauthToken" ]]; then
+    if [[ -n "$jiraOauthToken" ]]; then
         echo "[INFO] Jira auth: using static OAuth Bearer token"
-        export JIRA_AUTH_HEADER="Authorization: Bearer $oauthToken"
-        export JIRA_EFFECTIVE_BASE_URL="$baseUrl"
+        export JIRA_AUTH_HEADER="Authorization: Bearer $jiraOauthToken"
+        export JIRA_EFFECTIVE_BASE_URL="$jiraBaseUrl"
         return 0
     fi
 
     # Priority 2: Dynamic OAuth 2.0 client-credentials token exchange
-    if [[ -n "$clientId" && -n "$clientSecret" ]]; then
+    if [[ -n "$jiraClientId" && -n "$jiraClientSecret" ]]; then
         echo "[INFO] Jira auth: performing dynamic OAuth 2.0 token exchange"
 
         local tokenResponse
         tokenResponse=$(curl -s -X POST \
             "https://auth.atlassian.com/oauth/token" \
             -H "Content-Type: application/json" \
-            --data "{\"grant_type\":\"client_credentials\",\"client_id\":\"$clientId\",\"client_secret\":\"$clientSecret\"}")
+            --data "{\"grant_type\":\"client_credentials\",\"client_id\":\"$jiraClientId\",\"client_secret\":\"$jiraClientSecret\"}")
 
         if [[ $? -ne 0 ]]; then
             echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed to request OAuth token from Atlassian"
@@ -81,10 +77,10 @@ function resolve_jira_auth() {
     fi
 
     # Priority 3: Basic auth fallback
-    if [[ -n "$username" && -n "$password" ]]; then
+    if [[ -n "$jiraUserName" && -n "$jiraPassword" ]]; then
         echo "[INFO] Jira auth: using Basic authentication"
-        export JIRA_AUTH_HEADER="Authorization: Basic $(echo -n "$username:$password" | base64 | tr -d '\n')"
-        export JIRA_EFFECTIVE_BASE_URL="$baseUrl"
+        export JIRA_AUTH_HEADER="Authorization: Basic $(echo -n "$jiraUserName:$jiraPassword" | base64 | tr -d '\n')"
+        export JIRA_EFFECTIVE_BASE_URL="$jiraBaseUrl"
         return 0
     fi
 

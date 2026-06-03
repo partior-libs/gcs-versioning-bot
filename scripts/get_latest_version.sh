@@ -664,14 +664,12 @@ checkInitialReleaseVersion "$initialVersion"
 
 ## Resolve Jira auth when Jira integration is enabled
 if [[ "$jiraEnabler" == "true" ]]; then
-    source "$ACTION_BASE_DIR/jira-auth-lib.sh"
-    export JIRA_OAUTH_TOKEN="$jiraOauthToken"
-    export JIRA_CLIENT_ID="$jiraClientId"
-    export JIRA_CLIENT_SECRET="$jiraClientSecret"
-    export JIRA_USERNAME="$jiraUsername"
-    export JIRA_PASSWORD="$jiraPassword"
-    export JIRA_BASE_URL="$jiraBaseUrl"
-    resolve_jira_auth
+    if ! source "$ACTION_BASE_DIR/jira-auth-lib.sh"; then
+        echo "[ERROR] Failed to load Jira auth library."
+        exit 1
+    fi
+
+    resolve_jira_auth "${jiraOauthToken}" "${jiraClientId}" "${jiraClientSecret}" "${jiraUsername}" "${jiraPassword}" "${jiraBaseUrl}"
     jiraBaseUrl="$JIRA_EFFECTIVE_BASE_URL"
 fi
 
