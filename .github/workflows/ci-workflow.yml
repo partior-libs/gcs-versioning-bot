@@ -259,11 +259,26 @@ jobs:
         env:
           JIRA_USERNAME: ${{ secrets.JIRA_USERNAME }}
           JIRA_PASSWORD: ${{ secrets.JIRA_PASSWORD }}
-          JIRA_OAUTH_TOKEN: ${{ secrets.JIRA_OAUTH_TOKEN }}
           JIRA_CLIENT_ID: ${{ secrets.JIRA_CLIENT_ID }}
           JIRA_CLIENT_SECRET: ${{ secrets.JIRA_CLIENT_SECRET }}
         run: |
           cd $GITHUB_WORKSPACE
+          curl --request POST \
+            --url 'https://auth.atlassian.com/oauth/token' \
+            --header 'Content-Type: application/json' \
+            --data "{\"grant_type\": \"client_credentials\",\"client_id\": \"$JIRA_CLIENT_ID\",\"client_secret\": \"$JIRA_CLIENT_SECRET\"}" | tee /tmp/.jira_access_token
+          accessToken=$(jq -r ".access_token" < /tmp/.jira_access_token)
+
+          curl --request GET \
+            --url https://api.atlassian.com/oauth/token/accessible-resources \
+            --header "Authorization: Bearer $accessToken" \
+            --header 'Accept: application/json' | tee /tmp/.jira_accessible_res
+          cloudId=$(jq -r ".[0].id" < /tmp/.jira_accessible_res)
+          jiraBaseUrl="https://api.atlassian.com/ex/jira/$cloudId"
+
+          export JIRA_OAUTH_TOKEN="${accessToken}"
+          export JIRA_BASE_URL="${jiraBaseUrl}"
+
           chmod +x ./unittest-jira-auth.sh
           ./unittest-jira-auth.sh
 

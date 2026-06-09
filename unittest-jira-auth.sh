@@ -4,11 +4,6 @@
 # Validates all three auth resolution paths: static Bearer token, dynamic
 # OAuth 2.0 token exchange, and Basic auth fallback.
 #
-# NOTE: JIRA_OAUTH_TOKEN must be a proper OAuth 2.0 Bearer token.
-#       Atlassian API tokens (ATATT...) are designed for Basic auth only and
-#       will return HTTP 403 when used as a Bearer token. Use a real OAuth
-#       access token for TC1's network assertion to pass.
-#
 # Env vars consumed:
 #   JIRA_OAUTH_TOKEN   – static Bearer token       (required for TC1, TC5)
 #   JIRA_CLIENT_ID     – OAuth 2.0 client ID       (required for TC3)
@@ -16,14 +11,6 @@
 #   JIRA_USERNAME      – Basic auth username        (required for TC2, TC5)
 #   JIRA_API_TOKEN     – Jira API token             (required for TC2, TC5)
 #   JIRA_PASSWORD      – alias for JIRA_API_TOKEN   (backward compat)
-#
-# Usage (local):
-#   export JIRA_USERNAME="user@example.com"
-#   export JIRA_API_TOKEN="your-api-token"
-#   export JIRA_OAUTH_TOKEN="your-oauth-bearer-token"
-#   export JIRA_CLIENT_ID="your-client-id"
-#   export JIRA_CLIENT_SECRET="your-client-secret"
-#   ./unittest-jira-auth.sh
 
 set -euo pipefail
 
@@ -173,27 +160,6 @@ function assert_http_200() {
     fi
 }
 
-# Like assert_http_200 but only warns (does not count as failure) on non-200.
-# Used when the token type may not support all endpoints (e.g. API token as Bearer).
-function assert_http_200_or_warn() {
-    local description="$1"
-    local url="$2"
-    local authHeader="$3"
-    local responseStatus
-    responseStatus=$(curl -k -s -o /dev/null -w "%{http_code}" -X GET \
-        -H "$authHeader" \
-        -H "Content-Type: application/json" \
-        "$url")
-    if [[ "$responseStatus" == "200" ]]; then
-        echo "[PASS] $description (HTTP $responseStatus)"
-        log "INFO" "PASS: $description (HTTP $responseStatus)"
-        TC_ASSERT_PASS=$((TC_ASSERT_PASS + 1))
-    else
-        echo "[WARN] $description – HTTP $responseStatus (non-200; token may not be a full OAuth Bearer token)"
-        log "WARN" "WARN: $description – HTTP $responseStatus"
-    fi
-}
-
 function assert_exit_nonzero() {
     local description="$1"
     local exitCode="$2"
@@ -256,9 +222,7 @@ else
         "$INPUT_BASE_URL" \
         "${JIRA_EFFECTIVE_BASE_URL:-}"
 
-    # Atlassian API tokens (ATATT...) are for Basic auth only and return 403 as
-    # Bearer; a real OAuth 2.0 access token is required for HTTP 200.
-    assert_http_200_or_warn \
+    assert_http_200 \
         "Jira API responds to static Bearer token" \
         "${JIRA_EFFECTIVE_BASE_URL:-}/rest/api/3/myself" \
         "${JIRA_AUTH_HEADER:-}"
@@ -275,7 +239,7 @@ if [[ -z "$INPUT_USERNAME" || -z "$INPUT_API_TOKEN" ]]; then
     skip_test "TC2" "JIRA_USERNAME or JIRA_API_TOKEN is not set"
 else
     resolve_jira_auth \
-        "" "" "" "$INPUT_USERNAME" "$INPUT_API_TOKEN" "$INPUT_BASE_URL"
+        "" "" "" "$INPUT_USERNAME" "$INPUT_API_TOKEN" "$JIRA_BASE_URL_DEFAULT"
 
     assert_starts_with \
         "JIRA_AUTH_HEADER is a Basic token" \
@@ -284,7 +248,7 @@ else
 
     assert_equals \
         "JIRA_EFFECTIVE_BASE_URL is unchanged for Basic auth" \
-        "$INPUT_BASE_URL" \
+        "$JIRA_BASE_URL_DEFAULT" \
         "${JIRA_EFFECTIVE_BASE_URL:-}"
 
     assert_http_200 \
@@ -304,7 +268,7 @@ if [[ -z "$INPUT_CLIENT_ID" || -z "$INPUT_CLIENT_SECRET" ]]; then
     skip_test "TC3" "JIRA_CLIENT_ID or JIRA_CLIENT_SECRET is not set"
 else
     resolve_jira_auth \
-        "" "$INPUT_CLIENT_ID" "$INPUT_CLIENT_SECRET" "" "" "$INPUT_BASE_URL"
+        "" "$INPUT_CLIENT_ID" "$INPUT_CLIENT_SECRET" "" "" "$JIRA_BASE_URL_DEFAULT"
 
     assert_starts_with \
         "JIRA_AUTH_HEADER is a dynamic Bearer token" \
