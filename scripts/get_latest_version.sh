@@ -38,6 +38,16 @@ prependVersionLabel=${19}
 excludeVersionName=${20:-latest}
 rebaseReleaseVersion="${21}"
 versionListFile="${22:-versionlist.tmp}"
+publishedName="${23}"
+publishedPath="${24}"
+
+if [[ -z "$publishedName" ]]; then
+    publishedName="$artifactoryTargetArtifactName"
+fi
+
+if [[ -z "$publishedPath" ]]; then
+    publishedPath="$artifactoryTargetArtifactName"
+fi
 
 rm -f $versionListFile
 JFROGEXE=jf
@@ -381,15 +391,15 @@ EOF
 cat << EOF > $aqlQueryPayloadFile
 items.find(
     { 
-        "name": {"\$match": "$artifactoryTargetArtifactName-*"}, 
+        "name": {"\$match": "$publishedName-*"}, 
         "\$or": [
             { "repo": "$targetRepo" },
             { "repo": "$targetDevRepo" },
             { "repo": "$targetReleaseRepo" }
         ], 
         "\$or": [
-            { "path": {"\$match" : "$aqlTargetGroup/$artifactoryTargetArtifactName"}},
-            { "path": {"\$match" : "$aqlTargetGroup/$artifactoryTargetArtifactName/*"}}
+            { "path": {"\$match" : "$aqlTargetGroup/$publishedPath"}},
+            { "path": {"\$match" : "$aqlTargetGroup/$publishedPath/*"}}
         ]
     }
 ).sort({"\$desc" : ["created"]}).offset($offset).limit($pageSize)
@@ -473,7 +483,7 @@ EOF
         touch "$versionOutputFile"
         for currentArtifactFile in "${foundArtifactList[@]}"; do
             # The logic is now simplified to always extract the version from the filename
-            extractAndStoreVersionFromArtifactName "$artifactoryTargetArtifactName" "$currentArtifactFile" "$versionOutputFile"
+            extractAndStoreVersionFromArtifactName "$publishedName" "$currentArtifactFile" "$versionOutputFile"
         done
         rm -f "$finalJsonFile"
     else
