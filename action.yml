@@ -25,6 +25,18 @@ inputs:
     description: 'Jira Password. Mandatory if version-sources.jira.enabled is true'
     required: false
     default: ''
+  jira-oauth-token:
+    description: 'Static Bearer token for Jira OAuth authentication. Takes priority over username/password.'
+    required: false
+    default: ''
+  jira-client-id:
+    description: 'Client ID for Jira OAuth 2.0 dynamic token exchange. Used when jira-oauth-token is not set.'
+    required: false
+    default: ''
+  jira-client-secret:
+    description: 'Client Secret for Jira OAuth 2.0 dynamic token exchange. Used when jira-oauth-token is not set.'
+    required: false
+    default: ''
   jira-base-url:
     description: 'Jira Base Url'
     required: false
@@ -273,7 +285,10 @@ runs:
           "\"${{ env.BUILD_GH_VERSION_PREPEND_LABEL }}\"" \
           "\"${{ steps.exclusion-string.outputs.name }}\"" \
           "\"${{ steps.rebase-branch.outputs.version }}\"" \
-          "versionFile.tmp"
+          "versionFile.tmp" \
+          "\"${{ inputs.jira-oauth-token }}\"" \
+          "\"${{ inputs.jira-client-id }}\"" \
+          "\"${{ inputs.jira-client-secret }}\""
 
         ${{ github.action_path }}/scripts/get_latest_version.sh "${{ inputs.artifactory-base-url }}" \
           "${{ steps.yaml-config.outputs.artifact_packager_artifactory-repo }}" \
@@ -296,7 +311,10 @@ runs:
           "${{ env.BUILD_GH_VERSION_PREPEND_LABEL }}" \
           "${{ steps.exclusion-string.outputs.name }}" \
           "${{ steps.rebase-branch.outputs.version }}" \
-          "versionFile.tmp"
+          "versionFile.tmp" \
+          "${{ inputs.jira-oauth-token }}" \
+          "${{ inputs.jira-client-id }}" \
+          "${{ inputs.jira-client-secret }}"
       shell: bash
 
     - name: Generate next available version
@@ -377,7 +395,10 @@ runs:
           "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_project-keys }}" \
           "${{ steps.final-version.outputs.new-version }}" \
           "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_version-identifier }}" \
-          "$prependVersionLabel"
+          "$prependVersionLabel" \
+          "${{ inputs.jira-oauth-token }}" \
+          "${{ inputs.jira-client-id }}" \
+          "${{ inputs.jira-client-secret }}"
       shell: bash
 
     - name: Get delta commit message if not PR
@@ -405,7 +426,10 @@ runs:
           "${{ steps.final-version.outputs.new-version }}" \
           "${{ steps.yaml-config.outputs.artifact-auto-versioning_version-sources_jira_version-identifier }}" \
           "$prependVersionLabel" \
-          "$commitMessageFile"
+          "$commitMessageFile" \
+          "${{ inputs.jira-oauth-token }}" \
+          "${{ inputs.jira-client-id }}" \
+          "${{ inputs.jira-client-secret }}"
       shell: bash
       
     - run: echo Done versioning

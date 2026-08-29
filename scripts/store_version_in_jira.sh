@@ -20,6 +20,9 @@ jiraPojectKeyList="${4}"
 newVersion="${5}"
 jiraVersionIdentifier="${6}"
 versionPrependLabel="${7}"
+jiraOauthToken="${8}"
+jiraClientId="${9}"
+jiraClientSecret="${10}"
 
 
 echo "[INFO] Jira Base Url: $jiraBaseUrl"
@@ -27,6 +30,14 @@ echo "[INFO] Jira Project Keys: $jiraPojectKeyList"
 echo "[INFO] New Version: $newVersion"
 echo "[INFO] Jira Version Identifier: $jiraVersionIdentifier"
 echo "[INFO] Prepend Label: $versionPrependLabel"
+
+if ! source "$ACTION_BASE_DIR/jira-auth-lib.sh"; then
+    echo "[ERROR] Failed to load Jira auth library."
+    exit 1
+fi
+
+resolve_jira_auth "${jiraOauthToken}" "${jiraClientId}" "${jiraClientSecret}" "${jiraUsername}" "${jiraPassword}" "${jiraBaseUrl}"
+jiraBaseUrl="$JIRA_EFFECTIVE_BASE_URL"
 
 versionListFile=versionlist.tmp
 projectDetails=tempfile.tmp
@@ -36,7 +47,7 @@ function getJiraProjectId() {
     local jiraProjectKey="$1"
     local responseOutFile=responseOutFile.tmp
     local response=""
-    response=$(curl -k -s -u $jiraUsername:$jiraPassword \
+    response=$(curl -k -s -H "$JIRA_AUTH_HEADER" \
                 -w "status_code:[%{http_code}]" \
                 -X GET \
                 -H "Content-Type: application/json" \
@@ -80,7 +91,7 @@ function createArtifactNextVersionInJira() {
     local releaseDate=$(date '+%Y-%m-%d' -d "$startDate+14 days")
     local buildUrl=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
     local response=""
-    response=$(curl -k -s -u $jiraUsername:$jiraPassword \
+    response=$(curl -k -s -H "$JIRA_AUTH_HEADER" \
                 -w "status_code:[%{http_code}]" \
                 -X POST \
                 -H "Content-Type: application/json" \
@@ -116,7 +127,7 @@ function updateJiraVersion() {
     local releaseDate=$(date '+%Y-%m-%d')
     local buildUrl=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
     local response=""
-    response=$(curl -k -s -u $jiraUsername:$jiraPassword \
+    response=$(curl -k -s -H "$JIRA_AUTH_HEADER" \
                 -w "status_code:[%{http_code}]" \
                 -X PUT \
                 -H "Content-Type: application/json" \
@@ -162,7 +173,7 @@ function getUnreleasedVersionsFromJira() {
     ## reset output file
     touch $versionOutputFile
     echo "[INFO] Getting all versions from Jira... "
-    response=$(curl -k -s -u $jiraUsername:$jiraPassword \
+    response=$(curl -k -s -H "$JIRA_AUTH_HEADER" \
                     -w "status_code:[%{http_code}]" \
                     -X GET \
                     "$jiraBaseUrl/rest/api/3/project/$jiraProjectKey/versions" -o $versionOutputFile)
