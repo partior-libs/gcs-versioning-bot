@@ -273,7 +273,9 @@ runs:
           "\"${{ env.BUILD_GH_VERSION_PREPEND_LABEL }}\"" \
           "\"${{ steps.exclusion-string.outputs.name }}\"" \
           "\"${{ steps.rebase-branch.outputs.version }}\"" \
-          "versionFile.tmp"
+          "versionFile.tmp" \
+          "\"${{ steps.yaml-config.outputs.artifact_packager_published-name }}\"" \
+          "\"${{ steps.yaml-config.outputs.artifact_packager_published-path }}\""
 
         ${{ github.action_path }}/scripts/get_latest_version.sh "${{ inputs.artifactory-base-url }}" \
           "${{ steps.yaml-config.outputs.artifact_packager_artifactory-repo }}" \
@@ -296,7 +298,9 @@ runs:
           "${{ env.BUILD_GH_VERSION_PREPEND_LABEL }}" \
           "${{ steps.exclusion-string.outputs.name }}" \
           "${{ steps.rebase-branch.outputs.version }}" \
-          "versionFile.tmp"
+          "versionFile.tmp" \
+          "${{ steps.yaml-config.outputs.artifact_packager_published-name }}" \
+          "${{ steps.yaml-config.outputs.artifact_packager_published-path }}"
       shell: bash
 
     - name: Generate next available version
