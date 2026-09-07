@@ -1,0 +1,66 @@
+name: 'Derive Branch Version'
+description: >
+  Derive a version number from the branch, its version declaration and the
+  repository's release tags. Git-only — no Artifactory, no Jira, no controller
+  config — so any workflow can use it, release-related or not.
+
+inputs:
+  branch-name:
+    description: 'Branch to derive for. Defaults to the ref the workflow runs on.'
+    required: false
+    default: ''
+  version-file:
+    description: 'File declaring the release line (or a complete version override).'
+    required: false
+    default: 'VERSION'
+  version-declaration:
+    description: 'Declaration value. Overrides version-file when set.'
+    required: false
+    default: ''
+  working-directory:
+    description: 'Repository to inspect.'
+    required: false
+    default: '.'
+  dev-label:
+    description: 'Pre-release label used in the build identifier.'
+    required: false
+    default: 'dev'
+
+outputs:
+  target:
+    description: 'Target version the branch is working toward, e.g. 27.1.8'
+    value: ${{ steps.derive.outputs.target }}
+  counter:
+    description: 'Build counter within that target, e.g. 3'
+    value: ${{ steps.derive.outputs.counter }}
+  version:
+    description: 'Full build identifier, e.g. 27.1.8-dev.3'
+    value: ${{ steps.derive.outputs.version }}
+
+runs:
+  using: composite
+  steps:
+    - id: derive
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+        BRANCH_NAME_IN: ${{ inputs.branch-name }}
+        VERSION_FILE: ${{ inputs.version-file }}
+        VERSION_DECLARATION_IN: ${{ inputs.version-declaration }}
+        DEV_LABEL: ${{ inputs.dev-label }}
+      run: |
+        set -euo pipefail
+        branchName="${BRANCH_NAME_IN:-${GITHUB_REF_NAME}}"
+        if [[ -n "$VERSION_DECLARATION_IN" ]]; then
+          declaration="$VERSION_DECLARATION_IN"
+        else
+          if [[ ! -f "$VERSION_FILE" ]]; then
+            echo "[ERROR] No version declaration: $VERSION_FILE not found and version-declaration was not supplied" >&2
+            exit 1
+          fi
+          declaration="$(cat "$VERSION_FILE")"
+        fi
+        chmod +x "$ACTION_PATH/../scripts/derive_branch_version.sh"
+        "$ACTION_PATH/../scripts/derive_branch_version.sh" \
+          "$branchName" "$declaration" "." "$DEV_LABEL" | tee -a "$GITHUB_OUTPUT"
