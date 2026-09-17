@@ -10,7 +10,7 @@ inputs:
     required: false
     default: ''
   version-file:
-    description: 'File declaring the release line (or a complete version override).'
+    description: 'File declaring the release line. Hotfix branches ignore it.'
     required: false
     default: 'VERSION'
   version-declaration:

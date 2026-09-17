@@ -57,17 +57,14 @@ function gitInRepo() {
     git -C "$repoDir" "$@"
 }
 
-## The plain releases of a line: X.Y -> X.Y.Z, exact segment count. A glob on
-## 27.1.* would also return hotfix tags such as 27.1.7_hf.1 and push a release
-## branch onto a hotfix series.
-function childReleaseTags() {
-    gitInRepo tag -l | grep -E "^${1//./\\.}\.[0-9]+$" || true
-}
-
-## The releases of one Hotfix Line: <prefix> -> <prefix>.N, where <prefix> is
-## X.Y.Z_<label>. Each line is matched on its own prefix, so one line never
-## sees another's tags. That isolation is what lets Variant Lines diverge.
-function hotfixTagsOfLine() {
+## Tags exactly one numeric segment below $1, and nothing deeper.
+##
+## Called with a release line (27.1) it returns that line's plain releases.
+## Called with a Hotfix Line prefix (27.1.7_hf) it returns that ONE line's
+## releases. The exact shape is what keeps the two apart: a glob on 27.1.*
+## would also return 27.1.7_hf.1 and push a release branch onto a hotfix line,
+## and a Variant Line must never see the General Line's tags.
+function directChildTags() {
     gitInRepo tag -l | grep -E "^${1//./\\.}\.[0-9]+$" || true
 }
 
@@ -109,7 +106,7 @@ case "$branchName" in
             || refuse "on $branchName the declaration must be a release line (X.Y); got '$versionDeclaration'"
         [[ "$versionDeclaration" == "$line" ]] \
             || refuse "branch $branchName disagrees with the declaration '$versionDeclaration'"
-        existing="$(childReleaseTags "$line")"
+        existing="$(directChildTags "$line")"
         [[ -n "$existing" ]] \
             || refuse "no release tags visible for line $line — the branch is cut at ${line}.0, so zero tags proves a shallow clone or unfetched tags"
         max="$(echo "$existing" | sort -V | tail -1)"
@@ -133,7 +130,7 @@ case "$branchName" in
         tagExists "$frozen" \
             || refuse "release tag $frozen is not visible — a hotfix branch is cut from the release it patches"
 
-        hotfixTags="$(hotfixTagsOfLine "$linePrefix")"
+        hotfixTags="$(directChildTags "$linePrefix")"
         if [[ -n "$hotfixTags" ]]; then
             ## Wrong-anchor guard, per line: every shipped release of THIS line
             ## must be in this branch's history. Other lines are deliberately
