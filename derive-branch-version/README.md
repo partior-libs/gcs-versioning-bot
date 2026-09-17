@@ -17,7 +17,10 @@ not that workflow is releasing anything.
 - id: version
   uses: partior-libs/gcs-versioning-bot/derive-branch-version@feature/derive-branch-version
 
-- run: echo "building ${{ steps.version.outputs.version }}"
+# `target` goes in the pom. `version` becomes the git tag and the image tag.
+- run: |
+    echo "pom version:   ${{ steps.version.outputs.target }}"
+    echo "build tag:     ${{ steps.version.outputs.version }}"
 ```
 
 ## Inputs
@@ -44,29 +47,39 @@ The declaration names a **release line** (`27.1`); the rest follows from tags:
 
 | Branch | Target |
 |---|---|
-| `main` | the line's `.0` — a line's first release always comes from the mainline |
+| `main` | the line's `.0`, because a line's first release always comes from the mainline |
 | `release/X.Y` | highest **three-segment** `X.Y.Z` tag + 1 |
-| `hotfix/X.Y.Z` | frozen version from the branch name, next fourth segment |
+| `hotfix/X.Y.Z_<label>` | the branch suffix is the version prefix; next `.N` on that line |
 
-A release branch may exceptionally declare a **complete** version
-(`27.1.7.1`) to prepare an in-place hotfix; that is taken verbatim.
+A hotfix branch names its own line. `hotfix/27.1.7_hf` is the **general line**
+for release `27.1.7` and produces `27.1.7_hf.1`, `27.1.7_hf.2`, and so on. A
+label other than `hf` names a **variant line**, such as `hotfix/27.1.7_v2`
+producing `27.1.7_v2.1`. Lines are independent: each counts only its own tags,
+so a variant never continues the general line's numbering and is never refused
+for lacking its fixes.
 
-Tag matching is by exact segment count, never a glob: `27.1.*` would also match
-the hotfix tag `27.1.7.1`, which sorts above `27.1.7` and would push a release
-branch onto the hotfix series.
+Separators carry meaning here. `-` means pre-release, so it is used only for
+the `-dev.N` build label. `_` marks a version that comes after its release.
+`+` would be the SemVer-correct way to say "same version, different build",
+but container tags forbid it.
+
+Tag matching is by exact shape, never a glob: `27.1.*` would also match
+`27.1.7_hf.1` and push a release branch onto a hotfix series.
 
 ## Refusals
 
 The script exits non-zero rather than emit a wrong number when:
 
-- the mainline declaration names a line that already has release tags (stale
-  after a branch cut — at any depth, so a hotfix-only line counts);
-- a release branch sees no tags for its line (a shallow clone or unfetched
-  tags, not a genuinely fresh line);
+- the mainline declaration names a line that already has release tags, which is
+  stale after a branch cut. A hotfix-only line counts as shipped;
+- a release branch sees no tags for its line, which means a shallow clone or
+  unfetched tags rather than a genuinely fresh line;
 - the branch name and the declaration disagree;
-- an override names a shipped version, or one off the branch's line;
-- a hotfix branch is anchored below the frozen version's latest hotfix tag,
-  which would silently drop a shipped fix;
+- a hotfix branch name does not match `X.Y.Z_<label>`, or its label is `dev`,
+  which is reserved for build candidates;
+- the release a hotfix branch patches is not visible;
+- a hotfix branch is anchored below the latest tag **of its own line**, which
+  would silently drop a shipped fix;
 - the derived target is already released.
 
 ## Tests

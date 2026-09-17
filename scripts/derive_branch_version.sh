@@ -10,16 +10,22 @@
 ## Usage:
 ##   derive_branch_version.sh <branchName> <versionDeclaration> [repoDir] [devLabel]
 ##
-##   branchName          e.g. main | release/27.1 | hotfix/27.1.7
-##   versionDeclaration  the VERSION file's content: a release line (27.1) or,
-##                       exceptionally, a complete version (27.1.7.1)
+##   branchName          e.g. main | release/27.1 | hotfix/27.1.7_hf
+##   versionDeclaration  the VERSION file's content: a release line (27.1).
+##                       Hotfix branches take their version from the branch
+##                       name, so the declaration is not read there.
 ##   repoDir             repository to inspect (default: current directory)
 ##   devLabel            pre-release label for the build identifier (default: dev)
 ##
 ## Emits key=value lines on stdout:
-##   target=27.1.8
-##   counter=3
-##   version=27.1.8-dev.3
+##   target=27.1.8        the version being built toward; this goes in the pom
+##   counter=3            successful builds so far for that target
+##   version=27.1.8-dev.3 the build identifier; this becomes the git tag and
+##                        the candidate container tag
+##
+## target and version are deliberately different. '-' means pre-release, so it
+## is correct on a candidate but must never reach an artifact version: Maven
+## orders 27.1.1-dev.2 ABOVE 27.1.1_hf.1, which would be wrong.
 ##
 ## Every refusal exits 1 with [ERROR] on stderr, so a caller fails loudly
 ## instead of versioning an artifact with a garbage number.
@@ -51,17 +57,26 @@ function gitInRepo() {
     git -C "$repoDir" "$@"
 }
 
-## Tags exactly one segment below $1 — the direct release children of a line
-## (X.Y -> X.Y.Z) or of a released version (X.Y.Z -> X.Y.Z.H). Matching by
-## exact segment count matters: a glob on 27.1.* also returns 27.1.7.1, which
-## sorts above 27.1.7 and would push a release branch onto the hotfix series.
+## The plain releases of a line: X.Y -> X.Y.Z, exact segment count. A glob on
+## 27.1.* would also return hotfix tags such as 27.1.7_hf.1 and push a release
+## branch onto a hotfix series.
 function childReleaseTags() {
     gitInRepo tag -l | grep -E "^${1//./\\.}\.[0-9]+$" || true
 }
 
-## Every release tag on a line, at any depth (X.Y.Z and X.Y.Z.H).
+## The releases of one Hotfix Line: <prefix> -> <prefix>.N, where <prefix> is
+## X.Y.Z_<label>. Each line is matched on its own prefix, so one line never
+## sees another's tags. That isolation is what lets Variant Lines diverge.
+function hotfixTagsOfLine() {
+    gitInRepo tag -l | grep -E "^${1//./\\.}\.[0-9]+$" || true
+}
+
+## Anything released on a line, plain or hotfix. Used only to decide whether a
+## mainline declaration has gone stale, where a hotfix counts as a shipment
+## just as much as a patch does.
 function anyReleaseTagsOfLine() {
-    gitInRepo tag -l | grep -E "^${1//./\\.}\.[0-9]+(\.[0-9]+)?$" || true
+    gitInRepo tag -l \
+        | grep -E "^${1//./\\.}\.[0-9]+(_[a-z][a-z0-9]*\.[0-9]+)?$" || true
 }
 
 function tagExists() {
@@ -86,46 +101,53 @@ case "$branchName" in
         target="${versionDeclaration}.0"
         ;;
     release/*)
+        ## A release branch only ever produces the line's next patch. Hotfixes
+        ## come from a hotfix branch, so there is no override here: the
+        ## declaration has exactly one meaning.
         line="${branchName#release/}"
-        if [[ "$versionDeclaration" =~ ^[0-9]+\.[0-9]+$ ]]; then
-            [[ "$versionDeclaration" == "$line" ]] \
-                || refuse "branch $branchName disagrees with the declaration '$versionDeclaration'"
-            existing="$(childReleaseTags "$line")"
-            [[ -n "$existing" ]] \
-                || refuse "no release tags visible for line $line — the branch is cut at ${line}.0, so zero tags proves a shallow clone or unfetched tags"
-            max="$(echo "$existing" | sort -V | tail -1)"
-            target="${line}.$(( ${max##*.} + 1 ))"
-        elif [[ "$versionDeclaration" =~ ^[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
-            ## Complete-version override: an in-place hotfix is a declared,
-            ## reviewed decision, so it is taken verbatim.
-            [[ "$versionDeclaration" == "$line".* ]] \
-                || refuse "override '$versionDeclaration' is not on this branch's line $line"
-            tagExists "$versionDeclaration" \
-                && refuse "override target $versionDeclaration is already released"
-            target="$versionDeclaration"
-        else
-            refuse "unparseable version declaration '$versionDeclaration'"
-        fi
+        [[ "$versionDeclaration" =~ ^[0-9]+\.[0-9]+$ ]] \
+            || refuse "on $branchName the declaration must be a release line (X.Y); got '$versionDeclaration'"
+        [[ "$versionDeclaration" == "$line" ]] \
+            || refuse "branch $branchName disagrees with the declaration '$versionDeclaration'"
+        existing="$(childReleaseTags "$line")"
+        [[ -n "$existing" ]] \
+            || refuse "no release tags visible for line $line — the branch is cut at ${line}.0, so zero tags proves a shallow clone or unfetched tags"
+        max="$(echo "$existing" | sort -V | tail -1)"
+        target="${line}.$(( ${max##*.} + 1 ))"
         ;;
     hotfix/*)
-        frozen="${branchName#hotfix/}"
-        [[ "$frozen" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] \
-            || refuse "hotfix branches are named hotfix/X.Y.Z; got $branchName"
+        ## The branch suffix IS the version prefix, so there is no special case
+        ## to get wrong: read the line id off the branch, count its own tags,
+        ## take the next number.
+        linePrefix="${branchName#hotfix/}"
+        [[ "$linePrefix" =~ ^([0-9]+\.[0-9]+\.[0-9]+)_([a-z][a-z0-9]*)$ ]] \
+            || refuse "hotfix branches are named hotfix/X.Y.Z_<label>, where <label> is 'hf' for the general line or a variant code matching [a-z][a-z0-9]*; got $branchName"
+        frozen="${BASH_REMATCH[1]}"
+        lineLabel="${BASH_REMATCH[2]}"
+
+        ## 'dev' marks a candidate and lives on the other separator. Letting a
+        ## line take it would produce strings nobody could read back.
+        [[ "$lineLabel" == "$devLabel" ]] \
+            && refuse "'$devLabel' is reserved for build candidates and cannot name a Hotfix Line"
+
         tagExists "$frozen" \
-            || refuse "release tag $frozen is not visible — a hotfix branch is cut from the release tag itself"
-        hotfixTags="$(childReleaseTags "$frozen")"
+            || refuse "release tag $frozen is not visible — a hotfix branch is cut from the release it patches"
+
+        hotfixTags="$(hotfixTagsOfLine "$linePrefix")"
         if [[ -n "$hotfixTags" ]]; then
-            ## Wrong-anchor guard: every shipped hotfix of the frozen version
-            ## must be in this branch's history, or building here would drop it.
+            ## Wrong-anchor guard, per line: every shipped release of THIS line
+            ## must be in this branch's history. Other lines are deliberately
+            ## ignored, because a Variant Line is not expected to contain the
+            ## General Line's fixes.
             while IFS= read -r shipped; do
                 [[ -z "$shipped" ]] && continue
                 gitInRepo merge-base --is-ancestor "$shipped" HEAD \
-                    || refuse "shipped hotfix $shipped is not in this branch's history — cut hotfix/$frozen from the frozen version's LATEST tag"
+                    || refuse "shipped release $shipped is not in this branch's history — cut hotfix/$linePrefix from that line's LATEST tag"
             done <<< "$hotfixTags"
             max="$(echo "$hotfixTags" | sort -V | tail -1)"
-            target="${frozen}.$(( ${max##*.} + 1 ))"
+            target="${linePrefix}.$(( ${max##*.} + 1 ))"
         else
-            target="${frozen}.1"
+            target="${linePrefix}.1"
         fi
         ;;
     *)
