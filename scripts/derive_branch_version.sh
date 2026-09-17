@@ -8,12 +8,15 @@
 ## not it is releasing anything.
 ##
 ## Usage:
-##   derive_branch_version.sh <branchName> <versionDeclaration> [repoDir] [devLabel]
+##   derive_branch_version.sh <branchName> <versionConfigFile> [repoDir] [devLabel]
 ##
 ##   branchName          e.g. main | release/27.1 | hotfix/27.1.7_hf
-##   versionDeclaration  the VERSION file's content: a release line (27.1).
-##                       Hotfix branches take their version from the branch
-##                       name, so the declaration is not read there.
+##   versionConfigFile   app-version.cfg, holding one KEY=VALUE per line:
+##                           MAJOR-VERSION=26
+##                           MINOR-VERSION=1
+##                       Relative paths resolve against repoDir. Hotfix branches
+##                       take their version from the branch name, so the file is
+##                       not read there and need not exist.
 ##   repoDir             repository to inspect (default: current directory)
 ##   devLabel            pre-release label for the build identifier (default: dev)
 ##
@@ -44,9 +47,15 @@ else
 fi
 
 branchName="$1"
-versionDeclaration="$(echo "$2" | tr -d '[:space:]')"
+versionConfigFile="${2:-app-version.cfg}"
 repoDir="${3:-.}"
 devLabel="${4:-dev}"
+
+## Resolve the config relative to the repository unless given absolutely.
+case "$versionConfigFile" in
+    /*) versionConfigPath="$versionConfigFile" ;;
+    *)  versionConfigPath="${repoDir%/}/$versionConfigFile" ;;
+esac
 
 function refuse() {
     echo "[ERROR] $BASH_SOURCE (line:$LINENO): $1" >&2
@@ -80,32 +89,60 @@ function tagExists() {
     gitInRepo tag -l | grep -qxF "$1"
 }
 
+## NOTE: refuse() inside this function exits only the SUBSHELL that $( )
+## creates, and this script deliberately runs without `set -e`. Every caller
+## must therefore write `x="$(readReleaseLine)" || exit 1`, or a refusal turns
+## into an empty string and the run continues.
+##
+## Read the Release Line from app-version.cfg, which holds one KEY=VALUE per
+## line:
+##
+##     MAJOR-VERSION=26
+##     MINOR-VERSION=1
+##
+## Keys are anchored, so APP-MAJOR-VERSION is not mistaken for MAJOR-VERSION,
+## and anything else in the file is ignored. Read lazily, because a hotfix
+## branch takes its version from the branch name and never needs this.
+function readReleaseLine() {
+    local major minor
+    [[ -f "$versionConfigPath" ]] \
+        || refuse "version config not found: $versionConfigPath"
+    major="$(grep -E '^[[:space:]]*MAJOR-VERSION[[:space:]]*=' "$versionConfigPath" \
+        | head -1 | cut -d= -f2- | tr -d '[:space:]')"
+    minor="$(grep -E '^[[:space:]]*MINOR-VERSION[[:space:]]*=' "$versionConfigPath" \
+        | head -1 | cut -d= -f2- | tr -d '[:space:]')"
+    [[ -n "$major" ]] || refuse "MAJOR-VERSION is missing from $versionConfigPath"
+    [[ -n "$minor" ]] || refuse "MINOR-VERSION is missing from $versionConfigPath"
+    [[ "$major" =~ ^[0-9]+$ ]] \
+        || refuse "MAJOR-VERSION must be a whole number; got '$major'"
+    [[ "$minor" =~ ^[0-9]+$ ]] \
+        || refuse "MINOR-VERSION must be a whole number; got '$minor'"
+    echo "${major}.${minor}"
+}
+
 [[ -n "$branchName" ]] || refuse "branch name is required"
-[[ -n "$versionDeclaration" ]] || refuse "version declaration is required (the VERSION file's content)"
 gitInRepo rev-parse --git-dir >/dev/null 2>&1 || refuse "not a git repository: $repoDir"
 
 target=""
 case "$branchName" in
     main|master|develop)
-        [[ "$versionDeclaration" =~ ^[0-9]+\.[0-9]+$ ]] \
-            || refuse "on $branchName the declaration must be a release line (X.Y); got '$versionDeclaration'"
+        line="$(readReleaseLine)" || exit 1
         ## A line's first release always comes from the mainline, so the target
-        ## is that line's .0 — and the declaration is stale the moment the line
-        ## has shipped anything at all.
-        if [[ -n "$(anyReleaseTagsOfLine "$versionDeclaration")" ]]; then
-            refuse "declaration names line $versionDeclaration but that line already has release tags — bump it after cutting the release branch"
+        ## is that line's .0, and the config is stale the moment the line has
+        ## shipped anything at all.
+        if [[ -n "$(anyReleaseTagsOfLine "$line")" ]]; then
+            refuse "$versionConfigFile names line $line but that line already has release tags — bump it after cutting the release branch"
         fi
-        target="${versionDeclaration}.0"
+        target="${line}.0"
         ;;
     release/*)
         ## A release branch only ever produces the line's next patch. Hotfixes
         ## come from a hotfix branch, so there is no override here: the
         ## declaration has exactly one meaning.
         line="${branchName#release/}"
-        [[ "$versionDeclaration" =~ ^[0-9]+\.[0-9]+$ ]] \
-            || refuse "on $branchName the declaration must be a release line (X.Y); got '$versionDeclaration'"
-        [[ "$versionDeclaration" == "$line" ]] \
-            || refuse "branch $branchName disagrees with the declaration '$versionDeclaration'"
+        declaredLine="$(readReleaseLine)" || exit 1
+        [[ "$declaredLine" == "$line" ]] \
+            || refuse "branch $branchName disagrees with the declaration '$declaredLine' in $versionConfigFile"
         existing="$(directChildTags "$line")"
         [[ -n "$existing" ]] \
             || refuse "no release tags visible for line $line — the branch is cut at ${line}.0, so zero tags proves a shallow clone or unfetched tags"

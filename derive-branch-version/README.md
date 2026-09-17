@@ -28,8 +28,7 @@ not that workflow is releasing anything.
 | Input | Default | Meaning |
 |---|---|---|
 | `branch-name` | current ref | Branch to derive for. |
-| `version-file` | `VERSION` | File declaring the release line. |
-| `version-declaration` | — | Declaration value; overrides `version-file`. |
+| `version-file` | `app-version.cfg` | Config declaring the release line as `MAJOR-VERSION=` and `MINOR-VERSION=`. |
 | `working-directory` | `.` | Repository to inspect. |
 | `dev-label` | `dev` | Pre-release label in the build identifier. |
 
@@ -43,7 +42,15 @@ not that workflow is releasing anything.
 
 ## Derivation rules
 
-The declaration names a **release line** (`27.1`); the rest follows from tags:
+The release line comes from `app-version.cfg`, which holds one `KEY=VALUE` per line:
+
+```
+MAJOR-VERSION=26
+MINOR-VERSION=1
+```
+
+Keys are anchored, so `APP-MAJOR-VERSION` is not mistaken for `MAJOR-VERSION`, and any other
+key in the file is ignored. From that line, the rest follows from tags:
 
 | Branch | Target |
 |---|---|
@@ -70,11 +77,13 @@ Tag matching is by exact shape, never a glob: `27.1.*` would also match
 
 The script exits non-zero rather than emit a wrong number when:
 
-- the mainline declaration names a line that already has release tags, which is
+- `app-version.cfg` is missing, or lacks `MAJOR-VERSION` or `MINOR-VERSION`, or either is
+  not a whole number;
+- the mainline config names a line that already has release tags, which is
   stale after a branch cut. A hotfix-only line counts as shipped;
 - a release branch sees no tags for its line, which means a shallow clone or
   unfetched tags rather than a genuinely fresh line;
-- the branch name and the declaration disagree;
+- the branch name and the declared line disagree;
 - a hotfix branch name does not match `X.Y.Z_<label>`, or its label is `dev`,
   which is reserved for build candidates;
 - the release a hotfix branch patches is not visible;

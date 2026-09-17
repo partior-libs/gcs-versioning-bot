@@ -10,13 +10,12 @@ inputs:
     required: false
     default: ''
   version-file:
-    description: 'File declaring the release line. Hotfix branches ignore it.'
+    description: >
+      Config declaring the release line, as MAJOR-VERSION= and MINOR-VERSION=
+      lines. Hotfix branches take their version from the branch name and ignore
+      it.
     required: false
-    default: 'VERSION'
-  version-declaration:
-    description: 'Declaration value. Overrides version-file when set.'
-    required: false
-    default: ''
+    default: 'app-version.cfg'
   working-directory:
     description: 'Repository to inspect.'
     required: false
@@ -47,20 +46,10 @@ runs:
         ACTION_PATH: ${{ github.action_path }}
         BRANCH_NAME_IN: ${{ inputs.branch-name }}
         VERSION_FILE: ${{ inputs.version-file }}
-        VERSION_DECLARATION_IN: ${{ inputs.version-declaration }}
         DEV_LABEL: ${{ inputs.dev-label }}
       run: |
         set -euo pipefail
         branchName="${BRANCH_NAME_IN:-${GITHUB_REF_NAME}}"
-        if [[ -n "$VERSION_DECLARATION_IN" ]]; then
-          declaration="$VERSION_DECLARATION_IN"
-        else
-          if [[ ! -f "$VERSION_FILE" ]]; then
-            echo "[ERROR] No version declaration: $VERSION_FILE not found and version-declaration was not supplied" >&2
-            exit 1
-          fi
-          declaration="$(cat "$VERSION_FILE")"
-        fi
         chmod +x "$ACTION_PATH/../scripts/derive_branch_version.sh"
         "$ACTION_PATH/../scripts/derive_branch_version.sh" \
-          "$branchName" "$declaration" "." "$DEV_LABEL" | tee -a "$GITHUB_OUTPUT"
+          "$branchName" "$VERSION_FILE" "." "$DEV_LABEL" | tee -a "$GITHUB_OUTPUT"
