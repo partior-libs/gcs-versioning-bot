@@ -33,16 +33,13 @@
 ## Every refusal exits 1 with [ERROR] on stderr, so a caller fails loudly
 ## instead of versioning an artifact with a garbage number.
 
-## Reading action's global setting
-if [[ ! -z $BASH_SOURCE ]]; then
-    ACTION_BASE_DIR=$(dirname $BASH_SOURCE)
-    source $(find $ACTION_BASE_DIR/.. -type f -name general.ini)
-elif [[ $(find . -type f -name general.ini | wc -l) > 0 ]]; then
-    source $(find . -type f -name general.ini)
-elif [[ $(find .. -type f -name general.ini | wc -l) > 0 ]]; then
-    source $(find .. -type f -name general.ini)
+## The bot's shared function library, which sources general.ini itself. Use it
+## rather than repeating the lookup, so this script reads app-version.cfg
+## through the same getVFileValue the rest of the bot uses.
+if [[ -n "$BASH_SOURCE" ]] && [[ -f "$(dirname "$BASH_SOURCE")/bot-libs.sh" ]]; then
+    source "$(dirname "$BASH_SOURCE")/bot-libs.sh"
 else
-    echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to find and source general.ini"
+    echo "[ERROR] $BASH_SOURCE (line:$LINENO): Unable to find and source bot-libs.sh"
     exit 1
 fi
 
@@ -100,19 +97,21 @@ function tagExists() {
 ##     MAJOR-VERSION=26
 ##     MINOR-VERSION=1
 ##
-## Keys are anchored, so APP-MAJOR-VERSION is not mistaken for MAJOR-VERSION,
-## and anything else in the file is ignored. Read lazily, because a hotfix
-## branch takes its version from the branch name and never needs this.
+## The reading itself is getVFileValue from bot-libs.sh, so this script and
+## get_latest_version.sh agree on what the file means. Its first two arguments
+## are the bot's rule switches; both are true here, because a caller that asked
+## for a release line has already decided it wants one. Read lazily, because a
+## hotfix branch takes its version from the branch name and never needs this.
 function readReleaseLine() {
     local major minor
     [[ -f "$versionConfigPath" ]] \
         || refuse "version config not found: $versionConfigPath"
-    major="$(grep -E '^[[:space:]]*MAJOR-VERSION[[:space:]]*=' "$versionConfigPath" \
-        | head -1 | cut -d= -f2- | tr -d '[:space:]')"
-    minor="$(grep -E '^[[:space:]]*MINOR-VERSION[[:space:]]*=' "$versionConfigPath" \
-        | head -1 | cut -d= -f2- | tr -d '[:space:]')"
-    [[ -n "$major" ]] || refuse "MAJOR-VERSION is missing from $versionConfigPath"
-    [[ -n "$minor" ]] || refuse "MINOR-VERSION is missing from $versionConfigPath"
+    major="$(getVFileValue true true "$versionConfigPath" "MAJOR-VERSION")"
+    minor="$(getVFileValue true true "$versionConfigPath" "MINOR-VERSION")"
+    [[ -n "$major" && "$major" != "$VBOT_NIL" ]] \
+        || refuse "MAJOR-VERSION is missing from $versionConfigPath"
+    [[ -n "$minor" && "$minor" != "$VBOT_NIL" ]] \
+        || refuse "MINOR-VERSION is missing from $versionConfigPath"
     [[ "$major" =~ ^[0-9]+$ ]] \
         || refuse "MAJOR-VERSION must be a whole number; got '$major'"
     [[ "$minor" =~ ^[0-9]+$ ]] \

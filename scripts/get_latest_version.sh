@@ -13,6 +13,9 @@ else
     exit 1
 fi
 
+## Shared function library (getVFileValue and friends)
+source "$(dirname "${BASH_SOURCE[0]}")/bot-libs.sh"
+
 ## ANTZ TEMPORARY
 # source ./test-files/mock-base-variables.sh
 # source run2.sh
@@ -62,21 +65,7 @@ echo "[INFO] Rebase from release version: $rebaseReleaseVersion"
 echo "[INFO] Version list file: $versionListFile"
 
 
-function getVFileValue() {
-
-    local rulesEnabled="$1"
-    local rulesVFileEnabled="$2"
-    local rulesVFileName="$3"
-    local rulesVFileKey="$4"
-
-    local foundValue="$VBOT_NIL"    
-    if [[ "$rulesEnabled" == "true" ]] && [[ "$rulesVFileEnabled" == "true" ]]; then
-        if [[ -f "$rulesVFileName" ]]; then
-            foundValue=$(cat "$rulesVFileName" | grep -E "^rulesVFileKey=" | cut -d"=" -f2 | cut -d"#" -f1)
-        fi
-    fi
-    echo $foundValue
-}
+## getVFileValue now lives in bot-libs.sh, sourced above.
 
 function storeFileVersionIntoFile() {
     local inputList="$1"

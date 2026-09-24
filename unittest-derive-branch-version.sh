@@ -143,6 +143,9 @@ assertVersion "comments, blank lines and order do not matter" "27.1.0-dev.1" mai
 writeVersionConfig "MAJOR-VERSION = 27
 MINOR-VERSION = 1"
 assertVersion "surrounding whitespace is tolerated" "27.1.0-dev.1" main
+writeVersionConfig "MAJOR-VERSION=27   # the line this branch builds toward
+MINOR-VERSION=1"
+assertVersion "a trailing comment is not part of the value" "27.1.0-dev.1" main
 writeVersionConfig "MINOR-VERSION=1"
 assertRefused "a missing MAJOR-VERSION is refused" "MAJOR-VERSION" main
 writeVersionConfig "MAJOR-VERSION=27"

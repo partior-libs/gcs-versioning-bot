@@ -33,3 +33,38 @@ function digestRebaseBranchSetup() {
         
 }
 
+## Read one KEY=VALUE from a version config file, for example app-version.cfg:
+##
+##     MAJOR-VERSION=26      # a trailing comment is ignored
+##     MINOR-VERSION=1
+##
+## Usage: getVFileValue <rulesEnabled> <vFileEnabled> <fileName> <key>
+##
+## Returns $VBOT_NIL when the rule is off, the file is absent, or the key is
+## not present, so a caller can tell "no value" apart from an empty value.
+## The key is anchored, so APP-MAJOR-VERSION cannot answer for MAJOR-VERSION.
+## Keys are plain words; a key holding regular-expression characters is not
+## supported.
+function getVFileValue() {
+    local rulesEnabled="$1"
+    local rulesVFileEnabled="$2"
+    local rulesVFileName="$3"
+    local rulesVFileKey="$4"
+
+    local foundValue="$VBOT_NIL"
+    if [[ "$rulesEnabled" == "true" ]] && [[ "$rulesVFileEnabled" == "true" ]]; then
+        if [[ -f "$rulesVFileName" ]]; then
+            ## Spaces around '=' are tolerated, everything after the first '='
+            ## is the value, a trailing '#' comment is cut, and the result is
+            ## trimmed.
+            local rawValue
+            rawValue=$(grep -E "^[[:space:]]*${rulesVFileKey}[[:space:]]*=" "$rulesVFileName" \
+                | head -1 | cut -d"=" -f2- | cut -d"#" -f1 \
+                | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+            if [[ -n "$rawValue" ]]; then
+                foundValue="$rawValue"
+            fi
+        fi
+    fi
+    echo "$foundValue"
+}
