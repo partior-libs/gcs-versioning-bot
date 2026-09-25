@@ -1,7 +1,7 @@
 #!/bin/bash +e
 
-## Derive a version number from the branch, its version declaration and the
-## repository's existing release tags.
+## Derive the Build Tag for a branch from the branch name, the declared Release
+## Line, and the repository's existing tags.
 ##
 ## Deliberately git-only: no Artifactory, no Jira, no controller config. Any
 ## workflow that needs "what version is this commit?" can call it, whether or
@@ -10,25 +10,23 @@
 ## Usage:
 ##   derive_branch_version.sh <branchName> <versionConfigFile> [repoDir] [devLabel]
 ##
-##   branchName          e.g. main | release/27.1 | hotfix/27.1.7_hf
+##   branchName          main | release/27.1 | hotfix-base/27.1.30[_v2]
 ##   versionConfigFile   app-version.cfg, holding one KEY=VALUE per line:
-##                           MAJOR-VERSION=26
+##                           MAJOR-VERSION=27
 ##                           MINOR-VERSION=1
-##                       Relative paths resolve against repoDir. Hotfix branches
-##                       take their version from the branch name, so the file is
-##                       not read there and need not exist.
+##                       Relative paths resolve against repoDir. Hotfix
+##                       branches take their version from the branch name, so
+##                       the file is not read there and need not exist.
 ##   repoDir             repository to inspect (default: current directory)
-##   devLabel            pre-release label for the build identifier (default: dev)
+##   devLabel            label reserved for pull request builds (default: dev)
 ##
-## Emits key=value lines on stdout:
-##   target=27.1.8        the version being built toward; this goes in the pom
-##   counter=3            successful builds so far for that target
-##   version=27.1.8-dev.3 the build identifier; this becomes the git tag and
-##                        the candidate container tag
+## Emits one key=value line on stdout:
+##   version=27.1.31     the Build Tag, which is also the artifact version
 ##
-## target and version are deliberately different. '-' means pre-release, so it
-## is correct on a candidate but must never reach an artifact version: Maven
-## orders 27.1.1-dev.2 ABOVE 27.1.1_hf.1, which would be wrong.
+## There is no separate target and no build label. A Build Tag numbers a
+## commit; a release is a second tag (R27.1.1) added later by promotion. Pull
+## request builds are the only ones carrying a label, and the workflow appends
+## that itself because a pull request is never tagged.
 ##
 ## Every refusal exits 1 with [ERROR] on stderr, so a caller fails loudly
 ## instead of versioning an artifact with a garbage number.
@@ -65,25 +63,33 @@ function gitInRepo() {
 
 ## Tags exactly one numeric segment below $1, and nothing deeper.
 ##
-## Called with a release line (27.1) it returns that line's plain releases.
-## Called with a Hotfix Line prefix (27.1.7_hf) it returns that ONE line's
-## releases. The exact shape is what keeps the two apart: a glob on 27.1.*
-## would also return 27.1.7_hf.1 and push a release branch onto a hotfix line,
-## and a Variant Line must never see the General Line's tags.
+## Called with a Release Line (27.1) it returns that line's Build Tags. Called
+## with a Hotfix Line prefix (27.1.30_hf) it returns that ONE line's Build
+## Tags. The exact shape is what keeps the two apart: a glob on 27.1.* would
+## also return 27.1.30_hf.1 and push a Release Branch onto a hotfix line, and a
+## Variant Line must never see the General Line's tags.
 function directChildTags() {
     gitInRepo tag -l | grep -E "^${1//./\\.}\.[0-9]+$" || true
 }
 
-## Anything released on a line, plain or hotfix. Used only to decide whether a
-## mainline declaration has gone stale, where a hotfix counts as a shipment
-## just as much as a patch does.
-function anyReleaseTagsOfLine() {
-    gitInRepo tag -l \
-        | grep -E "^${1//./\\.}\.[0-9]+(_[a-z][a-z0-9]*\.[0-9]+)?$" || true
-}
-
 function tagExists() {
     gitInRepo tag -l | grep -qxF "$1"
+}
+
+## A Release Branch for this line, local or on any remote. Its existence means
+## the line has been cut, so the mainline should already have moved on.
+function releaseBranchExists() {
+    gitInRepo for-each-ref --format='%(refname)' \
+        "refs/heads/release/$1" "refs/remotes/*/release/$1" 2>/dev/null \
+        | grep -q .
+}
+
+## Highest numeric segment below $1, or empty when the line has no tags.
+function highestChild() {
+    local tags
+    tags="$(directChildTags "$1")"
+    [[ -z "$tags" ]] && return 0
+    echo "$tags" | sort -V | tail -1 | sed 's/.*\.//'
 }
 
 ## NOTE: refuse() inside this function exits only the SUBSHELL that $( )
@@ -94,7 +100,7 @@ function tagExists() {
 ## Read the Release Line from app-version.cfg, which holds one KEY=VALUE per
 ## line:
 ##
-##     MAJOR-VERSION=26
+##     MAJOR-VERSION=27
 ##     MINOR-VERSION=1
 ##
 ## The reading itself is getVFileValue from bot-libs.sh, so this script and
@@ -119,81 +125,73 @@ function readReleaseLine() {
     echo "${major}.${minor}"
 }
 
-[[ -n "$branchName" ]] || refuse "branch name is required"
-gitInRepo rev-parse --git-dir >/dev/null 2>&1 || refuse "not a git repository: $repoDir"
+[[ -n "$branchName" ]] || refuse "no branch name given"
 
-target=""
 case "$branchName" in
     main|master|develop)
         line="$(readReleaseLine)" || exit 1
-        ## A line's first release always comes from the mainline, so the target
-        ## is that line's .0, and the config is stale the moment the line has
-        ## shipped anything at all.
-        if [[ -n "$(anyReleaseTagsOfLine "$line")" ]]; then
-            refuse "$versionConfigFile names line $line but that line already has release tags — bump it after cutting the release branch"
+        ## Once the Release Branch exists it owns this line's numbering, and
+        ## the mainline should have been moved on automatically when the branch
+        ## was cut. Both minting into one namespace is the failure this catches.
+        if releaseBranchExists "$line"; then
+            refuse "$versionConfigFile names line $line but release/$line already exists — the mainline should have moved to the next line when that branch was cut"
         fi
-        target="${line}.0"
+        highest="$(highestChild "$line")"
+        ## A line's first build is .0. Every later commit takes the next
+        ## number, whether or not the previous one produced an artifact.
+        if [[ -z "$highest" ]]; then
+            version="${line}.0"
+        else
+            version="${line}.$(( highest + 1 ))"
+        fi
         ;;
     release/*)
-        ## A release branch only ever produces the line's next patch. Hotfixes
-        ## come from a hotfix branch, so there is no override here: the
-        ## declaration has exactly one meaning.
+        ## A Release Branch continues its line's numbering where the mainline
+        ## stopped. The declaration must agree with the branch name, so a
+        ## mis-cut branch cannot quietly mint into another line.
         line="${branchName#release/}"
+        [[ "$line" =~ ^[0-9]+\.[0-9]+$ ]] \
+            || refuse "release branches are named release/X.Y; got $branchName"
         declaredLine="$(readReleaseLine)" || exit 1
         [[ "$declaredLine" == "$line" ]] \
             || refuse "branch $branchName disagrees with the declaration '$declaredLine' in $versionConfigFile"
-        existing="$(directChildTags "$line")"
-        [[ -n "$existing" ]] \
-            || refuse "no release tags visible for line $line — the branch is cut at ${line}.0, so zero tags proves a shallow clone or unfetched tags"
-        max="$(echo "$existing" | sort -V | tail -1)"
-        target="${line}.$(( ${max##*.} + 1 ))"
+        highest="$(highestChild "$line")"
+        [[ -n "$highest" ]] \
+            || refuse "no build tags visible for line $line — the branch is cut at one, so zero proves a shallow clone or unfetched tags"
+        version="${line}.$(( highest + 1 ))"
         ;;
-    hotfix/*)
-        ## The branch suffix IS the version prefix, so there is no special case
-        ## to get wrong: read the line id off the branch, count its own tags,
-        ## take the next number.
-        linePrefix="${branchName#hotfix/}"
-        [[ "$linePrefix" =~ ^([0-9]+\.[0-9]+\.[0-9]+)_([a-z][a-z0-9]*)$ ]] \
-            || refuse "hotfix branches are named hotfix/X.Y.Z_<label>, where <label> is 'hf' for the general line or a variant code matching [a-z][a-z0-9]*; got $branchName"
-        frozen="${BASH_REMATCH[1]}"
-        lineLabel="${BASH_REMATCH[2]}"
+    hotfix-base/*)
+        ## The branch suffix is the anchor Build Tag plus an optional line
+        ## label. No label means the General Hotfix Line, 'hf'. The anchor is
+        ## fixed for the life of the branch, because a hotfix-base branch is
+        ## cut once and then reused.
+        suffix="${branchName#hotfix-base/}"
+        [[ "$suffix" =~ ^([0-9]+\.[0-9]+\.[0-9]+)(_([a-z][a-z0-9]*))?$ ]] \
+            || refuse "hotfix branches are named hotfix-base/X.Y.Z for the general line or hotfix-base/X.Y.Z_<label> for a variant, where <label> matches [a-z][a-z0-9]*; got $branchName"
+        anchor="${BASH_REMATCH[1]}"
+        lineLabel="${BASH_REMATCH[3]:-hf}"
 
-        ## 'dev' marks a candidate and lives on the other separator. Letting a
-        ## line take it would produce strings nobody could read back.
+        ## 'dev' marks a pull request build. Letting a line take it would
+        ## produce strings nobody could read back.
         [[ "$lineLabel" == "$devLabel" ]] \
-            && refuse "'$devLabel' is reserved for build candidates and cannot name a Hotfix Line"
+            && refuse "'$devLabel' is reserved for pull request builds and cannot name a Hotfix Line"
 
-        tagExists "$frozen" \
-            || refuse "release tag $frozen is not visible — a hotfix branch is cut from the release it patches"
+        tagExists "$anchor" \
+            || refuse "build tag $anchor is not visible — a hotfix branch is cut from the build it patches"
 
-        hotfixTags="$(directChildTags "$linePrefix")"
-        if [[ -n "$hotfixTags" ]]; then
-            ## Wrong-anchor guard, per line: every shipped release of THIS line
-            ## must be in this branch's history. Other lines are deliberately
-            ## ignored, because a Variant Line is not expected to contain the
-            ## General Line's fixes.
-            while IFS= read -r shipped; do
-                [[ -z "$shipped" ]] && continue
-                gitInRepo merge-base --is-ancestor "$shipped" HEAD \
-                    || refuse "shipped release $shipped is not in this branch's history — cut hotfix/$linePrefix from that line's LATEST tag"
-            done <<< "$hotfixTags"
-            max="$(echo "$hotfixTags" | sort -V | tail -1)"
-            target="${linePrefix}.$(( ${max##*.} + 1 ))"
+        linePrefix="${anchor}_${lineLabel}"
+        highest="$(highestChild "$linePrefix")"
+        if [[ -z "$highest" ]]; then
+            version="${linePrefix}.1"
         else
-            target="${linePrefix}.1"
+            version="${linePrefix}.$(( highest + 1 ))"
         fi
         ;;
     *)
-        refuse "branch '$branchName' is not a versioned branch (main, release/*, hotfix/*)"
+        refuse "branch '$branchName' is not a versioned branch (main, release/*, hotfix-base/*)"
         ;;
 esac
 
-tagExists "$target" && refuse "derived target $target is already released"
+tagExists "$version" && refuse "derived build tag $version already exists"
 
-## The counter distinguishes builds of one target, so it counts the build
-## identifiers already minted for it rather than commits.
-counter=$(( $(gitInRepo tag -l | grep -cE "^${target//./\\.}-${devLabel}\.[0-9]+$" || true) + 1 ))
-
-echo "target=${target}"
-echo "counter=${counter}"
-echo "version=${target}-${devLabel}.${counter}"
+echo "version=${version}"

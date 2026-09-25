@@ -68,16 +68,9 @@ function assertField() {
 }
 
 function assertVersion() {
-    ## The full build identifier, which becomes the git tag and the candidate
-    ## container tag.
+    ## The Build Tag, which is also the artifact version. There is no separate
+    ## target any more: promotion adds a Milestone Tag, it does not renumber.
     assertField version "$1" "$2" "$3" "$4"
-}
-
-function assertTarget() {
-    ## The version the build is heading for, which is what goes in the pom.
-    ## Asserting this separately matters: the pom must never carry the -dev
-    ## label, because Maven orders that label above a hotfix label.
-    assertField target "$1" "$2" "$3" "$4"
 }
 
 function assertRefused() {
@@ -96,40 +89,67 @@ function assertRefused() {
     fi
 }
 
+
 echo "===== mainline ====="
 setupFixture
-assertVersion "mainline derives the line's .0" "27.1.0-dev.1" main
-assertTarget "the target carries no build label" "27.1.0" main
-git -C "$FIXTURE" tag 27.1.0-dev.1
-assertVersion "counter counts build identifiers" "27.1.0-dev.2" main
+assertVersion "a fresh line starts at .0" "27.1.0" main
 git -C "$FIXTURE" tag 27.1.0
-assertRefused "mainline declaration goes stale once the line ships" "already has release tags" main
+assertVersion "every commit takes the next number" "27.1.1" main
+git -C "$FIXTURE" tag 27.1.1
+git -C "$FIXTURE" tag 27.1.2
+assertVersion "burnt numbers are skipped, not reused" "27.1.3" main
 teardownFixture
 
-echo "===== mainline staleness counts hotfix-only lines ====="
+echo "===== mainline stops once its line is cut ====="
 setupFixture
-setLine 30 1
-git -C "$FIXTURE" tag 30.1.0_hf.1
-assertRefused "a line whose only release is a hotfix still counts as shipped" \
-    "already has release tags" main
+git -C "$FIXTURE" tag 27.1.0
+git -C "$FIXTURE" branch release/27.1
+assertRefused "the mainline refuses while release/<line> exists" \
+    "release/27.1 already exists" main
+teardownFixture
+
+setupFixture
+git -C "$FIXTURE" tag 27.1.0
+git -C "$FIXTURE" update-ref refs/remotes/origin/release/27.1 HEAD
+assertRefused "a release branch on a remote counts too" \
+    "release/27.1 already exists" main
+teardownFixture
+
+setupFixture
+git -C "$FIXTURE" tag 27.1.0
+git -C "$FIXTURE" branch release/27.2
+assertVersion "another line's release branch does not block this one" "27.1.1" main
+teardownFixture
+
+echo "===== milestone tags never affect build numbering ====="
+setupFixture
+git -C "$FIXTURE" tag 27.1.0
+git -C "$FIXTURE" tag R27.1.1
+assertVersion "an R tag is not a build tag" "27.1.1" main
 teardownFixture
 
 echo "===== release branch ====="
 setupFixture
 git -C "$FIXTURE" tag 27.1.0
-assertVersion "infers the next patch" "27.1.1-dev.1" release/27.1
-assertTarget "the pom version is the plain patch" "27.1.1" release/27.1
-git -C "$FIXTURE" tag 27.1.1
-git -C "$FIXTURE" tag 27.1.1_hf.1
-assertVersion "hotfix tags do not perturb patch inference" "27.1.2-dev.1" release/27.1
-assertRefused "branch and declaration must agree" "disagrees with the declaration" release/27.2
+git -C "$FIXTURE" tag 27.1.30
+assertVersion "a release branch continues the line's numbering" "27.1.31" release/27.1
 teardownFixture
 
-echo "===== release branch, shallow clone guard ====="
 setupFixture
-setLine 29 9
-assertRefused "no visible line tags is a broken checkout" "shallow clone or unfetched tags" \
-    release/29.9
+setLine 27 2
+git -C "$FIXTURE" tag 27.1.0
+assertRefused "a branch that disagrees with its declaration is refused" \
+    "disagrees with the declaration" release/27.1
+teardownFixture
+
+setupFixture
+assertRefused "a release branch with no build tags proves a shallow clone" \
+    "no build tags visible" release/27.1
+teardownFixture
+
+setupFixture
+assertRefused "a malformed release branch name is refused" \
+    "named release/X.Y" release/27.1.1
 teardownFixture
 
 echo "===== the version config ====="
@@ -139,13 +159,13 @@ MAJOR-VERSION=27
 
 MINOR-VERSION=1
 "
-assertVersion "comments, blank lines and order do not matter" "27.1.0-dev.1" main
+assertVersion "comments, blank lines and order do not matter" "27.1.0" main
 writeVersionConfig "MAJOR-VERSION = 27
 MINOR-VERSION = 1"
-assertVersion "surrounding whitespace is tolerated" "27.1.0-dev.1" main
+assertVersion "surrounding whitespace is tolerated" "27.1.0" main
 writeVersionConfig "MAJOR-VERSION=27   # the line this branch builds toward
 MINOR-VERSION=1"
-assertVersion "a trailing comment is not part of the value" "27.1.0-dev.1" main
+assertVersion "a trailing comment is not part of the value" "27.1.0" main
 writeVersionConfig "MINOR-VERSION=1"
 assertRefused "a missing MAJOR-VERSION is refused" "MAJOR-VERSION" main
 writeVersionConfig "MAJOR-VERSION=27"
@@ -156,86 +176,69 @@ assertRefused "a non-numeric value is refused" "must be a whole number" main
 writeVersionConfig "APP-MAJOR-VERSION=99
 MAJOR-VERSION=27
 MINOR-VERSION=1"
-assertVersion "a key that merely contains the name is not mistaken for it" "27.1.0-dev.1" main
+assertVersion "a key that merely contains the name is not mistaken for it" "27.1.0" main
 assertRefused "a missing config file is refused" "not found" main no-such-file.cfg
-teardownFixture
-
-echo "===== the complete-version override is withdrawn ====="
-setupFixture
-git -C "$FIXTURE" tag 27.1.1
-writeVersionConfig "MAJOR-VERSION=27
-MINOR-VERSION=1
-FULL-VERSION=27.1.1_hf.1"
-assertVersion "an unknown key is ignored, so no override sneaks back in" \
-    "27.1.2-dev.1" release/27.1
 teardownFixture
 
 echo "===== general hotfix line ====="
 setupFixture
-git -C "$FIXTURE" tag 27.1.7
-assertVersion "first hotfix on the general line" "27.1.7_hf.1-dev.1" hotfix/27.1.7_hf
-assertTarget "the pom version is the hotfix version" "27.1.7_hf.1" hotfix/27.1.7_hf
-fixtureCommit "hotfix work"
-git -C "$FIXTURE" tag 27.1.7_hf.1
-assertVersion "next hotfix on the same line" "27.1.7_hf.2-dev.1" hotfix/27.1.7_hf
+git -C "$FIXTURE" tag 27.1.30
+assertVersion "no label means the general line, starting at .1" \
+    "27.1.30_hf.1" hotfix-base/27.1.30
+git -C "$FIXTURE" tag 27.1.30_hf.1
+assertVersion "the general line counts its own builds" \
+    "27.1.30_hf.2" hotfix-base/27.1.30
 teardownFixture
 
-echo "===== variant hotfix line ====="
+echo "===== variant lines are independent ====="
 setupFixture
-git -C "$FIXTURE" tag 27.1.7
-assertVersion "first hotfix on a variant line" "27.1.7_v2.1-dev.1" hotfix/27.1.7_v2
-fixtureCommit "variant work"
-git -C "$FIXTURE" tag 27.1.7_v2.1
-assertVersion "next hotfix on the variant line" "27.1.7_v2.2-dev.1" hotfix/27.1.7_v2
+git -C "$FIXTURE" tag 27.1.30
+git -C "$FIXTURE" tag 27.1.30_hf.1
+git -C "$FIXTURE" tag 27.1.30_hf.2
+assertVersion "a variant starts at .1 and ignores the general line" \
+    "27.1.30_v2.1" hotfix-base/27.1.30_v2
+git -C "$FIXTURE" tag 27.1.30_v2.1
+assertVersion "the general line ignores the variant" \
+    "27.1.30_hf.3" hotfix-base/27.1.30
 teardownFixture
 
-echo "===== lines are independent ====="
+echo "===== a hotfix line does not continue the release line ====="
 setupFixture
-git -C "$FIXTURE" tag 27.1.7
-## The general line ships a fix on its own branch. A variant cut from the
-## release must not be refused for lacking it, and must not continue its
-## numbering either.
-git -C "$FIXTURE" checkout -qb generalwork
-fixtureCommit "general fix"
-git -C "$FIXTURE" tag 27.1.7_hf.1
-git -C "$FIXTURE" checkout -q 27.1.7
-assertVersion "a variant ignores the general line's tags" "27.1.7_v2.1-dev.1" \
-    hotfix/27.1.7_v2
-teardownFixture
-
-echo "===== anchor guard is per line ====="
-setupFixture
-git -C "$FIXTURE" tag 27.1.7
-git -C "$FIXTURE" checkout -qb hotfixwork
-fixtureCommit "shipped hotfix"
-git -C "$FIXTURE" tag 27.1.7_hf.1
-## Re-anchor at the release tag, which misses the shipped hotfix of this line.
-git -C "$FIXTURE" checkout -q 27.1.7
-assertRefused "anchoring below the latest tag of the same line drops a shipped fix" \
-    "not in this branch's history" hotfix/27.1.7_hf
+git -C "$FIXTURE" tag 27.1.30
+git -C "$FIXTURE" tag 27.1.31
+assertVersion "later builds on the line do not renumber the hotfix line" \
+    "27.1.30_hf.1" hotfix-base/27.1.30
 teardownFixture
 
 echo "===== hotfix branch naming ====="
 setupFixture
-git -C "$FIXTURE" tag 27.1.7
-assertRefused "a hotfix branch must carry a label" "hotfix branches are named" \
-    hotfix/27.1.7
-assertRefused "the dev label is reserved for candidates" "reserved" \
-    hotfix/27.1.7_dev
-assertRefused "a variant of a variant is refused" "hotfix branches are named" \
-    hotfix/27.1.7_v2_v5
-assertRefused "a label must start with a letter" "hotfix branches are named" \
-    hotfix/27.1.7_2v
-assertRefused "an uppercase label is refused" "hotfix branches are named" \
-    hotfix/27.1.7_V2
-assertRefused "the anchor release must be visible" "is not visible" \
-    hotfix/27.1.9_hf
+git -C "$FIXTURE" tag 27.1.30
+assertRefused "the dev label is reserved for pull request builds" \
+    "reserved for pull request builds" hotfix-base/27.1.30_dev
+assertRefused "a variant of a variant is refused" \
+    "hotfix-base/X.Y.Z" hotfix-base/27.1.30_v2_v3
+assertRefused "a label must start with a letter" \
+    "hotfix-base/X.Y.Z" hotfix-base/27.1.30_2v
+assertRefused "an uppercase label is refused" \
+    "hotfix-base/X.Y.Z" hotfix-base/27.1.30_V2
+assertRefused "the anchor build tag must be visible" \
+    "is not visible" hotfix-base/27.1.99
+assertRefused "the old hotfix/ prefix is not a versioned branch" \
+    "not a versioned branch" hotfix/27.1.30_hf
+teardownFixture
+
+echo "===== numbering resumes above the highest, never in a gap ====="
+setupFixture
+git -C "$FIXTURE" tag 27.1.0
+git -C "$FIXTURE" tag 27.1.2
+git -C "$FIXTURE" tag 27.1.3
+assertVersion "a gap in the sequence is left alone" "27.1.4" main
 teardownFixture
 
 echo "===== unversioned branch ====="
 setupFixture
-assertRefused "feature branches are not versioned here" "not a versioned branch" \
-    feature/DSO-1234_something
+assertRefused "feature branches are not versioned here" \
+    "not a versioned branch" feature/something
 teardownFixture
 
 echo ""

@@ -6,7 +6,10 @@ description: >
 
 inputs:
   branch-name:
-    description: 'Branch to derive for. Defaults to the ref the workflow runs on.'
+    description: >
+      Branch to derive for. Defaults to the ref the workflow runs on. On a pull
+      request pass the BASE branch, so the version is the one the change would
+      land as.
     required: false
     default: ''
   version-file:
@@ -21,19 +24,17 @@ inputs:
     required: false
     default: '.'
   dev-label:
-    description: 'Pre-release label used in the build identifier.'
+    description: >
+      Label reserved for pull request builds. A Hotfix Line may not take it.
     required: false
     default: 'dev'
 
 outputs:
-  target:
-    description: 'Target version the branch is working toward, e.g. 27.1.8'
-    value: ${{ steps.derive.outputs.target }}
-  counter:
-    description: 'Build counter within that target, e.g. 3'
-    value: ${{ steps.derive.outputs.counter }}
   version:
-    description: 'Full build identifier, e.g. 27.1.8-dev.3'
+    description: >
+      The Build Tag for this commit, which is also the artifact version, e.g.
+      27.1.31 on a release line or 27.1.30_hf.2 on a hotfix line. There is no
+      separate target: a release is a second tag added later by promotion.
     value: ${{ steps.derive.outputs.version }}
 
 runs:
