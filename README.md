@@ -23,12 +23,12 @@ This action generate the next incremented semantic version of artifact with the 
     # Default: ${{ github.token }}
     artifactory-base-url: 'https://partior.jfrog.io/artifactory'
     
-    # Jira username to query versions
-    # Mandatory: false (Mandatory if version-sources.jira.enabled in yaml config is true)
+    # Jira username (email) for Basic auth, or an OAuth 2.0 client ID (any value without "@"). See "Jira authentication" below
+    # Mandatory: false (Mandatory if version-sources.jira.enabled in yaml config is true, unless env vars JIRA_CLIENT_ID and JIRA_CLIENT_SECRET are set)
     jira-username: ''
     
-    # Jira password to query versions
-    # Mandatory: false (Mandatory if version-sources.jira.enabled in yaml config is true)
+    # Jira API token for Basic auth, or the OAuth 2.0 client secret when jira-username is a client ID
+    # Mandatory: false (Mandatory if version-sources.jira.enabled in yaml config is true, unless env vars JIRA_CLIENT_ID and JIRA_CLIENT_SECRET are set)
     jira-password: ''
     
     # Jira base URL for query endpoint
@@ -75,6 +75,27 @@ The action has two outputs:
     artifact-full-version-name: ''
 ```
 <!-- end usage -->
+
+## Jira authentication
+When `version-sources.jira.enabled` is `true`, the action picks the first Jira auth method that is available:
+
+1. **OAuth 2.0 from env vars**: `JIRA_CLIENT_ID` and `JIRA_CLIENT_SECRET` set with `env:` on the step that calls the action.
+2. **OAuth 2.0 from the existing inputs**: `jira-username` is not an email address. It is used as the OAuth client ID, and `jira-password` as the client secret. This lets callers switch to OAuth by changing the secret values only.
+3. **Basic auth**: `jira-username` is an email address and `jira-password` is a Jira API token.
+
+For OAuth, the action gets an access token from `https://auth.atlassian.com/oauth/token` (client credentials) and discovers the Jira cloud ID from the accessible-resources API. Set the env var `JIRA_CLOUD_ID` to skip the discovery.
+
+```yaml
+      - name: Start versioning bot
+        uses: partior-libs/gcs-versioning-bot@partior-stable
+        env:
+          JIRA_CLIENT_ID: ${{ secrets.JIRA_CLIENT_ID }}
+          JIRA_CLIENT_SECRET: ${{ secrets.JIRA_CLIENT_SECRET }}
+        with:
+          jfrog-token: ${{ secrets.JFROG_ARTIFACTORY_CONFIG }}
+          versioning-rules-importer-file: ${{ env.YAML_STD_CI_CONFIG_IMPORTER }}
+          branch-packager-rules-importer-file: ${{ env.YAML_CI_BRANCH_CONFIG_IMPORTER }}
+```
 
 
 

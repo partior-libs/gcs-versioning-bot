@@ -20,9 +20,6 @@ jiraPojectKeyList="${4}"
 newVersion="${5}"
 jiraVersionIdentifier="${6}"
 versionPrependLabel="${7}"
-jiraOauthToken="${8}"
-jiraClientId="${9}"
-jiraClientSecret="${10}"
 
 
 echo "[INFO] Jira Base Url: $jiraBaseUrl"
@@ -36,7 +33,10 @@ if ! source "$ACTION_BASE_DIR/jira-auth-lib.sh"; then
     exit 1
 fi
 
-resolve_jira_auth "${jiraOauthToken}" "${jiraClientId}" "${jiraClientSecret}" "${jiraUsername}" "${jiraPassword}" "${jiraBaseUrl}"
+if ! resolve_jira_auth "${jiraUsername}" "${jiraPassword}" "${jiraBaseUrl}"; then
+    echo "[ERROR] Unable to authenticate to Jira."
+    exit 1
+fi
 jiraBaseUrl="$JIRA_EFFECTIVE_BASE_URL"
 
 versionListFile=versionlist.tmp

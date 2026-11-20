@@ -194,18 +194,19 @@ jobs:
           echo "[INFO] accessUsername: $accessUsername"
 
       - name: Get the latest version
+        # OAuth client credentials are read from env vars by scripts/jira-auth-lib.sh
+        env:
+          JIRA_CLIENT_ID: ${{ secrets.JIRA_CLIENT_ID }}
+          JIRA_CLIENT_SECRET: ${{ secrets.JIRA_CLIENT_SECRET }}
         run: |
           cd $GITHUB_WORKSPACE
           jfrogToken="${{ secrets.JFROG_ARTIFACTORY_CONFIG }}"
           jiraUserName="${{ secrets.JIRA_USERNAME }}"
           jiraPassword="${{ secrets.JIRA_PASSWORD }}"
-          jiraClientId="${{ secrets.JIRA_CLIENT_ID }}"
-          jiraClientSecret="${{ secrets.JIRA_CLIENT_SECRET }}"
-          jiraOauthToken="${{ secrets.JIRA_OAUTH_TOKEN }}"
           sanitizedConfigProfile="$(echo "${{ matrix.rule }}" | sed "s/_/-/g")"
           echo "SANITIZED_CONFIG_PROFILE=${sanitizedConfigProfile}" >> ${GITHUB_ENV}
 
-          ./unittest-get-latest-version.sh jira "${sanitizedConfigProfile}" all "" "${jiraUserName}" "${jiraPassword}" "${ARTIFACTORY_TMP_USERNAME}" "${ARTIFACTORY_TMP_TOKEN}" "${jiraOauthToken}" "${jiraClientId}" "${jiraClientSecret}"
+          ./unittest-get-latest-version.sh jira "${sanitizedConfigProfile}" all "" "${jiraUserName}" "${jiraPassword}" "${ARTIFACTORY_TMP_USERNAME}" "${ARTIFACTORY_TMP_TOKEN}"
 
       - name: Run JIRA unit tests
         run: |
@@ -263,22 +264,6 @@ jobs:
           JIRA_CLIENT_SECRET: ${{ secrets.JIRA_CLIENT_SECRET }}
         run: |
           cd $GITHUB_WORKSPACE
-          curl --request POST \
-            --url 'https://auth.atlassian.com/oauth/token' \
-            --header 'Content-Type: application/json' \
-            --data "{\"grant_type\": \"client_credentials\",\"client_id\": \"$JIRA_CLIENT_ID\",\"client_secret\": \"$JIRA_CLIENT_SECRET\"}" | tee /tmp/.jira_access_token
-          accessToken=$(jq -r ".access_token" < /tmp/.jira_access_token)
-
-          curl --request GET \
-            --url https://api.atlassian.com/oauth/token/accessible-resources \
-            --header "Authorization: Bearer $accessToken" \
-            --header 'Accept: application/json' | tee /tmp/.jira_accessible_res
-          cloudId=$(jq -r ".[0].id" < /tmp/.jira_accessible_res)
-          jiraBaseUrl="https://api.atlassian.com/ex/jira/$cloudId"
-
-          export JIRA_OAUTH_TOKEN="${accessToken}"
-          export JIRA_BASE_URL="${jiraBaseUrl}"
-
           chmod +x ./unittest-jira-auth.sh
           ./unittest-jira-auth.sh
 

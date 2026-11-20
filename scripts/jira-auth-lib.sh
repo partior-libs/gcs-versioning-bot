@@ -2,89 +2,119 @@
 
 # Jira authentication resolution library.
 #
-# Provides resolve_jira_auth() which determines the auth method by priority:
-#   1. Static Bearer token  (JIRA_OAUTH_TOKEN)
-#   2. Dynamic OAuth 2.0 exchange (JIRA_CLIENT_ID + JIRA_CLIENT_SECRET)
-#   3. Basic auth fallback  (JIRA_USERNAME + JIRA_PASSWORD)
+# Usage: resolve_jira_auth <jiraUsername> <jiraPassword> <jiraBaseUrl>
+#
+# Resolves the auth method by priority:
+#   1. OAuth 2.0 client credentials from env vars JIRA_CLIENT_ID + JIRA_CLIENT_SECRET
+#      (set them with `env:` on the step that calls the action).
+#   2. OAuth 2.0 client credentials passed through the existing jira-username /
+#      jira-password inputs. A username that is not an email address is treated
+#      as an OAuth client ID, so callers can switch to OAuth by changing the
+#      secret values only.
+#   3. Basic auth with jira-username (email) + jira-password (API token).
+#
+# For OAuth, the Jira cloud ID is discovered from the accessible-resources API,
+# unless the env var JIRA_CLOUD_ID is set.
 #
 # After a successful call, the following variables are exported:
-#   JIRA_AUTH_HEADER       – full "Authorization: ..." header value
+#   JIRA_AUTH_HEADER        – full "Authorization: ..." header value
 #   JIRA_EFFECTIVE_BASE_URL – base URL to use for all Jira REST calls
-#                             (may differ from JIRA_BASE_URL when using dynamic OAuth)
+#                             (https://api.atlassian.com/ex/jira/<cloudId> for OAuth)
 
-function resolve_jira_auth() {
-    local jiraOauthToken="${1}"
-    local jiraClientId="${2}"
-    local jiraClientSecret="${3}"
-    local jiraUserName="${4}"
-    local jiraPassword="${5}"
-    local jiraBaseUrl="${6}"
+ATLASSIAN_OAUTH_TOKEN_URL="https://auth.atlassian.com/oauth/token"
+ATLASSIAN_ACCESSIBLE_RESOURCES_URL="https://api.atlassian.com/oauth/token/accessible-resources"
+ATLASSIAN_JIRA_API_BASE_URL="https://api.atlassian.com/ex/jira"
 
-    # Priority 1: Static Bearer token
-    if [[ -n "$jiraOauthToken" ]]; then
-        echo "[INFO] Jira auth: using static OAuth Bearer token"
-        export JIRA_AUTH_HEADER="Authorization: Bearer $jiraOauthToken"
-        export JIRA_EFFECTIVE_BASE_URL="$jiraBaseUrl"
-        return 0
+# Hide a sensitive value from GitHub Actions logs.
+function _jira_auth_mask() {
+    if [[ "${GITHUB_ACTIONS:-}" == "true" && -n "$1" ]]; then
+        echo "::add-mask::$1"
+    fi
+}
+
+function _jira_auth_oauth() {
+    local jiraClientId="$1"
+    local jiraClientSecret="$2"
+
+    echo "[INFO] Jira auth: performing OAuth 2.0 client credentials token exchange"
+
+    local requestBody tokenResponse accessToken
+    requestBody=$(jq -n --arg id "$jiraClientId" --arg secret "$jiraClientSecret" \
+        '{grant_type: "client_credentials", client_id: $id, client_secret: $secret}')
+
+    if ! tokenResponse=$(curl -s -X POST "$ATLASSIAN_OAUTH_TOKEN_URL" \
+            -H "Content-Type: application/json" \
+            --data "$requestBody"); then
+        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed to request OAuth token from Atlassian"
+        return 1
     fi
 
-    # Priority 2: Dynamic OAuth 2.0 client-credentials token exchange
-    if [[ -n "$jiraClientId" && -n "$jiraClientSecret" ]]; then
-        echo "[INFO] Jira auth: performing dynamic OAuth 2.0 token exchange"
+    accessToken=$(echo "$tokenResponse" | jq -r '.access_token // empty' 2>/dev/null)
+    if [[ -z "$accessToken" ]]; then
+        echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed to get access_token from OAuth response:" \
+             "$(echo "$tokenResponse" | jq -r '.error_description // .error // "unknown error"' 2>/dev/null)"
+        return 1
+    fi
+    _jira_auth_mask "$accessToken"
 
-        local tokenResponse
-        tokenResponse=$(curl -s -X POST \
-            "https://auth.atlassian.com/oauth/token" \
-            -H "Content-Type: application/json" \
-            --data "{\"grant_type\":\"client_credentials\",\"client_id\":\"$jiraClientId\",\"client_secret\":\"$jiraClientSecret\"}")
-
-        if [[ $? -ne 0 ]]; then
-            echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed to request OAuth token from Atlassian"
-            return 1
-        fi
-
-        local accessToken
-        accessToken=$(echo "$tokenResponse" | jq -r '.access_token // empty')
-        if [[ -z "$accessToken" ]]; then
-            echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed to extract access_token from OAuth response"
-            echo "[DEBUG] Response: $tokenResponse"
-            return 1
-        fi
-
+    local cloudId="${JIRA_CLOUD_ID:-}"
+    if [[ -n "$cloudId" ]]; then
+        echo "[INFO] Jira auth: using cloud ID from JIRA_CLOUD_ID"
+    else
         local resourcesResponse
-        resourcesResponse=$(curl -s -X GET \
-            "https://api.atlassian.com/oauth/token/accessible-resources" \
-            -H "Authorization: Bearer $accessToken" \
-            -H "Accept: application/json")
-        if [[ $? -ne 0 ]]; then
+        if ! resourcesResponse=$(curl -s -X GET "$ATLASSIAN_ACCESSIBLE_RESOURCES_URL" \
+                -H "Authorization: Bearer $accessToken" \
+                -H "Accept: application/json"); then
             echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed to retrieve accessible resources from Atlassian"
             return 1
         fi
-
-        local cloudId
-        cloudId=$(echo "$resourcesResponse" | jq -r '.[0].id // empty')
+        cloudId=$(echo "$resourcesResponse" | jq -r '.[0].id // empty' 2>/dev/null)
         if [[ -z "$cloudId" ]]; then
-            echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed to extract cloud ID from accessible-resources response"
-            echo "[DEBUG] Response: $resourcesResponse"
+            echo "[ERROR] $BASH_SOURCE (line:$LINENO): Failed to discover Jira cloud ID from accessible-resources response"
             return 1
         fi
-
-        export JIRA_AUTH_HEADER="Authorization: Bearer $accessToken"
-        export JIRA_EFFECTIVE_BASE_URL="https://api.atlassian.com/ex/jira/$cloudId"
-        echo "[INFO] Jira auth: OAuth token acquired. Cloud ID: $cloudId"
-        echo "[INFO] Jira effective base URL: $JIRA_EFFECTIVE_BASE_URL"
-        return 0
+        echo "[INFO] Jira auth: discovered cloud ID: $cloudId"
     fi
 
-    # Priority 3: Basic auth fallback
-    if [[ -n "$jiraUserName" && -n "$jiraPassword" ]]; then
+    export JIRA_AUTH_HEADER="Authorization: Bearer $accessToken"
+    export JIRA_EFFECTIVE_BASE_URL="$ATLASSIAN_JIRA_API_BASE_URL/$cloudId"
+    echo "[INFO] Jira effective base URL: $JIRA_EFFECTIVE_BASE_URL"
+    return 0
+}
+
+function resolve_jira_auth() {
+    local jiraUsername="${1}"
+    local jiraPassword="${2}"
+    local jiraBaseUrl="${3}"
+
+    unset JIRA_AUTH_HEADER JIRA_EFFECTIVE_BASE_URL
+
+    # Priority 1: OAuth client credentials from env vars
+    if [[ -n "${JIRA_CLIENT_ID:-}" && -n "${JIRA_CLIENT_SECRET:-}" ]]; then
+        echo "[INFO] Jira auth: using OAuth client credentials from JIRA_CLIENT_ID/JIRA_CLIENT_SECRET"
+        _jira_auth_oauth "$JIRA_CLIENT_ID" "$JIRA_CLIENT_SECRET"
+        return $?
+    fi
+
+    if [[ -n "$jiraUsername" && -n "$jiraPassword" ]]; then
+        # Priority 2: OAuth client credentials via jira-username/jira-password
+        if [[ "$jiraUsername" != *@* ]]; then
+            echo "[INFO] Jira auth: jira-username is not an email, using it as OAuth client ID"
+            _jira_auth_oauth "$jiraUsername" "$jiraPassword"
+            return $?
+        fi
+
+        # Priority 3: Basic auth
         echo "[INFO] Jira auth: using Basic authentication"
-        export JIRA_AUTH_HEADER="Authorization: Basic $(echo -n "$jiraUserName:$jiraPassword" | base64 | tr -d '\n')"
+        local basicToken
+        basicToken=$(echo -n "$jiraUsername:$jiraPassword" | base64 | tr -d '\n')
+        _jira_auth_mask "$basicToken"
+        export JIRA_AUTH_HEADER="Authorization: Basic $basicToken"
         export JIRA_EFFECTIVE_BASE_URL="$jiraBaseUrl"
         return 0
     fi
 
     echo "[ERROR] $BASH_SOURCE (line:$LINENO): No Jira authentication method provided." \
-         "Set one of: jira-oauth-token, jira-client-id+jira-client-secret, or jira-username+jira-password"
+         "Set env vars JIRA_CLIENT_ID + JIRA_CLIENT_SECRET, or inputs jira-username + jira-password"
     return 1
 }

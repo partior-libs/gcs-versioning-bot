@@ -1,16 +1,16 @@
 #!/bin/bash
 # Unit tests for scripts/jira-auth-lib.sh
 #
-# Validates all three auth resolution paths: static Bearer token, dynamic
-# OAuth 2.0 token exchange, and Basic auth fallback.
+# Validates the auth resolution paths: OAuth 2.0 client credentials from env
+# vars, OAuth 2.0 client credentials passed as jira-username/jira-password,
+# Basic auth, priority between them, and the JIRA_CLOUD_ID override.
 #
 # Env vars consumed:
-#   JIRA_OAUTH_TOKEN   – static Bearer token       (required for TC1, TC5)
-#   JIRA_CLIENT_ID     – OAuth 2.0 client ID       (required for TC3)
-#   JIRA_CLIENT_SECRET – OAuth 2.0 client secret   (required for TC3)
-#   JIRA_USERNAME      – Basic auth username        (required for TC2, TC5)
-#   JIRA_API_TOKEN     – Jira API token             (required for TC2, TC5)
-#   JIRA_PASSWORD      – alias for JIRA_API_TOKEN   (backward compat)
+#   JIRA_CLIENT_ID     – OAuth 2.0 client ID       (required for TC1, TC2, TC5, TC6)
+#   JIRA_CLIENT_SECRET – OAuth 2.0 client secret   (required for TC1, TC2, TC5, TC6)
+#   JIRA_USERNAME      – Basic auth username/email (required for TC3, TC5)
+#   JIRA_API_TOKEN     – Jira API token            (required for TC3, TC5)
+#   JIRA_PASSWORD      – alias for JIRA_API_TOKEN  (backward compat)
 
 set -euo pipefail
 
@@ -29,12 +29,15 @@ source "$JIRA_AUTH_LIB"
 
 # ── Read credentials from env vars once at startup ───────────────────────────
 # JIRA_API_TOKEN takes precedence over the legacy JIRA_PASSWORD alias.
-INPUT_OAUTH_TOKEN="${JIRA_OAUTH_TOKEN:-}"
 INPUT_CLIENT_ID="${JIRA_CLIENT_ID:-}"
 INPUT_CLIENT_SECRET="${JIRA_CLIENT_SECRET:-}"
 INPUT_USERNAME="${JIRA_USERNAME:-}"
 INPUT_API_TOKEN="${JIRA_API_TOKEN:-${JIRA_PASSWORD:-}}"
 INPUT_BASE_URL="${JIRA_BASE_URL:-$JIRA_BASE_URL_DEFAULT}"
+
+# The library reads these from the environment, so each test case sets them
+# explicitly instead of inheriting them from the caller.
+unset JIRA_CLIENT_ID JIRA_CLIENT_SECRET JIRA_CLOUD_ID
 
 # ── Counters ──────────────────────────────────────────────────────────────────
 totalTests=0
@@ -62,6 +65,7 @@ function log() {
 function reset_output_vars() {
     unset JIRA_AUTH_HEADER        || true
     unset JIRA_EFFECTIVE_BASE_URL || true
+    unset JIRA_CLIENT_ID JIRA_CLIENT_SECRET JIRA_CLOUD_ID || true
 }
 
 function startTestCase() {
@@ -201,45 +205,75 @@ function printSummary() {
     } | tee -a "$LOG_FILE"
 }
 
-# ── TC1: Static Bearer token ──────────────────────────────────────────────────
+# ── TC1: OAuth client credentials from env vars ──────────────────────────────
 echo ""
-echo "=== TC1: Static Bearer token ==="
-startTestCase "TC1: Static Bearer token"
+echo "=== TC1: OAuth client credentials from env vars ==="
+startTestCase "TC1: OAuth client credentials from env vars"
 
-if [[ -z "$INPUT_OAUTH_TOKEN" ]]; then
-    skip_test "TC1" "JIRA_OAUTH_TOKEN is not set"
+if [[ -z "$INPUT_CLIENT_ID" || -z "$INPUT_CLIENT_SECRET" ]]; then
+    skip_test "TC1" "JIRA_CLIENT_ID or JIRA_CLIENT_SECRET is not set"
 else
-    resolve_jira_auth \
-        "$INPUT_OAUTH_TOKEN" "" "" "" "" "$INPUT_BASE_URL"
+    export JIRA_CLIENT_ID="$INPUT_CLIENT_ID"
+    export JIRA_CLIENT_SECRET="$INPUT_CLIENT_SECRET"
+    resolve_jira_auth "" "" "$INPUT_BASE_URL"
 
     assert_starts_with \
         "JIRA_AUTH_HEADER is a Bearer token" \
         "Authorization: Bearer " \
         "${JIRA_AUTH_HEADER:-}"
 
-    assert_equals \
-        "JIRA_EFFECTIVE_BASE_URL is unchanged for static token" \
-        "$INPUT_BASE_URL" \
+    assert_starts_with \
+        "JIRA_EFFECTIVE_BASE_URL points to api.atlassian.com/ex/jira" \
+        "https://api.atlassian.com/ex/jira/" \
         "${JIRA_EFFECTIVE_BASE_URL:-}"
 
     assert_http_200 \
-        "Jira API responds to static Bearer token" \
+        "Jira API responds to OAuth token from env vars" \
         "${JIRA_EFFECTIVE_BASE_URL:-}/rest/api/3/myself" \
         "${JIRA_AUTH_HEADER:-}"
 fi
 
-endTestCase "TC1: Static Bearer token"
+endTestCase "TC1: OAuth client credentials from env vars"
 
-# ── TC2: Basic auth fallback ──────────────────────────────────────────────────
+# ── TC2: OAuth client credentials via jira-username/jira-password ────────────
 echo ""
-echo "=== TC2: Basic auth fallback ==="
-startTestCase "TC2: Basic auth fallback"
+echo "=== TC2: OAuth client credentials via jira-username/jira-password ==="
+startTestCase "TC2: OAuth client credentials via jira-username/jira-password"
+
+if [[ -z "$INPUT_CLIENT_ID" || -z "$INPUT_CLIENT_SECRET" ]]; then
+    skip_test "TC2" "JIRA_CLIENT_ID or JIRA_CLIENT_SECRET is not set"
+else
+    resolve_jira_auth "$INPUT_CLIENT_ID" "$INPUT_CLIENT_SECRET" "$INPUT_BASE_URL"
+
+    assert_starts_with \
+        "JIRA_AUTH_HEADER is a Bearer token" \
+        "Authorization: Bearer " \
+        "${JIRA_AUTH_HEADER:-}"
+
+    assert_starts_with \
+        "JIRA_EFFECTIVE_BASE_URL points to api.atlassian.com/ex/jira" \
+        "https://api.atlassian.com/ex/jira/" \
+        "${JIRA_EFFECTIVE_BASE_URL:-}"
+
+    assert_http_200 \
+        "Jira API responds to OAuth token from jira-username/jira-password" \
+        "${JIRA_EFFECTIVE_BASE_URL:-}/rest/api/3/myself" \
+        "${JIRA_AUTH_HEADER:-}"
+fi
+
+endTestCase "TC2: OAuth client credentials via jira-username/jira-password"
+
+# ── TC3: Basic auth with email username ──────────────────────────────────────
+echo ""
+echo "=== TC3: Basic auth with email username ==="
+startTestCase "TC3: Basic auth with email username"
 
 if [[ -z "$INPUT_USERNAME" || -z "$INPUT_API_TOKEN" ]]; then
-    skip_test "TC2" "JIRA_USERNAME or JIRA_API_TOKEN is not set"
+    skip_test "TC3" "JIRA_USERNAME or JIRA_API_TOKEN is not set"
+elif [[ "$INPUT_USERNAME" != *@* ]]; then
+    skip_test "TC3" "JIRA_USERNAME is not an email address"
 else
-    resolve_jira_auth \
-        "" "" "" "$INPUT_USERNAME" "$INPUT_API_TOKEN" "$JIRA_BASE_URL_DEFAULT"
+    resolve_jira_auth "$INPUT_USERNAME" "$INPUT_API_TOKEN" "$JIRA_BASE_URL_DEFAULT"
 
     assert_starts_with \
         "JIRA_AUTH_HEADER is a Basic token" \
@@ -257,36 +291,7 @@ else
         "${JIRA_AUTH_HEADER:-}"
 fi
 
-endTestCase "TC2: Basic auth fallback"
-
-# ── TC3: Dynamic OAuth 2.0 token exchange ────────────────────────────────────
-echo ""
-echo "=== TC3: Dynamic OAuth 2.0 token exchange ==="
-startTestCase "TC3: Dynamic OAuth 2.0 token exchange"
-
-if [[ -z "$INPUT_CLIENT_ID" || -z "$INPUT_CLIENT_SECRET" ]]; then
-    skip_test "TC3" "JIRA_CLIENT_ID or JIRA_CLIENT_SECRET is not set"
-else
-    resolve_jira_auth \
-        "" "$INPUT_CLIENT_ID" "$INPUT_CLIENT_SECRET" "" "" "$JIRA_BASE_URL_DEFAULT"
-
-    assert_starts_with \
-        "JIRA_AUTH_HEADER is a dynamic Bearer token" \
-        "Authorization: Bearer " \
-        "${JIRA_AUTH_HEADER:-}"
-
-    assert_starts_with \
-        "JIRA_EFFECTIVE_BASE_URL points to api.atlassian.com/ex/jira" \
-        "https://api.atlassian.com/ex/jira/" \
-        "${JIRA_EFFECTIVE_BASE_URL:-}"
-
-    assert_http_200 \
-        "Jira API responds to dynamic OAuth Bearer token" \
-        "${JIRA_EFFECTIVE_BASE_URL:-}/rest/api/3/myself" \
-        "${JIRA_AUTH_HEADER:-}"
-fi
-
-endTestCase "TC3: Dynamic OAuth 2.0 token exchange"
+endTestCase "TC3: Basic auth with email username"
 
 # ── TC4: Validation error – no credentials (always runs) ─────────────────────
 echo ""
@@ -294,13 +299,13 @@ echo "=== TC4: Validation error – no credentials ==="
 startTestCase "TC4: Validation error – no credentials"
 
 set +e
-resolve_jira_auth "" "" "" "" "" ""
+resolve_jira_auth "" "" ""
 TC4_EXIT=$?
 set -e
 
 assert_exit_nonzero \
     "resolve_jira_auth exits non-zero when no auth credentials are provided" \
-    "$TC4_EXIT"  
+    "$TC4_EXIT"
 
 assert_empty \
     "JIRA_AUTH_HEADER is not set after auth failure" \
@@ -312,24 +317,46 @@ assert_empty \
 
 endTestCase "TC4: Validation error – no credentials"
 
-# ── TC5: Priority – static token takes precedence over basic auth ─────────────
+# ── TC5: Priority – env var OAuth over Basic credentials ─────────────────────
 echo ""
-echo "=== TC5: Priority – static token takes precedence over basic auth ==="
-startTestCase "TC5: Priority – static token over basic auth"
+echo "=== TC5: Priority – env var OAuth over Basic credentials ==="
+startTestCase "TC5: Priority – env var OAuth over Basic credentials"
 
-if [[ -z "$INPUT_OAUTH_TOKEN" || -z "$INPUT_USERNAME" || -z "$INPUT_API_TOKEN" ]]; then
-    skip_test "TC5" "JIRA_OAUTH_TOKEN, JIRA_USERNAME, and JIRA_API_TOKEN are all required"
+if [[ -z "$INPUT_CLIENT_ID" || -z "$INPUT_CLIENT_SECRET" || -z "$INPUT_USERNAME" || -z "$INPUT_API_TOKEN" ]]; then
+    skip_test "TC5" "JIRA_CLIENT_ID, JIRA_CLIENT_SECRET, JIRA_USERNAME and JIRA_API_TOKEN are all required"
 else
-    resolve_jira_auth \
-        "$INPUT_OAUTH_TOKEN" "" "" "$INPUT_USERNAME" "$INPUT_API_TOKEN" "$INPUT_BASE_URL"
+    export JIRA_CLIENT_ID="$INPUT_CLIENT_ID"
+    export JIRA_CLIENT_SECRET="$INPUT_CLIENT_SECRET"
+    resolve_jira_auth "$INPUT_USERNAME" "$INPUT_API_TOKEN" "$JIRA_BASE_URL_DEFAULT"
 
-    assert_equals \
-        "Static Bearer token wins over Basic credentials" \
-        "Authorization: Bearer $INPUT_OAUTH_TOKEN" \
+    assert_starts_with \
+        "Env var OAuth wins over Basic credentials" \
+        "Authorization: Bearer " \
         "${JIRA_AUTH_HEADER:-}"
 fi
 
-endTestCase "TC5: Priority – static token over basic auth"
+endTestCase "TC5: Priority – env var OAuth over Basic credentials"
+
+# ── TC6: JIRA_CLOUD_ID overrides cloud ID discovery ──────────────────────────
+echo ""
+echo "=== TC6: JIRA_CLOUD_ID overrides cloud ID discovery ==="
+startTestCase "TC6: JIRA_CLOUD_ID overrides cloud ID discovery"
+
+if [[ -z "$INPUT_CLIENT_ID" || -z "$INPUT_CLIENT_SECRET" ]]; then
+    skip_test "TC6" "JIRA_CLIENT_ID or JIRA_CLIENT_SECRET is not set"
+else
+    export JIRA_CLIENT_ID="$INPUT_CLIENT_ID"
+    export JIRA_CLIENT_SECRET="$INPUT_CLIENT_SECRET"
+    export JIRA_CLOUD_ID="unit-test-cloud-id"
+    resolve_jira_auth "" "" "$INPUT_BASE_URL"
+
+    assert_equals \
+        "JIRA_EFFECTIVE_BASE_URL uses JIRA_CLOUD_ID" \
+        "https://api.atlassian.com/ex/jira/unit-test-cloud-id" \
+        "${JIRA_EFFECTIVE_BASE_URL:-}"
+fi
+
+endTestCase "TC6: JIRA_CLOUD_ID overrides cloud ID discovery"
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 log "INFO" "Test execution completed"

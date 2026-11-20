@@ -53,9 +53,6 @@ function runTest() {
     local artifactoryUsername="$5"
     local artifactoryPassword="$6"
     local artifactType="$7"
-    local jiraOauthToken="${8:-}"
-    local jiraClientId="${9:-}"
-    local jiraClientSecret="${10:-}"
 
     local versionPrependLabel
     if [[ "${artifact_auto_versioning__prepend_version__enabled}" == "true" ]]; then
@@ -87,10 +84,7 @@ function runTest() {
         "\"${versionPrependLabel}\"" \
         "\"${versionFilter}\"" \
         "\"${version}\"" \
-        "\"${versionFile}\"" \
-        "\"${jiraOauthToken}\"" \
-        "\"${jiraClientId}\"" \
-        "\"${jiraClientSecret}\""
+        "\"${versionFile}\""
 
     source "${GET_LATEST_VERSION_SCRIPT_PATH}" "${ARTIFACTORY_BASE_URL}" \
         "${branches__default__artifact__packager__artifactory_repo}" \
@@ -113,10 +107,7 @@ function runTest() {
         "${versionPrependLabel}" \
         "${versionFilter}" \
         "${version}" \
-        "${versionFile}" \
-        "${jiraOauthToken}" \
-        "${jiraClientId}" \
-        "${jiraClientSecret}"
+        "${versionFile}"
 }
 
 function startYamlImporter(){
@@ -176,9 +167,6 @@ function runTests() {
     local jiraPassword="$5"
     local artifactoryUsername="$6"
     local artifactoryPassword="$7"
-    local jiraOauthToken="${8:-}"
-    local jiraClientId="${9:-}"
-    local jiraClientSecret="${10:-}"
 
     local artifactType
 
@@ -211,7 +199,7 @@ function runTests() {
             startYamlImporter "${YAML_IMPORTER_FILE}" "${configFilePath}"
             source "${YAML_IMPORTER_FILE}"
 
-            runTest "${jfrogToken}" "${jiraUserName}" "${jiraPassword}" "${versionFileFullPath}" "${artifactoryUsername}" "${artifactoryPassword}" "${artifactType}" "${jiraOauthToken}" "${jiraClientId}" "${jiraClientSecret}"
+            runTest "${jfrogToken}" "${jiraUserName}" "${jiraPassword}" "${versionFileFullPath}" "${artifactoryUsername}" "${artifactoryPassword}" "${artifactType}"
         fi
     done
 }
@@ -225,9 +213,6 @@ function mainTestRunner(){
     local jiraPassword="$6"
     local artifactoryUsername="$7"
     local artifactoryPassword="$8"
-    local jiraOauthToken="${9:-}"
-    local jiraClientId="${10:-}"
-    local jiraClientSecret="${11:-}"
 
     # Check if arguments are provided
     if [ $# -eq 0 ]; then
@@ -237,11 +222,11 @@ function mainTestRunner(){
 
     # Case 1: Run one config file + a specific testcase (e.g., testcase1, testcase2)
     if [[ $configFile != "all" && $scope =~ ^[0-9]+$ ]]; then
-        runTests "$configFile" "${TEST_SUITE_PATH}/${suiteCollection}/${configFile}/testcase${scope}" "${jfrogToken}" "${jiraUserName}" "${jiraPassword}" "${artifactoryUsername}" "${artifactoryPassword}" "${jiraOauthToken}" "${jiraClientId}" "${jiraClientSecret}"
+        runTests "$configFile" "${TEST_SUITE_PATH}/${suiteCollection}/${configFile}/testcase${scope}" "${jfrogToken}" "${jiraUserName}" "${jiraPassword}" "${artifactoryUsername}" "${artifactoryPassword}"
 
     # Case 2: Run one config file + all testcases (e.g., testcase1, testcase2, ...)
     elif [[ $configFile != "all" && $scope == "all" ]]; then
-        runTests "$configFile" "${TEST_SUITE_PATH}/${suiteCollection}/${configFile}/testcase*" "${jfrogToken}" "${jiraUserName}" "${jiraPassword}" "${artifactoryUsername}" "${artifactoryPassword}" "${jiraOauthToken}" "${jiraClientId}" "${jiraClientSecret}"
+        runTests "$configFile" "${TEST_SUITE_PATH}/${suiteCollection}/${configFile}/testcase*" "${jfrogToken}" "${jiraUserName}" "${jiraPassword}" "${artifactoryUsername}" "${artifactoryPassword}"
 
     else
         echo "Invalid option. Usage: $0 [all | specific_testcase | range_of_testcases]"
@@ -258,11 +243,8 @@ jiraUserName="$5"
 jiraPassword="$6"
 artifactoryUsername="$7"
 artifactoryPassword="$8"
-jiraOauthToken="${9:-}"
-jiraClientId="${10:-}"
-jiraClientSecret="${11:-}"
 
-mainTestRunner "${suiteCollection}" "${configFile}" "${scope}" "${jfrogToken}" "${jiraUserName}" "${jiraPassword}" "${artifactoryUsername}" "${artifactoryPassword}" "${jiraOauthToken}" "${jiraClientId}" "${jiraClientSecret}"
+mainTestRunner "${suiteCollection}" "${configFile}" "${scope}" "${jfrogToken}" "${jiraUserName}" "${jiraPassword}" "${artifactoryUsername}" "${artifactoryPassword}"
 
 
 
