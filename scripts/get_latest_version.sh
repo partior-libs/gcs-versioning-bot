@@ -113,10 +113,16 @@ function storeLatestBaseVersionIntoFile() {
         if (cat $inputList | grep -qE "\"$targetBaseVersion\""); then
             echo "[INFO] Found target baseline: [$targetBaseVersion]"
         else
-            echo "[ERROR] $BASH_SOURCE (line:$LINENO): Rebase validation enabled. Unable to find target baseline: [$targetBaseVersion]"
-            echo "[DEBUG] Versions:"
-            cat $inputList
-            exit 1
+            if [[ "$REBASE_V_VALIDATION_FAIL_NONEXISTENT_SEVERITY" == 'error' ]]; then
+                echo "[ERROR] $BASH_SOURCE (line:$LINENO): Rebase validation enabled. Unable to find target baseline: [$targetBaseVersion]"
+                echo "[DEBUG] Versions:"
+                cat $inputList
+                exit 1
+            else
+                echo "::warning::$BASH_SOURCE (line:$LINENO): Rebase validation enabled. Unable to find target baseline: [$targetBaseVersion]"
+                echo "[DEBUG] Versions:"
+                cat $inputList
+            fi
         fi
 
     fi
