@@ -18,11 +18,11 @@ inputs:
     required: false
     default: 'https://partior.jfrog.io/artifactory'
   jira-username:
-    description: 'Jira Username. Mandatory if version-sources.jira.enabled is true'
+    description: 'Jira username (email) for Basic auth, or an OAuth 2.0 client ID (any value without "@"). Mandatory if version-sources.jira.enabled is true, unless env vars JIRA_CLIENT_ID and JIRA_CLIENT_SECRET are set'
     required: false
     default: ''
   jira-password: 
-    description: 'Jira Password. Mandatory if version-sources.jira.enabled is true'
+    description: 'Jira API token for Basic auth, or the OAuth 2.0 client secret when jira-username is a client ID. Mandatory if version-sources.jira.enabled is true, unless env vars JIRA_CLIENT_ID and JIRA_CLIENT_SECRET are set'
     required: false
     default: ''
   jira-base-url:
