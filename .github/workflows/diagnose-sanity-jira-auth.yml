@@ -1,0 +1,102 @@
+name: Diagnose Sanity Jira Auth (DSO-4453, do not merge)
+
+# Reproduces how "update-partior-tag / Perform Sanity on Controller" passes Jira
+# credentials to gcs-versioning-bot@main, and compares it with the other wiring
+# options. Secret values are never printed, only whether they are set.
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/diagnose-sanity-jira-auth.yml'
+  workflow_dispatch:
+
+jobs:
+  diagnose:
+    name: Jira auth (${{ matrix.case }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Same inputs as controller-3p-pipelines pipeline-template-controller-ci.yaml
+          - case: controller-wiring
+            use-env: 'false'
+            username-secret: JIRA_USERNAME
+            password-secret: JIRA_PASSWORD
+          # Env vars, as ci-workflow.yml does for the unit tests
+          - case: env-vars
+            use-env: 'true'
+            username-secret: ''
+            password-secret: ''
+          # Proposed fix: client ID/secret stored under the names callers already pass
+          - case: reuse-secret-names
+            use-env: 'false'
+            username-secret: JIRA_CLIENT_ID
+            password-secret: JIRA_CLIENT_SECRET
+
+    steps:
+      - name: Checkout gcs-versioning-bot@main
+        uses: actions/checkout@v4
+        with:
+          repository: partior-libs/gcs-versioning-bot
+          ref: main
+          path: bot
+
+      - name: Show which secrets are set (no values)
+        env:
+          JIRA_USERNAME: ${{ secrets.JIRA_USERNAME }}
+          JIRA_PASSWORD: ${{ secrets.JIRA_PASSWORD }}
+          JIRA_CLIENT_ID: ${{ secrets.JIRA_CLIENT_ID }}
+          JIRA_CLIENT_SECRET: ${{ secrets.JIRA_CLIENT_SECRET }}
+          JIRA_SE_CLIENT_ID: ${{ secrets.JIRA_SE_CLIENT_ID }}
+          JIRA_SE_CLIENT_SECRET: ${{ secrets.JIRA_SE_CLIENT_SECRET }}
+        run: |
+          for name in JIRA_USERNAME JIRA_PASSWORD JIRA_CLIENT_ID JIRA_CLIENT_SECRET JIRA_SE_CLIENT_ID JIRA_SE_CLIENT_SECRET; do
+            value="${!name}"
+            if [[ -z "$value" ]]; then
+              echo "$name: EMPTY"
+            elif [[ "$value" == *@* ]]; then
+              echo "$name: set (${#value} chars, looks like an email)"
+            else
+              echo "$name: set (${#value} chars)"
+            fi
+          done
+
+      - name: Resolve Jira auth and query Jira
+        env:
+          JIRA_CLIENT_ID: ${{ matrix.use-env == 'true' && secrets.JIRA_CLIENT_ID || '' }}
+          JIRA_CLIENT_SECRET: ${{ matrix.use-env == 'true' && secrets.JIRA_CLIENT_SECRET || '' }}
+          INPUT_JIRA_USERNAME: ${{ matrix.username-secret != '' && secrets[matrix.username-secret] || '' }}
+          INPUT_JIRA_PASSWORD: ${{ matrix.password-secret != '' && secrets[matrix.password-secret] || '' }}
+          JIRA_BASE_URL: https://partior.atlassian.net
+          JIRA_PROJECT_KEY: DSO
+          JIRA_VERSION_PREFIX: LIB_GCS_VERSIONING_BOT
+        run: |
+          source bot/scripts/jira-auth-lib.sh
+          if ! resolve_jira_auth "$INPUT_JIRA_USERNAME" "$INPUT_JIRA_PASSWORD" "$JIRA_BASE_URL"; then
+            echo "::error::[${{ matrix.case }}] Jira auth could not be resolved"
+            exit 1
+          fi
+
+          status=$(curl -s -o myself.json -w '%{http_code}' -H "$JIRA_AUTH_HEADER" -H 'Accept: application/json' \
+            "$JIRA_EFFECTIVE_BASE_URL/rest/api/3/myself")
+          echo "GET /myself: HTTP $status (account type: $(jq -r '.accountType // "n/a"' myself.json 2>/dev/null))"
+
+          status=$(curl -s -o project.json -w '%{http_code}' -H "$JIRA_AUTH_HEADER" -H 'Accept: application/json' \
+            "$JIRA_EFFECTIVE_BASE_URL/rest/api/3/project/$JIRA_PROJECT_KEY")
+          echo "GET /project/$JIRA_PROJECT_KEY: HTTP $status"
+
+          status=$(curl -s -o versions.json -w '%{http_code}' -H "$JIRA_AUTH_HEADER" -H 'Accept: application/json' \
+            "$JIRA_EFFECTIVE_BASE_URL/rest/api/3/project/$JIRA_PROJECT_KEY/versions")
+          echo "GET /project/$JIRA_PROJECT_KEY/versions: HTTP $status"
+          if [[ "$status" == "200" ]]; then
+            echo "  $(jq length versions.json) versions, $(jq --arg p "$JIRA_VERSION_PREFIX" '[.[] | select(.name | startswith($p))] | length' versions.json) starting with $JIRA_VERSION_PREFIX"
+          fi
+
+          status=$(curl -s -o perms.json -w '%{http_code}' -H "$JIRA_AUTH_HEADER" -H 'Accept: application/json' \
+            "$JIRA_EFFECTIVE_BASE_URL/rest/api/3/mypermissions?projectKey=$JIRA_PROJECT_KEY&permissions=BROWSE_PROJECTS,ADMINISTER_PROJECTS,EDIT_ISSUES")
+          echo "GET /mypermissions ($JIRA_PROJECT_KEY): HTTP $status"
+          if [[ "$status" == "200" ]]; then
+            jq -r '.permissions | to_entries[] | "  \(.key): \(.value.havePermission)"' perms.json
+          fi
